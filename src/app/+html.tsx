@@ -21,6 +21,15 @@ const responsiveStyles = `
   @media (max-width: 599px) {
     #design-review-shell { padding-right: 16px !important; padding-left: 16px !important; }
   }
+  #app-tablet-nav, #app-mobile-nav { display: none; }
+  @media (max-width: 1023px) {
+    #app-sidebar { display: none !important; }
+    #app-tablet-nav { display: flex !important; }
+  }
+  @media (max-width: 599px) {
+    #app-tablet-nav { display: none !important; }
+    #app-mobile-nav { position: fixed !important; z-index: 20; right: 0; bottom: 0; left: 0; display: flex !important; padding-bottom: max(env(safe-area-inset-bottom), 8px); }
+  }
 `;
 
 export default function RootHtml({ children }: PropsWithChildren) {

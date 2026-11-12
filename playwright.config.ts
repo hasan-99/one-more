@@ -24,7 +24,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev:web -- --port 8090 --clear',
+    command: 'npm run dev:web -- --port 8090 --clear --no-dev --minify',
     url: 'http://127.0.0.1:8090',
     reuseExistingServer: false,
     timeout: 120_000,

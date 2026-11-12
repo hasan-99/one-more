@@ -39,6 +39,26 @@
 - **Issues / deviations:** None for the phase gate. Starting two Expo dev servers concurrently during inspection caused a temporary Metro cache error; after stopping both, all checks and the final browser inspection passed with one server.
 - **Next:** Phase 02 — shell, landing, routes and polished design skeleton. Not started; waiting for the user's next instruction.
 
+### 2026-11-12 — Phase 02: Shell, landing, routes and design skeleton
+
+- **Status:** PASS
+- **Summary:** Added the responsive guest app shell with desktop sidebar, tablet navigation and mobile bottom navigation; wired the landing CTA and shell links; added Home, Explore, Create, Teams, Profile, Notifications, Settings, Match, Team, Challenge and Chat route skeletons with honest empty states. Added English and Greek copy for all new visible text and retained the development-only design review link.
+- **Decisions:** Kept every route as a localized preview/empty state because backend and feature phases are not implemented yet. Disabled Expo Router async routes in `app.json` after repeated Playwright navigations exposed Metro `unknown module` errors; route navigation and production web checks then passed. E2E uses the minified web bundle to avoid Metro HMR disconnects during repeated screenshot navigation.
+- **Commands:**
+  - `npm run lint` — PASS, exit 0
+  - `npm run typecheck` — PASS, exit 0
+  - `npm run test:run` — PASS, 2 files / 5 tests, exit 0
+  - `npm run test:e2e -- --workers=1 --project=desktop-chromium` — PASS, 4 tests, exit 0 (includes route/theme screenshot matrix)
+  - `npm run test:e2e -- --workers=1 --project=mobile-chromium` — PASS, 3 tests passed / 1 screenshot-matrix test skipped by design, exit 0
+  - `npm run format:check` — PASS, exit 0
+  - `npx expo-doctor` — PASS, 20/20 checks, exit 0
+  - `npm run build:web` — PASS, Expo server-rendered web export created `dist`, exit 0
+  - `npm run dev:web -- --port 8090 --clear` — PASS, app started and was opened in Chromium for direct navigation verification
+- **Browser verification:** Tested landing CTA to Explore and shell navigation. Playwright checked every Phase 02 route at 375×812 and 1440×900 in Dark and Light, with no horizontal overflow. Greek localization was checked on desktop and mobile. Screenshots: `docs/screenshots/phase-02/` (44 images).
+- **Security verification:** No database, Supabase client, credentials, or protected data access was added. Preview-only content is identified as a guest preview or empty state.
+- **Issues / deviations:** The first browser run found a React Native Web `Link asChild` array-style incompatibility and an Expo dev-bundler cache issue. Flattened link styles, waited for preference hydration before interactions, and ran final E2E against a minified web bundle. No known blockers remain.
+- **Next:** Phase 03 — Supabase foundation and reproducible schema. Not started; waiting for the user's next instruction.
+
 ## Follow-up product requirement — Open positions on a pitch map (2026-11-12)
 
 - Organizer selects needed player positions by adding one marker per player on a pitch map during match creation/editing.

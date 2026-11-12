@@ -1,4 +1,5 @@
 import { useFonts } from 'expo-font';
+import { router, type Href } from 'expo-router';
 import { useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   Platform,
@@ -28,8 +29,6 @@ export default function LandingScreen() {
   const { width } = useWindowDimensions();
   const isCompact = Platform.OS !== 'web' && width < 760;
   const scrollRef = useRef<ElementRef<typeof ScrollView>>(null);
-  const [heroOffset, setHeroOffset] = useState(0);
-  const [demoOffset, setDemoOffset] = useState(0);
   const [howOffset, setHowOffset] = useState(0);
 
   const scrollTo = (offset: number) => {
@@ -54,11 +53,7 @@ export default function LandingScreen() {
           </View>
         </View>
 
-        <View
-          nativeID="landing-hero"
-          onLayout={(event) => setHeroOffset(event.nativeEvent.layout.y)}
-          style={[styles.hero, isCompact && styles.heroCompact]}
-        >
+        <View nativeID="landing-hero" style={[styles.hero, isCompact && styles.heroCompact]}>
           <View nativeID="hero-copy" style={styles.heroCopy}>
             <View style={styles.eyebrowRow}>
               <View style={styles.liveDot} />
@@ -94,7 +89,7 @@ export default function LandingScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={copy.primaryCta}
-                onPress={() => scrollTo(heroOffset + demoOffset)}
+                onPress={() => router.push('/explore' as Href)}
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
               >
                 <Text style={[styles.primaryButtonText, fontsLoaded && styles.interSemibold]}>
@@ -120,11 +115,7 @@ export default function LandingScreen() {
             </View>
           </View>
 
-          <View
-            nativeID="match-preview"
-            onLayout={(event) => setDemoOffset(event.nativeEvent.layout.y)}
-            style={styles.previewWrap}
-          >
+          <View nativeID="match-preview" style={styles.previewWrap}>
             <View style={styles.glow} />
             <View style={styles.matchCard}>
               <View style={styles.previewHeader}>
