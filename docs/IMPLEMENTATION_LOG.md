@@ -18,3 +18,23 @@
 - **Security verification:** No Supabase client, schema, or data access was added. `.env.example` contains blank publishable-variable placeholders only; no credentials are committed.
 - **Issues / deviations:** Expo's `npx expo lint` auto-setup reported a version-detection error after installing ESLint 9, so `npm run lint` uses ESLint directly and passes. npm reported 8 moderate advisories during dependency installation; they were not remediated in this phase.
 - **Next:** Phase 01 — theme, brand, and i18n foundations. Not started.
+
+### 2026-11-12 — Phase 01: Theme, brand, and i18n foundations
+
+- **Status:** PASS
+- **Summary:** Added semantic dark/light Electric Lime tokens and status colors; a cross-platform preference provider persists System/Dark/Light and EN/EL using AsyncStorage, resolves system appearance, localizes the document language, and reports persistence errors. The landing screen and placeholder BrandMark now follow the selected theme and locale. Added Cyprus-localized date/number formatting, a responsive navigation primitive, and a development-only component gallery for buttons, fields, badges, cards, dialog, and typography. Greek display copy uses Inter to preserve glyph coverage. Keyboard focus styles remain visible.
+- **Dependencies:** Added Expo SDK 58-compatible `@react-native-async-storage/async-storage`. No Supabase client or credentials added.
+- **Commands:**
+  - `npm run lint` — PASS, exit 0
+  - `npm run typecheck` — PASS, exit 0
+  - `npm run test:run` — PASS, 2 files / 5 tests, exit 0 (includes WCAG AA contrast pairs and Cyprus time formatting)
+  - `npm run test:e2e` — PASS, 2 landing tests across desktop/mobile, exit 0
+  - `npm run format:check` — PASS, exit 0
+  - `npx expo-doctor` — PASS, 20/20 checks, exit 0
+  - `npm run build:web` — PASS, Expo Web export created `dist`, exit 0
+  - `npm run dev:web -- --port 8092 --clear` — PASS, server loaded on `http://127.0.0.1:8092`; gallery inspected in Chromium
+- **Browser verification:** Visited `/design-review`; confirmed all gallery controls and Greek copy render. Changed to Light + Greek, refreshed, and confirmed `html lang="el"`, `color-scheme: light`, and stored values `one-more.theme=light`, `one-more.locale=el`. System mode followed emulated light/dark OS settings. Keyboard Tab reached a button with `:focus-visible` and a solid outline. No horizontal overflow at 375, 768, and 1440px in Dark/EN and Light/EL. Browser console had no errors during the final single-server inspection.
+- **Screenshots:** `docs/screenshots/phase-01/{dark-en,light-el}-{375,768,1440}.png`.
+- **Security verification:** No backend connection or secrets introduced. Preference values only store theme and locale locally.
+- **Issues / deviations:** None for the phase gate. Starting two Expo dev servers concurrently during inspection caused a temporary Metro cache error; after stopping both, all checks and the final browser inspection passed with one server.
+- **Next:** Phase 02 — shell, landing, routes and polished design skeleton. Not started; waiting for the user's next instruction.

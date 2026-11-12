@@ -16,7 +16,10 @@ const responsiveStyles = `
     #hero-line { font-size: 44px !important; line-height: 46px !important; }
     #section-title { font-size: 38px !important; line-height: 42px !important; }
     #steps { flex-direction: column !important; }
-    #steps > div { border-right-width: 0 !important; border-bottom: 1px solid #283328 !important; }
+    #steps > div { border-right-width: 0 !important; border-bottom: 1px solid var(--app-border, #283328) !important; }
+  }
+  @media (max-width: 599px) {
+    #design-review-shell { padding-right: 16px !important; padding-left: 16px !important; }
   }
 `;
 
