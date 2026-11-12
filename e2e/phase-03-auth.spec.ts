@@ -80,6 +80,117 @@ test('an expired signup code is rejected without creating a session', async ({ p
   expect(verifyRequests).toBe(1);
 });
 
+test('a verified signup session continues to profile onboarding', async ({ page }) => {
+  const userId = 'cf48b0df-2dd8-43aa-9091-e21f0c0bd3fe';
+  const email = 'player@example.invalid';
+  const now = Math.floor(Date.now() / 1000);
+  const encodeJwtPart = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const accessToken = [
+    encodeJwtPart({ alg: 'HS256', typ: 'JWT' }),
+    encodeJwtPart({
+      aud: 'authenticated',
+      role: 'authenticated',
+      sub: userId,
+      email,
+      exp: now + 3600,
+      iat: now,
+      app_metadata: { provider: 'email', providers: ['email'] },
+      user_metadata: {},
+    }),
+    'mock-signature',
+  ].join('.');
+  await page.route('**/auth/v1/verify**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'X-Supabase-Api-Version': '2024-01-01' },
+      body: JSON.stringify({
+        access_token: accessToken,
+        refresh_token: 'mock-refresh-token',
+        expires_in: 3600,
+        expires_at: now + 3600,
+        token_type: 'bearer',
+        user: {
+          id: userId,
+          aud: 'authenticated',
+          role: 'authenticated',
+          email,
+          email_confirmed_at: new Date(now * 1000).toISOString(),
+          phone: '',
+          app_metadata: { provider: 'email', providers: ['email'] },
+          user_metadata: {},
+          identities: [],
+          created_at: new Date(now * 1000).toISOString(),
+          updated_at: new Date(now * 1000).toISOString(),
+        },
+      }),
+    }),
+  );
+  await page.route('**/rest/v1/**', async (route) => {
+    const url = new URL(route.request().url());
+    const table = url.pathname.split('/').pop();
+    if (table === 'profiles') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          url.searchParams.get('select') === 'onboarding_complete'
+            ? { onboarding_complete: false }
+            : {
+                id: userId,
+                display_name: null,
+                avatar_path: null,
+                city_id: null,
+                area_id: null,
+                preferred_position: null,
+                skill_level: null,
+                language: 'en',
+                onboarding_complete: false,
+                created_at: new Date(now * 1000).toISOString(),
+                updated_at: new Date(now * 1000).toISOString(),
+              },
+        ),
+      });
+    } else if (table === 'cities' || table === 'areas') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    } else if (table === 'user_preferences') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user_id: userId,
+          preferred_formats: [],
+          availability_slots: [],
+          max_radius_km: 25,
+          created_at: new Date(now * 1000).toISOString(),
+          updated_at: new Date(now * 1000).toISOString(),
+        }),
+      });
+    } else if (table === 'notification_preferences') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user_id: userId,
+          in_app_enabled: true,
+          discovery_email_enabled: false,
+          chat_email_enabled: true,
+          created_at: new Date(now * 1000).toISOString(),
+          updated_at: new Date(now * 1000).toISOString(),
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+
+  await page.goto(`/verify-email?email=${encodeURIComponent(email)}`);
+  await page.getByLabel('6-digit email code').fill('123456');
+  await page.getByRole('button', { name: 'Verify email' }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await expect(page.getByRole('heading', { name: 'Build your player profile' })).toBeVisible();
+});
+
 test('OTP resend observes a 60-second cooldown and resets it after a successful send', async ({
   page,
 }) => {

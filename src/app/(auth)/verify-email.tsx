@@ -15,7 +15,7 @@ const resendCooldownMs = 60_000;
 export default function VerifyEmailScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
-  const { isConfigured } = useAuth();
+  const { isConfigured, refreshSession } = useAuth();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{
     email?: string | string[];
@@ -47,10 +47,15 @@ export default function VerifyEmailScreen() {
   const submit = async () => {
     setBusy(true);
     try {
-      const { error } = await verifySignupOtp(email, token);
+      const { data, error } = await verifySignupOtp(email, token);
       if (error) throw error;
       showToast(copy.authVerified, 'success');
-      router.replace('/sign-in' as Href);
+      if (data.session) {
+        await refreshSession();
+        router.replace('/onboarding' as Href);
+      } else {
+        router.replace('/sign-in' as Href);
+      }
     } catch (error) {
       showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {

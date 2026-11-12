@@ -284,7 +284,7 @@ export const en = {
   authGenericError: 'Something went wrong. Please try again.',
   authEmailSent: 'Check your inbox for the next step.',
   authSignupPending: 'Account created. Enter the email code to verify it.',
-  authVerified: 'Email verified. You can now sign in.',
+  authVerified: 'Email verified successfully.',
   authPasswordUpdated: 'Your password has been updated.',
   authResendWait: 'Wait before requesting another code.',
   authUnavailable: 'Authentication is not configured yet.',

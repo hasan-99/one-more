@@ -285,7 +285,7 @@ export const el = {
   authGenericError: 'Κάτι πήγε στραβά. Δοκίμασε ξανά.',
   authEmailSent: 'Έλεγξε τα εισερχόμενά σου για το επόμενο βήμα.',
   authSignupPending: 'Ο λογαριασμός δημιουργήθηκε. Επαλήθευσε το email με τον κωδικό.',
-  authVerified: 'Το email επαληθεύτηκε. Μπορείς τώρα να συνδεθείς.',
+  authVerified: 'Το email επαληθεύτηκε με επιτυχία.',
   authPasswordUpdated: 'Ο κωδικός σου ενημερώθηκε.',
   authResendWait: 'Περίμενε πριν ζητήσεις νέο κωδικό.',
   authUnavailable: 'Η λειτουργία σύνδεσης δεν έχει ρυθμιστεί ακόμη.',
