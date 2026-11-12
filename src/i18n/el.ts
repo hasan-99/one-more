@@ -147,4 +147,11 @@ export const el = {
   authProtectedDescription: 'Συνδέσου για να αποκτήσεις πρόσβαση σε αυτό το τμήμα.',
   authEntry: 'Σύνδεση',
   authRetry: 'Δοκίμασε ξανά',
+  authAccountExists: 'Υπάρχει ήδη λογαριασμός με αυτό το email. Συνδέσου.',
+  authSignInSuccess: 'Συνδέθηκες.',
+  authSignOutSuccess: 'Αποσυνδέθηκες.',
+  preferencesThemeSaved: 'Η προτίμηση εμφάνισης αποθηκεύτηκε.',
+  preferencesLanguageSaved: 'Η προτίμηση γλώσσας αποθηκεύτηκε.',
+  toastDismiss: 'Κλείσιμο ειδοποίησης',
+  authEmailUnconfirmed: 'Επαλήθευσε το email σου πριν συνδεθείς.',
 } as const;

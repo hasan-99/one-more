@@ -145,4 +145,11 @@ export const en = {
   authProtectedDescription: 'Sign in to access this part of your account.',
   authEntry: 'Sign in',
   authRetry: 'Try again',
+  authAccountExists: 'An account already uses this email. Sign in instead.',
+  authSignInSuccess: 'You are signed in.',
+  authSignOutSuccess: 'You are signed out.',
+  preferencesThemeSaved: 'Appearance preference saved.',
+  preferencesLanguageSaved: 'Language preference saved.',
+  toastDismiss: 'Dismiss notification',
+  authEmailUnconfirmed: 'Verify your email before signing in.',
 } as const;

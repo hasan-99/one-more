@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthButton, AuthFeedback, AuthField, AuthPage } from '@/components/auth/AuthPage';
+import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
 import { resendSignupOtp, verifySignupOtp } from '@/features/auth/auth-service';
+import { authErrorMessageKey } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -12,33 +14,32 @@ export default function VerifyEmailScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
   const { isConfigured } = useAuth();
+  const { showToast } = useToast();
   const params = useLocalSearchParams<{ email?: string | string[] }>();
   const email = Array.isArray(params.email) ? (params.email[0] ?? '') : (params.email ?? '');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
   const submit = async () => {
     setBusy(true);
-    setMessage('');
     try {
       const { error } = await verifySignupOtp(email, token);
       if (error) throw error;
+      showToast(copy.authVerified, 'success');
       router.replace('/sign-in' as Href);
-    } catch {
-      setMessage(copy.authInvalidCode);
+    } catch (error) {
+      showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {
       setBusy(false);
     }
   };
   const resend = async () => {
     setBusy(true);
-    setMessage('');
     try {
       const { error } = await resendSignupOtp(email);
       if (error) throw error;
-      setMessage(copy.authEmailSent);
-    } catch {
-      setMessage(copy.authResendWait);
+      showToast(copy.authEmailSent, 'success');
+    } catch (error) {
+      showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {
       setBusy(false);
     }
@@ -63,11 +64,6 @@ export default function VerifyEmailScreen() {
           maxLength={6}
         />
         {!isConfigured ? <AuthFeedback kind="info">{copy.authUnavailable}</AuthFeedback> : null}
-        {message ? (
-          <AuthFeedback kind={message === copy.authEmailSent ? 'success' : 'error'}>
-            {message}
-          </AuthFeedback>
-        ) : null}
         <AuthButton
           label={busy ? copy.authSessionLoading : copy.authVerify}
           disabled={busy || !isConfigured || token.trim().length !== 6}

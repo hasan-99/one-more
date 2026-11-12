@@ -10,8 +10,9 @@ import {
   AuthPage,
   AuthTextLink,
 } from '@/components/auth/AuthPage';
+import { useToast } from '@/components/toast/ToastProvider';
 import { setNewPassword, signOut } from '@/features/auth/auth-service';
-import { validatePassword } from '@/features/auth/auth-validation';
+import { authErrorMessageKey, validatePassword } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -19,24 +20,30 @@ export default function ResetPasswordScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
   const auth = useAuth();
+  const { showToast } = useToast();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
   const submit = async () => {
-    if (!validatePassword(password)) return setMessage(copy.authPasswordShort);
-    if (password !== confirmation) return setMessage(copy.authPasswordMismatch);
+    if (!validatePassword(password)) {
+      showToast(copy.authPasswordShort, 'error');
+      return;
+    }
+    if (password !== confirmation) {
+      showToast(copy.authPasswordMismatch, 'error');
+      return;
+    }
     setBusy(true);
-    setMessage('');
     try {
       const { error } = await setNewPassword(password);
       if (error) throw error;
       const result = await signOut();
       if (result.error) throw result.error;
+      showToast(copy.authPasswordUpdated, 'success');
       auth.clearPasswordRecovery();
       router.replace('/sign-in' as Href);
-    } catch {
-      setMessage(copy.authGenericError);
+    } catch (error) {
+      showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {
       setBusy(false);
     }
@@ -73,7 +80,6 @@ export default function ResetPasswordScreen() {
           autoComplete="new-password"
           secureTextEntry
         />
-        {message ? <AuthFeedback>{message}</AuthFeedback> : null}
         <AuthButton
           label={busy ? copy.authSessionLoading : copy.authSavePassword}
           disabled={busy}

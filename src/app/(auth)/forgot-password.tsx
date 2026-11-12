@@ -8,9 +8,10 @@ import {
   AuthPage,
   AuthTextLink,
 } from '@/components/auth/AuthPage';
+import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
 import { requestPasswordReset } from '@/features/auth/auth-service';
-import { validateEmail } from '@/features/auth/auth-validation';
+import { authErrorMessageKey, validateEmail } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -18,24 +19,21 @@ export default function ForgotPasswordScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
   const { isConfigured } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
-  const [sent, setSent] = useState(false);
   const submit = async () => {
     if (!validateEmail(email)) {
-      setMessage(copy.authEmailRequired);
+      showToast(copy.authEmailRequired, 'error');
       return;
     }
     setBusy(true);
-    setMessage('');
     try {
       const { error } = await requestPasswordReset(email);
       if (error) throw error;
-      setSent(true);
-      setMessage(copy.authEmailSent);
-    } catch {
-      setMessage(copy.authGenericError);
+      showToast(copy.authEmailSent, 'success');
+    } catch (error) {
+      showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {
       setBusy(false);
     }
@@ -51,7 +49,6 @@ export default function ForgotPasswordScreen() {
           autoComplete="email"
         />
         {!isConfigured ? <AuthFeedback kind="info">{copy.authUnavailable}</AuthFeedback> : null}
-        {message ? <AuthFeedback kind={sent ? 'success' : 'error'}>{message}</AuthFeedback> : null}
         <AuthButton
           label={busy ? copy.authSessionLoading : copy.authSendReset}
           disabled={busy || !isConfigured}

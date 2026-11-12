@@ -9,9 +9,10 @@ import {
   AuthPage,
   AuthTextLink,
 } from '@/components/auth/AuthPage';
+import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
 import { signInWithPassword } from '@/features/auth/auth-service';
-import { safeReturnTo, validateEmail } from '@/features/auth/auth-validation';
+import { authErrorMessageKey, safeReturnTo, validateEmail } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -19,21 +20,24 @@ export default function SignInScreen() {
   const { locale, colors } = useAppPreferences();
   const copy = translations[locale];
   const { isConfigured } = useAuth();
+  const { showToast } = useToast();
   const params = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
   const submit = async () => {
-    if (!validateEmail(email)) return setMessage(copy.authEmailRequired);
+    if (!validateEmail(email)) {
+      showToast(copy.authEmailRequired, 'error');
+      return;
+    }
     setBusy(true);
-    setMessage('');
     try {
       const { error } = await signInWithPassword(email, password);
       if (error) throw error;
+      showToast(copy.authSignInSuccess, 'success');
       router.replace(safeReturnTo(params.returnTo) as never);
-    } catch {
-      setMessage(copy.authInvalidCredentials);
+    } catch (error) {
+      showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {
       setBusy(false);
     }
@@ -56,7 +60,6 @@ export default function SignInScreen() {
           secureTextEntry
         />
         {!isConfigured ? <AuthFeedback kind="info">{copy.authUnavailable}</AuthFeedback> : null}
-        {message ? <AuthFeedback>{message}</AuthFeedback> : null}
         <AuthButton
           label={busy ? copy.authSessionLoading : copy.authSignIn}
           disabled={busy || !isConfigured}

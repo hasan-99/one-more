@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePathname } from 'expo-router';
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -10,7 +11,8 @@ import {
 } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
-import type { Locale } from '@/i18n';
+import { translations, type Locale } from '@/i18n';
+import { useToast } from '@/components/toast/ToastProvider';
 import { themeTokens, type ThemeColors, type ThemeMode } from '@/theme/tokens';
 
 export type ThemePreference = 'system' | ThemeMode;
@@ -21,7 +23,6 @@ type AppPreferences = {
   colors: ThemeColors;
   locale: Locale;
   preferencesReady: boolean;
-  saveError: boolean;
   setThemePreference: (value: ThemePreference) => void;
   setLocale: (value: Locale) => void;
 };
@@ -33,10 +34,10 @@ const PreferencesContext = createContext<AppPreferences | null>(null);
 export function AppPreferencesProvider({ children }: PropsWithChildren) {
   const systemScheme = useColorScheme();
   const pathname = usePathname();
+  const { showToast } = useToast();
   const [themePreference, setThemePreferenceState] = useState<ThemePreference>('system');
   const [locale, setLocaleState] = useState<Locale>('en');
   const [preferencesReady, setPreferencesReady] = useState(false);
-  const [saveError, setSaveError] = useState(false);
   const theme: ThemeMode =
     themePreference === 'system' ? (systemScheme ?? 'dark') : themePreference;
   const colors = themeTokens[theme];
@@ -54,14 +55,14 @@ export function AppPreferencesProvider({ children }: PropsWithChildren) {
       })
       .catch(() => {
         if (active) {
-          setSaveError(true);
+          showToast(translations.en.preferencesSavedError, 'error');
           setPreferencesReady(true);
         }
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
@@ -88,18 +89,26 @@ export function AppPreferencesProvider({ children }: PropsWithChildren) {
       pathname === '/design-review' ? 'ONE MORE. · Design review' : 'ONE MORE. · Find your game';
   }, [pathname]);
 
-  const setThemePreference = (value: ThemePreference) => {
-    setThemePreferenceState(value);
-    void AsyncStorage.setItem(THEME_KEY, value)
-      .then(() => setSaveError(false))
-      .catch(() => setSaveError(true));
-  };
-  const setLocale = (value: Locale) => {
-    setLocaleState(value);
-    void AsyncStorage.setItem(LOCALE_KEY, value)
-      .then(() => setSaveError(false))
-      .catch(() => setSaveError(true));
-  };
+  const setThemePreference = useCallback(
+    (value: ThemePreference) => {
+      if (value === themePreference) return;
+      setThemePreferenceState(value);
+      void AsyncStorage.setItem(THEME_KEY, value)
+        .then(() => showToast(translations[locale].preferencesThemeSaved, 'success'))
+        .catch(() => showToast(translations[locale].preferencesSavedError, 'error'));
+    },
+    [locale, showToast, themePreference],
+  );
+  const setLocale = useCallback(
+    (value: Locale) => {
+      if (value === locale) return;
+      setLocaleState(value);
+      void AsyncStorage.setItem(LOCALE_KEY, value)
+        .then(() => showToast(translations[value].preferencesLanguageSaved, 'success'))
+        .catch(() => showToast(translations[value].preferencesSavedError, 'error'));
+    },
+    [locale, showToast],
+  );
 
   const value = useMemo(
     () => ({
@@ -108,11 +117,10 @@ export function AppPreferencesProvider({ children }: PropsWithChildren) {
       colors,
       locale,
       preferencesReady,
-      saveError,
       setThemePreference,
       setLocale,
     }),
-    [themePreference, theme, colors, locale, preferencesReady, saveError],
+    [themePreference, theme, colors, locale, preferencesReady, setThemePreference, setLocale],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

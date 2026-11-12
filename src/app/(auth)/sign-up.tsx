@@ -10,9 +10,10 @@ import {
   AuthPage,
   AuthTextLink,
 } from '@/components/auth/AuthPage';
+import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
 import { signUpWithPassword } from '@/features/auth/auth-service';
-import { validateSignup } from '@/features/auth/auth-validation';
+import { authErrorMessageKey, validateSignup } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -20,12 +21,12 @@ export default function SignUpScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
   const { isConfigured } = useAuth();
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
   const submit = async () => {
     const validation = validateSignup(email, password, confirmation, accepted);
     if (validation) {
@@ -35,17 +36,17 @@ export default function SignUpScreen() {
         passwordMismatch: copy.authPasswordMismatch,
         terms: copy.authTermsRequired,
       };
-      setMessage(messages[validation]);
+      showToast(messages[validation], 'error');
       return;
     }
     setBusy(true);
-    setMessage('');
     try {
       const { error } = await signUpWithPassword(email, password);
       if (error) throw error;
+      showToast(copy.authSignupPending, 'success');
       router.replace(`/verify-email?email=${encodeURIComponent(email.trim())}` as Href);
-    } catch {
-      setMessage(copy.authGenericError);
+    } catch (error) {
+      showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {
       setBusy(false);
     }
@@ -76,7 +77,6 @@ export default function SignUpScreen() {
         />
         <AuthCheckbox label={copy.authAcceptTerms} checked={accepted} onChange={setAccepted} />
         {!isConfigured ? <AuthFeedback kind="info">{copy.authUnavailable}</AuthFeedback> : null}
-        {message ? <AuthFeedback>{message}</AuthFeedback> : null}
         <AuthButton
           label={busy ? copy.authSessionLoading : copy.authSignUp}
           disabled={busy || !isConfigured}

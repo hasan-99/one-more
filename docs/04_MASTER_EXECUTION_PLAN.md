@@ -10,7 +10,7 @@
 4. Implement **only that phase**, using feature flags or coherent stubs if downstream features not yet built. Stubs must be labeled and must not simulate success of real backend requests.
 5. Run common checks: `npm run lint`, `npm run typecheck`, `npm run test:run`, `npx expo export --platform web`, `npx expo start --web` (running server; verify actual page via browser/Playwright).
 6. From Phase 02 onward add `npm run test:e2e` scoped to existing flows; from first DB phase run DB/RLS tests too.
-7. Check Web in mobile 375px and desktop 1440px, both dark and light when available; capture screenshot or explain lack of browser tool.
+7. Run scenario-based checks in the live Web app after every phase. Walk the changed flows as guest, signed-in player and organizer when applicable; intentionally exercise success, validation, empty, permission-denied, backend/storage failure and retry paths, fix discovered bugs, then re-run the checks. Check mobile 375px and desktop 1440px in dark and light when available; capture screenshots or explain lack of browser access.
 8. Update `docs/IMPLEMENTATION_LOG.md` with exact evidence, deviations and next phase.
 9. **Stop** and ask for next phase instruction. Failures are blockers unless documented and explicitly deferred with no false PASS.
 

@@ -4,15 +4,8 @@ import { translations } from '@/i18n';
 import { useAppPreferences, type ThemePreference } from '@/preferences/AppPreferencesProvider';
 
 export function PreferenceSwitchers() {
-  const {
-    locale,
-    setLocale,
-    themePreference,
-    setThemePreference,
-    colors,
-    saveError,
-    preferencesReady,
-  } = useAppPreferences();
+  const { locale, setLocale, themePreference, setThemePreference, colors, preferencesReady } =
+    useAppPreferences();
   const copy = translations[locale];
   const themeOptions: { value: ThemePreference; label: string }[] = [
     { value: 'system', label: copy.themeSystem },
@@ -88,11 +81,6 @@ export function PreferenceSwitchers() {
           })}
         </View>
       </View>
-      {saveError ? (
-        <Text accessibilityRole="alert" style={[styles.error, { color: colors.errorText }]}>
-          {copy.preferencesSavedError}
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -111,5 +99,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionText: { fontSize: 11, fontWeight: '600' },
-  error: { width: '100%', fontSize: 12 },
 });
