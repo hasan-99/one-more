@@ -53,6 +53,11 @@ for (const theme of ['Dark', 'Light'] as const) {
         for (const screen of screens) {
           await page.goto(screen.path);
           await expect(page.getByRole('heading').first()).toBeVisible();
+          if (screen.path === '/explore') {
+            await expect(
+              page.getByText(locale === 'en' ? 'Finding matches…' : 'Αναζήτηση αγώνων…'),
+            ).toBeHidden();
+          }
           await expect(page).toHaveTitle(/ONE MORE\./);
           await expect(page.locator('html')).toHaveAttribute('lang', locale);
           if (screen.path === '/home' && viewport.width <= 375) {

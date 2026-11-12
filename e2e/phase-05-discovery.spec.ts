@@ -21,6 +21,7 @@ test('live match discovery filters are accessible, localized and responsive', as
       'aria-checked',
       'true',
     );
+    await expect(page.getByText('Finding matches…')).toBeHidden();
     await page.screenshot({
       path: `docs/screenshots/phase-05/discovery-${width}.png`,
       fullPage: true,
