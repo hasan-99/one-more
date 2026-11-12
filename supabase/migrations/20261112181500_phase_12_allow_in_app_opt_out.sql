@@ -1,0 +1,2 @@
+alter table public.notification_preferences
+  drop constraint notification_preferences_in_app_enabled_check;

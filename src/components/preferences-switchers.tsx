@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { translations } from '@/i18n';
 import { useAppPreferences, type ThemePreference } from '@/preferences/AppPreferencesProvider';
@@ -14,7 +14,7 @@ export function PreferenceSwitchers() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View nativeID="preference-switchers" style={styles.container}>
       <View style={styles.group}>
         <Text style={[styles.label, { color: colors.textMuted }]}>{copy.themeLabel}</Text>
         <View
@@ -88,15 +88,15 @@ export function PreferenceSwitchers() {
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap', gap: 10 },
   group: { gap: 4 },
-  label: { fontSize: 9, letterSpacing: 0.8, textTransform: 'uppercase' },
+  label: { fontSize: 12, lineHeight: 16, letterSpacing: 0.4, textTransform: 'uppercase' },
   segment: { flexDirection: 'row', borderRadius: 10, borderWidth: 1, padding: 3, gap: 2 },
   option: {
-    minHeight: 32,
-    minWidth: 42,
+    minHeight: 44,
+    minWidth: 44,
     borderRadius: 7,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionText: { fontSize: 11, fontWeight: '600' },
+  optionText: { fontSize: 12, fontWeight: '600' },
 });

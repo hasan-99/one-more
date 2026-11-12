@@ -60,7 +60,7 @@ a {
   }
 }
 
-@media (max-width: 759px) {
+@media (max-width: 959px) {
   #page-shell {
     padding-right: 20px !important;
     padding-left: 20px !important;
@@ -72,6 +72,12 @@ a {
     min-height: 0 !important;
     padding-top: 58px !important;
     padding-bottom: 48px !important;
+  }
+  #hero-copy {
+    min-height: 360px;
+  }
+  #match-preview {
+    min-height: 412px;
   }
   #hero-title {
     font-size: 72px !important;
@@ -98,6 +104,20 @@ a {
   #design-review-shell {
     padding-right: 16px !important;
     padding-left: 16px !important;
+  }
+  #hero-copy {
+    min-height: 395px;
+  }
+  #match-preview {
+    min-height: 395px;
+  }
+}
+
+@media (max-width: 420px) {
+  #preference-switchers {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
   }
 }
 

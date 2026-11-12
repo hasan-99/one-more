@@ -41,6 +41,7 @@ describe('semantic theme contrast', () => {
       assertPair(colors, 'warningText', 'warning');
       assertPair(colors, 'errorText', 'error');
       assertPair(colors, 'infoText', 'info');
+      assertPair(colors, 'pitchText', 'pitch');
     });
   }
 });

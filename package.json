@@ -10,7 +10,7 @@
     "@expo/ui": "~58.0.28",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "2.119.0",
-    "expo": "~58.0.24",
+    "expo": "~58.0.25",
     "expo-constants": "~58.0.16",
     "expo-device": "~58.0.5",
     "expo-font": "~58.0.12",
@@ -44,13 +44,22 @@
     "typescript": "~6.0.3",
     "vitest": "^5.1.0"
   },
+  "overrides": {
+    "@expo/fingerprint": {
+      "minimatch": "^11.0.1"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    }
+  },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint src e2e --max-warnings=0",
     "dev:web": "expo start --web",
+    "preview:web": "npm run build:web && npx expo serve --port 8080",
     "typecheck": "tsc --noEmit",
     "test:run": "vitest run",
     "test": "vitest",

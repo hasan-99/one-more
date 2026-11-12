@@ -1,0 +1,1 @@
+create index match_message_reports_reporter_idx on public.match_message_reports(reporter_id);

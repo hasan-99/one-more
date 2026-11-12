@@ -20,6 +20,10 @@ export type ThemeColors = {
   errorText: string;
   info: string;
   infoText: string;
+  pitch: string;
+  pitchLine: string;
+  pitchText: string;
+  pitchMarkerBorder: string;
 };
 
 export const themeTokens: Record<ThemeMode, ThemeColors> = {
@@ -43,6 +47,10 @@ export const themeTokens: Record<ThemeMode, ThemeColors> = {
     errorText: '#FFB4A9',
     info: '#1D3548',
     infoText: '#A9D7FF',
+    pitch: '#173D2A',
+    pitchLine: '#9FC9A8',
+    pitchText: '#FFFFFF',
+    pitchMarkerBorder: '#101510',
   },
   light: {
     background: '#F7F9F2',
@@ -64,5 +72,9 @@ export const themeTokens: Record<ThemeMode, ThemeColors> = {
     errorText: '#9D2921',
     info: '#E5F1FA',
     infoText: '#245B82',
+    pitch: '#E4F0DF',
+    pitchLine: '#718A70',
+    pitchText: '#263D28',
+    pitchMarkerBorder: '#263D28',
   },
 };

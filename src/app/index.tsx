@@ -202,7 +202,25 @@ export default function LandingScreen() {
 
         <View style={styles.footer}>
           <BrandMark fontsLoaded={fontsLoaded} subtitle={copy.footer} />
-          <Text style={[styles.footerNote, fontsLoaded && styles.interRegular]}>{copy.city}</Text>
+          <View style={styles.footerMeta}>
+            <Text style={[styles.footerNote, fontsLoaded && styles.interRegular]}>{copy.city}</Text>
+            <View style={styles.footerLinks}>
+              <Link href={'/privacy' as Href} asChild>
+                <Pressable accessibilityRole="link" style={styles.footerLink}>
+                  <Text style={[styles.footerLinkText, fontsLoaded && styles.interRegular]}>
+                    {copy.footerPrivacy}
+                  </Text>
+                </Pressable>
+              </Link>
+              <Link href={'/terms' as Href} asChild>
+                <Pressable accessibilityRole="link" style={styles.footerLink}>
+                  <Text style={[styles.footerLinkText, fontsLoaded && styles.interRegular]}>
+                    {copy.footerTerms}
+                  </Text>
+                </Pressable>
+              </Link>
+            </View>
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -287,8 +305,8 @@ const createStyles = (theme: ThemeColors) => {
       alignItems: 'center',
       gap: 14,
     },
-    primaryButtonText: { color: colors.background, fontSize: 14 },
-    buttonArrow: { color: colors.background, fontSize: 17 },
+    primaryButtonText: { color: theme.primaryButtonText, fontSize: 14 },
+    buttonArrow: { color: theme.primaryButtonText, fontSize: 17 },
     buttonPressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
     secondaryButton: {
       minHeight: 52,
@@ -403,7 +421,7 @@ const createStyles = (theme: ThemeColors) => {
       borderRadius: 7,
       backgroundColor: colors.lime,
     },
-    pitchBadgeText: { color: colors.background, fontSize: 11, fontWeight: '800' },
+    pitchBadgeText: { color: theme.primaryButtonText, fontSize: 11, fontWeight: '800' },
     matchDetails: { paddingTop: 18 },
     matchTitle: { color: colors.white, fontSize: 19 },
     matchLocation: { color: colors.secondary, fontSize: 13, marginTop: 5 },
@@ -419,7 +437,7 @@ const createStyles = (theme: ThemeColors) => {
     openSpots: { flexDirection: 'row', alignItems: 'center', gap: 7 },
     spotDot: { width: 6, height: 6, borderRadius: 4, backgroundColor: colors.lime },
     openSpotsText: { color: theme.accentText, fontSize: 11 },
-    disclaimer: { color: '#71806F', fontSize: 10, letterSpacing: 0.8, marginTop: 12 },
+    disclaimer: { color: colors.muted, fontSize: 10, letterSpacing: 0.8, marginTop: 12 },
     howSection: { borderTopWidth: 1, borderTopColor: '#283328', paddingTop: 56, paddingBottom: 58 },
     sectionHeading: { maxWidth: 630 },
     sectionTitle: { color: colors.white, fontSize: 46, lineHeight: 50 },
@@ -450,6 +468,18 @@ const createStyles = (theme: ThemeColors) => {
       borderTopWidth: 1,
       borderTopColor: '#283328',
       paddingVertical: 20,
+    },
+    footerMeta: { alignItems: 'flex-end', gap: 2 },
+    footerLinks: { flexDirection: 'row', gap: 8 },
+    footerLink: {
+      minHeight: 44,
+      paddingHorizontal: 8,
+      justifyContent: 'center',
+    },
+    footerLinkText: {
+      color: colors.secondary,
+      textDecorationLine: 'underline',
+      fontSize: 12,
     },
     footerNote: { color: colors.muted, fontSize: 12 },
     barlow: { fontFamily: 'BarlowCondensed_700Bold' },

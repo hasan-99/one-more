@@ -13,13 +13,69 @@
       [
         "expo-router",
         {
-          "asyncRoutes": false
+          "asyncRoutes": {
+            "web": true
+          },
+          "headers": {
+            "Cache-Control": "no-store",
+            "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY"
+          },
+          "pageHeaders": [
+            {
+              "source": "/settings",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            },
+            {
+              "source": "/profile",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            },
+            {
+              "source": "/notifications",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            },
+            {
+              "source": "/chat/[id]",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            },
+            {
+              "source": "/teams/[id]",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            },
+            {
+              "source": "/matches/[id]",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            },
+            {
+              "source": "/challenges/[id]",
+              "headers": {
+                "Cache-Control": "no-store"
+              }
+            }
+          ]
         }
       ],
       "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "android": {
+      "package": "com.anonymous.onemore"
     }
   }
 }

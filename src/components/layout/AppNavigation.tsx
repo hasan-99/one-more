@@ -5,17 +5,37 @@ import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
 type NavVariant = 'side' | 'row' | 'bottom';
-type NavItem = { key: string; href: Href; label: string };
+type NavItem = { key: string; href: Href; label: string; shortLabel: string };
 
 export function AppNavigation({ active, variant }: { active: string; variant: NavVariant }) {
   const { locale, colors } = useAppPreferences();
   const copy = translations[locale];
   const items: NavItem[] = [
-    { key: 'home', href: '/home' as Href, label: copy.appHomeTitle },
-    { key: 'explore', href: '/explore' as Href, label: copy.appExploreTitle },
-    { key: 'create', href: '/create' as Href, label: copy.appCreateTitle },
-    { key: 'teams', href: '/teams' as Href, label: copy.appTeamsTitle },
-    { key: 'profile', href: '/profile' as Href, label: copy.appProfileTitle },
+    { key: 'home', href: '/home' as Href, label: copy.appHomeTitle, shortLabel: copy.appHomeTitle },
+    {
+      key: 'explore',
+      href: '/explore' as Href,
+      label: copy.appExploreTitle,
+      shortLabel: copy.appExploreShort,
+    },
+    {
+      key: 'create',
+      href: '/create' as Href,
+      label: copy.appCreateTitle,
+      shortLabel: copy.appCreateShort,
+    },
+    {
+      key: 'teams',
+      href: '/teams' as Href,
+      label: copy.appTeamsTitle,
+      shortLabel: copy.appTeamsTitle,
+    },
+    {
+      key: 'profile',
+      href: '/profile' as Href,
+      label: copy.appProfileTitle,
+      shortLabel: copy.appProfileTitle,
+    },
   ];
 
   return (
@@ -24,7 +44,7 @@ export function AppNavigation({ active, variant }: { active: string; variant: Na
       accessibilityLabel={copy.appNavigation}
       style={[styles.nav, styles[variant]]}
     >
-      {items.map(({ key, href, label }) => {
+      {items.map(({ key, href, label, shortLabel }) => {
         const selected = active === key;
         return (
           <Link key={key} href={href} asChild>
@@ -46,7 +66,7 @@ export function AppNavigation({ active, variant }: { active: string; variant: Na
                   selected && styles.selectedText,
                 ]}
               >
-                {label}
+                {variant === 'bottom' ? shortLabel : label}
               </Text>
             </Pressable>
           </Link>

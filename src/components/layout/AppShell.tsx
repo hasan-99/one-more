@@ -36,7 +36,8 @@ function sectionTitle(pathname: string, locale: 'en' | 'el') {
   if (pathname.startsWith('/teams/')) return copy.appTeamDetailsTitle;
   if (pathname === '/teams') return copy.appTeamsTitle;
   if (pathname.startsWith('/matches')) return copy.appMatchDetailsTitle;
-  if (pathname.startsWith('/challenges')) return copy.appChallengeDetailsTitle;
+  if (pathname === '/challenges') return copy.appChallenges;
+  if (pathname.startsWith('/challenges/')) return copy.appChallengeDetailsTitle;
   if (pathname.startsWith('/chat')) return copy.appChatTitle;
   if (pathname.startsWith('/notifications')) return copy.appNotificationsTitle;
   if (pathname.startsWith('/settings')) return copy.appSettingsTitle;

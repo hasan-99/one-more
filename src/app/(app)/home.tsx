@@ -49,6 +49,7 @@ export default function AppHomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{copy.appChallenges}</Text>
         <EmptyState title={copy.appNoChallengesTitle} description={copy.appNoChallengesCopy} />
+        <AppAction labelKey="appChallenges" href="/challenges" secondary />
       </View>
     </AppPage>
   );
