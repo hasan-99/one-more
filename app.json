@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "ONE MORE",
+    "slug": "one-more",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "one-more",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "output": "server"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
