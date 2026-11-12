@@ -13,37 +13,29 @@ test('main navigation opens every shell section and secondary route', async ({ p
   await navigation.getByRole('link', { name: 'Home' }).click();
   await expect(page).toHaveURL(/\/home$/);
   await navigation.getByRole('link', { name: 'Create a game' }).click();
-  await expect(page).toHaveURL(/\/create$/);
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fcreate$/);
+  await page.goto('/explore');
   await navigation.getByRole('link', { name: 'Teams' }).click();
   await expect(page).toHaveURL(/\/teams$/);
   await navigation.getByRole('link', { name: 'Profile' }).click();
-  await expect(page).toHaveURL(/\/profile$/);
-  await page.getByRole('link', { name: 'Open settings' }).click();
-  await expect(page).toHaveURL(/\/settings$/);
-  await navigation.getByRole('link', { name: 'Profile' }).click();
-  await page.getByRole('link', { name: 'Notifications' }).click();
-  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fprofile$/);
+  await page.goto('/settings');
+  await page.goto('/notifications');
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fnotifications$/);
 });
 
-test('all phase 02 routes load as honest placeholders in both themes', async ({
+test('private routes require sign-in at mobile and desktop sizes in both themes', async ({
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
   test.skip(testInfo.project.name !== 'desktop-chromium', 'Capture the full route matrix once.');
-  const screenshotDirectory = join(process.cwd(), 'docs', 'screenshots', 'phase-02');
+  const screenshotDirectory = join(process.cwd(), 'docs', 'screenshots', 'phase-03');
   mkdirSync(screenshotDirectory, { recursive: true });
   const routes = [
-    { path: '/home', slug: 'home', heading: 'Your next game starts here.' },
-    { path: '/explore', slug: 'explore', heading: 'Explore games' },
-    { path: '/create', slug: 'create', heading: 'Create a game' },
-    { path: '/teams', slug: 'teams', heading: 'Teams' },
-    { path: '/profile', slug: 'profile', heading: 'Profile' },
-    { path: '/notifications', slug: 'notifications', heading: 'Notifications' },
-    { path: '/settings', slug: 'settings', heading: 'Settings' },
-    { path: '/matches/demo', slug: 'match-detail', heading: 'Match details' },
-    { path: '/teams/demo', slug: 'team-detail', heading: 'Team details' },
-    { path: '/challenges/demo', slug: 'challenge-detail', heading: 'Challenge details' },
-    { path: '/chat/demo', slug: 'chat', heading: 'Match chat' },
+    { path: '/create', slug: 'create', heading: 'Welcome back' },
+    { path: '/profile', slug: 'profile', heading: 'Welcome back' },
+    { path: '/notifications', slug: 'notifications', heading: 'Welcome back' },
+    { path: '/chat/demo', slug: 'chat', heading: 'Welcome back' },
   ];
 
   for (const width of [375, 1440]) {
@@ -59,6 +51,16 @@ test('all phase 02 routes load as honest placeholders in both themes', async ({
 
       for (const route of routes) {
         await page.goto(route.path);
+        await expect(page).toHaveURL(
+          new RegExp(
+            route.path === '/create' ||
+              route.path === '/profile' ||
+              route.path === '/notifications' ||
+              route.path.startsWith('/chat/')
+              ? `/sign-in\\?returnTo=${encodeURIComponent(route.path)}$`
+              : `${route.path}$`,
+          ),
+        );
         await expect(page.getByRole('heading', { name: route.heading }).last()).toBeVisible();
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
           width,
@@ -83,5 +85,6 @@ test('main screens localize in Greek', async ({ page }) => {
     .getByRole('navigation', { name: 'Κύρια πλοήγηση' })
     .getByRole('link', { name: 'Δημιουργία αγώνα' })
     .click();
-  await expect(page.getByText('Η δημιουργία αγώνα θα είναι σύντομα διαθέσιμη εδώ.')).toBeVisible();
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fcreate$/);
+  await expect(page.getByRole('heading', { name: 'Καλώς ήρθες ξανά' })).toBeVisible();
 });

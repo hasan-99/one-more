@@ -9,7 +9,15 @@
     "web": {
       "output": "server"
     },
-    "plugins": [["expo-router", { "asyncRoutes": false }]],
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "asyncRoutes": false
+        }
+      ],
+      "expo-secure-store"
+    ],
     "experiments": {
       "typedRoutes": true
     }

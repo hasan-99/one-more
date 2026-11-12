@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { router, type Href } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { useMemo, useRef, useState, type ElementRef } from 'react';
 import {
   Platform,
@@ -49,6 +49,12 @@ export default function LandingScreen() {
             <Text style={[styles.location, fontsLoaded && styles.interSemibold]}>
               {copy.locationLabel}
             </Text>
+            <Link
+              href={'/sign-in' as Href}
+              style={{ color: colors.accentText, fontWeight: '700', padding: 8 }}
+            >
+              {copy.authEntry}
+            </Link>
             <PreferenceSwitchers />
           </View>
         </View>

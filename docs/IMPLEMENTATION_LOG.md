@@ -59,6 +59,27 @@
 - **Issues / deviations:** The first browser run found a React Native Web `Link asChild` array-style incompatibility and an Expo dev-bundler cache issue. Flattened link styles, waited for preference hydration before interactions, and ran final E2E against a minified web bundle. No known blockers remain.
 - **Next:** Phase 03 — Supabase foundation and reproducible schema. Not started; waiting for the user's next instruction.
 
+### 2026-11-12 — Phase 03: Supabase environment, auth and verified OTP
+
+- **Status:** PARTIAL
+- **Summary:** Connected the app to the `ONE MORE` Supabase project with the public publishable key from ignored `.env.local`; added typed Supabase client setup, native SecureStore session persistence, auth session context, email/password signup and login, signup OTP verification/resend, password reset, password recovery, signout, localized auth pages, and signed-out guards for create, profile, notifications and private chat. Added `profiles` on auth-user creation with RLS limited to the authenticated user's own row. Added EN/EL copy, unit/E2E coverage, local pgTAP coverage, and generated DB types.
+- **Dependencies:** Added `@supabase/supabase-js` 2.119.0 and Expo SDK-compatible `expo-secure-store` ~58.0.3. `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are configured locally; only the publishable key is used in the client. No service-role or secret key was added.
+- **Database:** Applied migration `20261112111944_create_profiles_for_auth_users` to the hosted project. Confirmed `public.profiles` exists with RLS enabled, `anon` has no SELECT grant, `authenticated` has SELECT, and the single SELECT policy requires `auth.uid() = id`. Live SQL checks inserted two disposable auth users inside a rolled-back transaction; the trigger created their profiles, the authenticated role saw only its own profile (1 row / 0 other rows), and an `anon` SELECT was rejected with SQLSTATE `42501`. Inspected the trigger function: SECURITY DEFINER with empty `search_path`. Hosted security, performance and health advisors returned no lints. The local pgTAP test file covers the same access boundary but local execution was blocked because Docker is unavailable.
+- **Commands:**
+  - `npm run lint` — PASS, exit 0
+  - `npm run typecheck` — PASS, exit 0
+  - `npm run test:run` — PASS, 3 files / 8 tests, exit 0
+  - `npm run test:e2e -- --workers=1` — PASS, 13 passed / 1 skipped, exit 0; includes auth forms, guard redirects, EN/EL, desktop/mobile and theme checks
+  - `npm run format:check` — PASS, exit 0
+  - `npx expo-doctor` — PASS, 20/20 checks, exit 0
+  - `npm run build:web` — PASS, Expo Web export created `dist`, exit 0
+  - `npx --yes supabase@2 test db --local` — BLOCKED, exit 1; local Postgres at `127.0.0.1:54322` refused the connection because Docker/Supabase local services are unavailable
+  - `npm run dev:web -- --port 8090 --clear --no-dev --minify` — PASS, started by Playwright; pages loaded in Chromium at `http://127.0.0.1:8090`
+- **Browser verification:** Chromium checked `/sign-up`, `/sign-in`, `/create`, `/profile`, `/notifications` and `/chat/demo` at 375×812 and 1440×900; signup screens were checked in dark and light themes, and EN/EL switching and guard redirects were verified. Screenshots: `docs/screenshots/phase-03/`.
+- **Security verification:** Client uses only the Supabase publishable key. Live SQL verified `anon` denial and authenticated own-row isolation; catalog checks confirmed grants, RLS policy and secure trigger settings. The pgTAP suite was not executable without local Docker. No organizer data or organizer role exists in this foundation phase.
+- **Issues / deviations:** The hosted project is on the Free plan and was created after Supabase's 2026-06-03 restriction on customizing auth email templates while using default SMTP. Real signup OTP and password-reset delivery therefore remain unverified until a custom SMTP provider is configured (or the project moves to a plan that permits template customization). The local OTP HTML templates are ready and include `{{ .Token }}`; they are not proof of hosted email delivery. Supabase documents this restriction in its [email template customization change](https://supabase.com/changelog/46599-changes-to-email-template-customisation-on-free-tier). Docker was not available for local pgTAP execution. A full 44-screenshot regression matrix exceeded the Metro Node heap; the phase check was narrowed to the four guarded paths, while Phase 02's prior route matrix remains recorded above.
+- **Next:** Phase 04 — onboarding and profile/preferences. Not started; awaiting the user's next phase instruction.
+
 ## Follow-up product requirement — Open positions on a pitch map (2026-11-12)
 
 - Organizer selects needed player positions by adding one marker per player on a pitch map during match creation/editing.

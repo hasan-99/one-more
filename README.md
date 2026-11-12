@@ -14,12 +14,15 @@ follow the specs in [`docs/`](docs/).
 ```bash
 npm install
 copy .env.example .env.local
+# Replace both placeholders with your Supabase project URL and publishable key.
 npm run dev:web
 ```
 
-The landing page is a visual scaffold. Its sample match is explicitly labeled
-as demo content; Supabase is not connected yet. Do not enter production or
-private credentials in `EXPO_PUBLIC_*` variables.
+Supabase is connected for email/password authentication. Signup verification and
+password recovery require an email provider configured for the project. The
+sample match on the landing page is explicitly labeled as demo content. Only a
+publishable key belongs in `EXPO_PUBLIC_*` variables; never put service-role or
+other private keys in the client.
 
 ## Project commands
 
