@@ -443,3 +443,13 @@
 - **Remaining issues:** Verify the worker token passed from Vault and confirm the required Edge Function settings (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `APP_BASE_URL`) are configured, then run a controlled delivery smoke and confirm the advisor clears. Live Auth OTP, hosted Web, native device, legal and restore/load gates also remain open.
 - **Next:** Resume worker delivery verification after authorized secret configuration; continue remaining release gates without marking email delivery or beta readiness PASS.
 - **Exact worker response confirmation:** A read-only query of `net._http_response` at 2026-11-12 22:02 UTC found the latest ten worker responses all returned `{"error":"mail_provider_not_configured"}`. This confirms the worker reaches its own configuration guard; it does not identify which of the three settings is missing. No email was delivered by these calls.
+
+### 2026-11-13 — Phase 18 backup access check
+
+- **Status:** PARTIAL — backup expectations are documented, but no off-site database dump or restore rehearsal could be executed.
+- **Summary:** Supabase organization inspection confirms the project is on the Free plan. Current official guidance says Free projects do not receive automatic daily backups and recommends regular CLI exports kept off-site ([Supabase backup guide](https://supabase.com/docs/guides/platform/backups), [Free-plan backup FAQ](https://supabase.com/kb/faqs/platform/free-plan-backups)). Supabase CLI 3.1.0 is available through `npx`; `supabase db dump --help` confirmed remote dump options. `supabase projects list` returned `Invalid access token`, so this machine cannot link or dump the remote project. No plan upgrade, DB password entry, backup, or restore was attempted.
+- **Checks:** Supabase org plan — `free`; CLI help — PASS; CLI project access — FAIL (`Invalid access token`); no data or schema changes.
+- **Browser verification:** Not applicable to a database backup access check; no browser backup/restore was performed.
+- **Security verification:** Did not retrieve credentials or dump personal data. Kept all data and plan settings unchanged.
+- **Remaining issues:** Authenticate the Supabase CLI using the owner's account, link the correct project, obtain the database password through the secure dashboard flow, export schema/data off-repo with encryption, and schedule a restore rehearsal before beta. Free plan has no automatic daily backups.
+- **Next:** Perform the documented remote backup and restore rehearsal after secure CLI authentication; overall Phase 18 remains PARTIAL.
