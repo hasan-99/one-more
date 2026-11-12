@@ -112,6 +112,7 @@ For each component: sizes, active/disabled/error/loading/pressed/focus behavior,
 ### E. Explore
 
 - Desktop side filters + card grid; mobile sticky search + filter sheet + list. Each game card: date/time chip, format, field/area, status, available places, progress, fee, organizer, `VIEW GAME` CTA. Clear filter and sort state. Avoid more than two simultaneous bright lime accents per viewport section.
+- When a match has position-specific vacancies, show a compact pitch illustration with one player marker per open position. Keep its position labels/counts available as accessible text; omit it when no position needs were specified. Use the same map and marker positions on the match detail.
 
 ### F. Match detail
 
@@ -122,6 +123,7 @@ For each component: sizes, active/disabled/error/loading/pressed/focus behavior,
 
 - Wizard or single structured scroll: `MATCH FORMAT` → `WHEN & WHERE` → `SQUAD & SPOTS` → `FIELD BOOKING` → `REVIEW & PUBLISH`.
 - Live participant count calculation; block invalid date, negative fee, over-capacity; prominent warning if field not confirmed. Provide Save Draft and Publish actions.
+- In `SQUAD & SPOTS`, let the organizer add/remove one open-player marker at a time by selecting pitch zones (`goalkeeper`, `defender`, `midfielder`, `forward`, `any`). Keep marker count within the remaining capacity and show a readable position/count list alongside the map. Reuse this pitch component in match cards/detail; the map is a position selector, not decorative artwork.
 
 ### H. Team hub & team profile
 

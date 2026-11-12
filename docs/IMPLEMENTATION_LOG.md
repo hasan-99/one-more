@@ -38,3 +38,10 @@
 - **Security verification:** No backend connection or secrets introduced. Preference values only store theme and locale locally.
 - **Issues / deviations:** None for the phase gate. Starting two Expo dev servers concurrently during inspection caused a temporary Metro cache error; after stopping both, all checks and the final browser inspection passed with one server.
 - **Next:** Phase 02 — shell, landing, routes and polished design skeleton. Not started; waiting for the user's next instruction.
+
+## Follow-up product requirement — Open positions on a pitch map (2026-11-12)
+
+- Organizer selects needed player positions by adding one marker per player on a pitch map during match creation/editing.
+- Match cards and details reuse the map to show the positions still open, with an accessible text/count alternative.
+- Markers are vacancy annotations, not extra capacity or automatic join approvals. Position assignment and slot updates remain organizer-controlled and capacity-safe.
+- Recorded in the PRD, design system, architecture, Phase 05/06 tasks and QA matrix. **Not implemented in Phase 01.**

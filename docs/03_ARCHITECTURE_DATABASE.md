@@ -68,6 +68,7 @@ IDs default `uuid`; use `created_at`, `updated_at` timestamptz; enforce `NOT NUL
 | `team_invites` | id, team_id, invited_user_id or invite token hash, invited_by, status, expires_at |
 | `matches` | id, organizer_id, challenge_id nullable, title, side_size enum(5,7,8,11), capacity computed or constrained, city_id, area_id, venue_id nullable, venue_display_name, starts_at UTC, duration_minutes, level, price_eur numeric(8,2), visibility, event_status, booking_status, reserved_guest_slots, notes |
 | `match_participants` | id, match_id, user_id, status (`active/left/removed`), joined_at; partial unique active (match_id,user_id) |
+| `match_position_slots` | id, match_id, position_code (`goalkeeper/defender/midfielder/forward/any`), status (`open/filled/removed`), assigned_participant_id nullable unique, created_at; each open row is one organizer-requested role marker. Position needs are a subset of vacant capacity, not extra capacity. |
 | `match_join_requests` | id, match_id, user_id, status (`pending/accepted/rejected/cancelled`), reviewed_by, reviewed_at; ensure one active request per match/user; history permitted |
 | `match_waitlist` | id, match_id, user_id, status (`waiting/offered/accepted/removed`), created_at, priority_seq; unique waiting/offered entry |
 | `waitlist_offers` | id, match_id, waitlist_id, offered_user_id, status (`offered/accepted/declined/expired`), expires_at, unique active reservations |
@@ -95,6 +96,7 @@ IDs default `uuid`; use `created_at`, `updated_at` timestamptz; enforce `NOT NUL
 - One active membership per (`team_id`, `user_id`), one active participant per (`match_id`, `user_id`), one pending request per (`match_id`, `user_id`), one waiting/offered queue item per (`match_id`, `user_id`).
 - Index `(city_id, starts_at, event_status)` on `matches`, `(match_id, created_at)` on messages; `(recipient_id, created_at DESC)` notifications; `(status, expires_at)` offers.
 - Cancel/past match must reject new join requests on server.
+- Position-slot creation/update must be transactional and cannot create more open slots than the match's derived remaining capacity. Approving a join request still requires organizer approval; an optional organizer assignment fills one matching open slot atomically with approval.
 - `challenge_id` linked to no more than one confirmed match; two opponent approvals cannot succeed simultaneously.
 
 ## 4. Database functions / transactional operations

@@ -75,17 +75,17 @@ and run relevant E2E/DB tests. Log actual results in
 
 **Goal:** Real list and detail browsing with safe RLS, filtering and responsive cards.
 
-**Tasks:** Migrations: venues, matches, participant reservation model, indexes, safe public views/RPC. Query hooks, cursor/paged discovery, sort by starts_at, city/area, date/time, side_size, price, free spots, level. Components MatchCard, capacity progress, filters/skeleton/empty/error states. RLS on public data/private fields.
+**Tasks:** Migrations: venues, matches, participant reservation model, open-position slots, indexes, safe public views/RPC. Query hooks, cursor/paged discovery, sort by starts_at, city/area, date/time, side_size, price, free spots, level. Components MatchCard, compact pitch-position map for matches with open role needs, capacity progress, filters/skeleton/empty/error states. Position markers must match persisted open slots and remain a subset of derived vacancy count. RLS on public data/private fields.
 
-**Gate:** Seeded local matches show accurate formats/capacity/time; filters and detail deep links work on Web; unauthenticated cannot read sensitive fields, results paginated, date formatting Cyprus/DST tests. No false claims that manual booking is verified.
+**Gate:** Seeded local matches show accurate formats/capacity/time; position-needs maps and accessible position counts match each seeded match; filters and detail deep links work on Web; unauthenticated cannot read sensitive fields, results paginated, date formatting Cyprus/DST tests. No false claims that manual booking is verified.
 
 ## Phase 06 — Match creation/editing and booking tracker
 
 **Goal:** Any verified player can publish, edit and cancel their own match, with manual field booking.
 
-**Tasks:** Create/edit multi-section polished form and Zod/shared database validation. Venue name/address/manual location, starts_at, duration, format, guest reservations, notes, fee, draft/publish, booking status. Derived remaining count, organizer defaults, cancellation flow, transactional update, strict organizer RLS. Booking sensitive note/reference organizer-only. Schedule changes send update events later.
+**Tasks:** Create/edit multi-section polished form and Zod/shared database validation. Venue name/address/manual location, starts_at, duration, format, guest reservations, organizer-selected open positions on a tappable pitch map (one marker per needed player), notes, fee, draft/publish, booking status. Derived remaining count, organizer defaults, cancellation flow, transactional update of position slots, strict organizer RLS. Position markers cannot exceed remaining capacity. Booking sensitive note/reference organizer-only. Schedule changes send update events later.
 
-**Gate:** Create all four formats, confirm capacity 10/14/16/22; invalid date and over-reserved slots blocked front/backend; other user cannot edit/cancel; publication visible to others; responsive forms tested.
+**Gate:** Create all four formats, confirm capacity 10/14/16/22; add/remove and persist positions in all pitch zones; open-position count cannot exceed remaining capacity and renders correctly on cards/details; invalid date and over-reserved slots blocked front/backend; other user cannot edit/cancel; publication visible to others; responsive forms tested.
 
 ## Phase 07 — Request to join and approval engine
 

@@ -24,6 +24,7 @@
 | MATCH-01 | Create 5v5, 7v7, 8v8, 11v11 | Correct capacities 10/14/16/22 |
 | MATCH-02 | Create with guest slots | Remaining places consistent with capacity |
 | MATCH-03 | Invalid date, overcapacity, bad price | Server and UI reject |
+| MATCH-04 | Organizer marks open positions on pitch | One marker per requested player; positions/counts persist and match cards/details; total open markers cannot exceed remaining capacity; accessible text alternative matches the map |
 | JOIN-01 | Player requests join | Pending, roster count unchanged |
 | JOIN-02 | Organizer approves | Accepted, roster increment, chat unlocked |
 | JOIN-03 | Organizer rejects | No seat, no chat access |
