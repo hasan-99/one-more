@@ -430,3 +430,5 @@
 - **Security verification:** All Auth test requests were intercepted and used an `example.invalid` address. No real email was sent, no live Auth user was created, and no SMTP password/API key was read or changed.
 - **Remaining issues:** Live OTP remains pending SMTP delivery and owner-entered test-account credentials. Hosted CI still fails before job creation, Expo Hosting has no authenticated EAS setup, and native device / Phase 18 operational gates remain outstanding as recorded above.
 - **Next:** Continue local phase work and retry live OTP/hosting gates when the required external credentials and service access are available.
+
+- **Remote CI follow-up:** The push of `40ff7d277d3b80f92473058f6164ca369c6c2d2a` triggered run `43315015192`, which again ended as `startup_failure` with 0 jobs. GitHub Actions exposes no job steps or runner logs, so the failure source is still undiagnosed. Local workflow structure remains valid on inspection; no speculative workflow edits were made.
