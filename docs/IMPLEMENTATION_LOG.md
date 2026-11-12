@@ -432,3 +432,13 @@
 - **Next:** Continue local phase work and retry live OTP/hosting gates when the required external credentials and service access are available.
 
 - **Remote CI follow-up:** The push of `40ff7d277d3b80f92473058f6164ca369c6c2d2a` triggered run `43315015192`, which again ended as `startup_failure` with 0 jobs. GitHub Actions exposes no job steps or runner logs, so the failure source is still undiagnosed. Local workflow structure remains valid on inspection; no speculative workflow edits were made.
+
+### 2026-11-13 — Phase 12/18 follow-up: notification worker health
+
+- **Status:** PARTIAL — the scheduled mail worker is deployed but its latest production health check is failing; email delivery is not verified.
+- **Summary:** The Supabase health advisor reports the `notification-outbox-worker` returned HTTP 5xx for all 5 requests in the two observed five-minute windows. Read-only logs show periodic `pg_net` POST calls returning 503 and an invalid authorization-key diagnostic. The deployed handler returns 503 when its mail-provider or app-base-url settings are absent; logs do not expose the response body or identify which check failed, so the precise runtime cause is not claimed. Did not read or change secret values, alter the cron schedule, or send email.
+- **Checks:** Supabase project status — `ACTIVE_HEALTHY`; security advisor reports public-schema `pg_net` plus existing `SECURITY DEFINER` RPC warnings (to be reviewed against the intentional RPC access model); health advisor reports one high-error-rate worker finding. Read-only logs for 2026-11-12 21:45–22:00 UTC show repeated worker 503 responses, initiated by `pg_net`, and invalid authorization diagnostics. No production configuration was changed.
+- **Browser verification:** No new browser flow was run for this diagnosis; Phase 03 Web verification remains recorded above.
+- **Security verification:** No credentials or secret values were read, exposed, or changed. The cron job and database state were left unchanged.
+- **Remaining issues:** Verify the worker token passed from Vault and confirm the required Edge Function settings (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `APP_BASE_URL`) are configured, then run a controlled delivery smoke and confirm the advisor clears. Live Auth OTP, hosted Web, native device, legal and restore/load gates also remain open.
+- **Next:** Resume worker delivery verification after authorized secret configuration; continue remaining release gates without marking email delivery or beta readiness PASS.
