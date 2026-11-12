@@ -154,4 +154,8 @@ export const el = {
   preferencesLanguageSaved: 'Η προτίμηση γλώσσας αποθηκεύτηκε.',
   toastDismiss: 'Κλείσιμο ειδοποίησης',
   authEmailUnconfirmed: 'Επαλήθευσε το email σου πριν συνδεθείς.',
+  authSwitchToEnglish: 'Αλλαγή γλώσσας σε English',
+  authSwitchToGreek: 'Αλλαγή γλώσσας σε Ελληνικά',
+  authSwitchToDark: 'Αλλαγή εμφάνισης σε σκούρα',
+  authSwitchToLight: 'Αλλαγή εμφάνισης σε φωτεινή',
 } as const;

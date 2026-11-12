@@ -152,4 +152,8 @@ export const en = {
   preferencesLanguageSaved: 'Language preference saved.',
   toastDismiss: 'Dismiss notification',
   authEmailUnconfirmed: 'Verify your email before signing in.',
+  authSwitchToEnglish: 'Switch language to English',
+  authSwitchToGreek: 'Switch language to Greek',
+  authSwitchToDark: 'Switch theme to dark',
+  authSwitchToLight: 'Switch theme to light',
 } as const;

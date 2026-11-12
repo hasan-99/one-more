@@ -3,7 +3,7 @@ import { Link, type Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
-import { PreferenceSwitchers } from '@/components/preferences-switchers';
+import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
 export function AuthPage({
@@ -11,7 +11,9 @@ export function AuthPage({
   description,
   children,
 }: PropsWithChildren<{ title: string; description: string }>) {
-  const { colors } = useAppPreferences();
+  const { colors, locale, setLocale, theme, setThemePreference, preferencesReady } =
+    useAppPreferences();
+  const copy = translations[locale];
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: colors.background }]}
@@ -19,8 +21,45 @@ export function AuthPage({
       keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <BrandMark />
-        <PreferenceSwitchers />
+        <View style={styles.topBar}>
+          <BrandMark />
+          <View style={styles.preferenceControls}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                locale === 'en' ? copy.authSwitchToGreek : copy.authSwitchToEnglish
+              }
+              accessibilityState={{ disabled: !preferencesReady }}
+              disabled={!preferencesReady}
+              onPress={() => setLocale(locale === 'en' ? 'el' : 'en')}
+              style={({ pressed }) => [
+                styles.compactControl,
+                { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+                pressed && styles.pressedControl,
+              ]}
+            >
+              <Text style={[styles.languageCode, { color: colors.textPrimary }]}>
+                {locale === 'en' ? 'EN' : 'EL'}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={theme === 'dark' ? copy.authSwitchToLight : copy.authSwitchToDark}
+              accessibilityState={{ disabled: !preferencesReady }}
+              disabled={!preferencesReady}
+              onPress={() => setThemePreference(theme === 'dark' ? 'light' : 'dark')}
+              style={({ pressed }) => [
+                styles.compactControl,
+                { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+                pressed && styles.pressedControl,
+              ]}
+            >
+              <Text style={[styles.themeIcon, { color: colors.textPrimary }]}>
+                {theme === 'dark' ? '☀' : '☾'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
         <View style={styles.heading}>
           <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>
             {title}
@@ -178,6 +217,25 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   card: { width: '100%', maxWidth: 480, borderWidth: 1, borderRadius: 20, padding: 24, gap: 24 },
+  topBar: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  preferenceControls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  compactControl: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  languageCode: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+  themeIcon: { fontSize: 21, lineHeight: 26 },
+  pressedControl: { opacity: 0.7 },
   heading: { gap: 8 },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '800' },
   description: { fontSize: 14, lineHeight: 21 },

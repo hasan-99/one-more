@@ -11,9 +11,12 @@ test('signup shows validation and localized account creation form', async ({ pag
   await page.getByRole('button', { name: 'Dismiss notification' }).click();
   await expect(page.getByLabel('Email address')).toBeVisible();
   await page.goto('/sign-in');
-  await page.getByRole('button', { name: 'Language: Ελληνικά' }).click();
+  const languageToggle = page.getByRole('button', { name: 'Switch language to Greek' });
+  await expect(languageToggle).toContainText('EN');
+  await languageToggle.click();
   await expect(page.getByRole('status')).toContainText('Η προτίμηση γλώσσας αποθηκεύτηκε.');
   await expect(page.getByRole('heading', { name: 'Καλώς ήρθες ξανά' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Αλλαγή γλώσσας σε English' })).toContainText('EL');
 });
 
 test('wrong password is announced in a dismissible error toast', async ({ page }) => {
@@ -69,7 +72,7 @@ test('a failed preference save shows a dismissible error toast', async ({ page }
     };
   });
   await page.goto('/sign-up');
-  await page.getByRole('button', { name: 'Appearance: Dark' }).click();
+  await page.getByRole('button', { name: /^Switch theme to (dark|light)$/ }).click();
   const errorToast = page.getByRole('alert');
   await expect(errorToast).toContainText('Your preference could not be saved. Please try again.');
   await errorToast.getByRole('button', { name: 'Dismiss notification' }).click();
@@ -90,10 +93,15 @@ test('auth screens fit mobile and desktop in dark and light themes', async ({ pa
   await page.setViewportSize({ width, height });
   for (const theme of ['Dark', 'Light'] as const) {
     await page.goto('/sign-up');
-    await page.getByRole('button', { name: `Appearance: ${theme}` }).click();
-    const toast = page.getByRole('status').filter({ hasText: 'preference saved' });
-    await expect(toast.last()).toBeVisible();
-    await toast.last().getByRole('button', { name: 'Dismiss notification' }).click();
+    const themeToggle = page.getByRole('button', {
+      name: `Switch theme to ${theme.toLowerCase()}`,
+    });
+    if (await themeToggle.isVisible()) {
+      await themeToggle.click();
+      const toast = page.getByRole('status').filter({ hasText: 'preference saved' });
+      await expect(toast.last()).toBeVisible();
+      await toast.last().getByRole('button', { name: 'Dismiss notification' }).click();
+    }
     await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
