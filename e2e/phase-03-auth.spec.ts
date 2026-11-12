@@ -19,6 +19,109 @@ test('signup shows validation and localized account creation form', async ({ pag
   await expect(page.getByRole('button', { name: 'Αλλαγή γλώσσας σε English' })).toContainText('EL');
 });
 
+test('successful signup opens code verification with the resend cooldown', async ({ page }) => {
+  await page.route('**/auth/v1/signup**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'X-Supabase-Api-Version': '2024-01-01' },
+      body: JSON.stringify({
+        id: 'cf48b0df-2dd8-43aa-9091-e21f0c0bd3fe',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'player@example.invalid',
+        email_confirmed_at: null,
+        phone: '',
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: {},
+        identities: [],
+        created_at: '2026-11-12T00:00:00Z',
+        updated_at: '2026-11-12T00:00:00Z',
+      }),
+    }),
+  );
+  await page.goto('/sign-up');
+  await page.getByLabel('Email address').fill('player@example.invalid');
+  await page.getByLabel('Password', { exact: true }).fill('safe-password-123');
+  await page.getByLabel('Confirm password').fill('safe-password-123');
+  await page.getByRole('checkbox', { name: 'I agree to the terms and privacy notice.' }).click();
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page).toHaveURL(/\/verify-email\?/);
+  const verificationUrl = new URL(page.url());
+  expect(verificationUrl.searchParams.get('email')).toBe('player@example.invalid');
+  const resendAfter = Number(verificationUrl.searchParams.get('resendAfter'));
+  expect(resendAfter).toBeGreaterThan(Date.now());
+  expect(resendAfter).toBeLessThanOrEqual(Date.now() + 60_000);
+  await expect(page.getByRole('button', { name: /Resend code in (59|60)s/ })).toBeDisabled();
+});
+
+test('an expired signup code is rejected without creating a session', async ({ page }) => {
+  let verifyRequests = 0;
+  await page.route('**/auth/v1/verify**', async (route) => {
+    verifyRequests += 1;
+    await route.fulfill({
+      status: 403,
+      contentType: 'application/json',
+      headers: { 'X-Supabase-Api-Version': '2024-01-01' },
+      body: JSON.stringify({
+        error_code: 'otp_expired',
+        msg: 'Email link is invalid or has expired',
+      }),
+    });
+  });
+  await page.goto('/verify-email?email=player%40example.invalid');
+  await page.getByLabel('6-digit email code').fill('123456');
+  await page.getByRole('button', { name: 'Verify email' }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'That code is invalid or expired. Request another code.',
+  );
+  await expect(page).toHaveURL(/\/verify-email\?/);
+  await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+  expect(verifyRequests).toBe(1);
+});
+
+test('OTP resend observes a 60-second cooldown and resets it after a successful send', async ({
+  page,
+}) => {
+  let resendRequests = 0;
+  await page.route('**/auth/v1/resend**', async (route) => {
+    resendRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'X-Supabase-Api-Version': '2024-01-01' },
+      body: JSON.stringify({}),
+    });
+  });
+  const resendAfter = Date.now() + 2_000;
+  await page.goto(`/verify-email?email=player%40example.invalid&resendAfter=${resendAfter}`);
+  const resendButton = page.getByRole('button', { name: /Resend code/ });
+  await expect(resendButton).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Resend code' })).toBeEnabled({ timeout: 5_000 });
+  await resendButton.click();
+  await expect(page.getByRole('status')).toContainText('Check your inbox for the next step.');
+  await expect(page.getByRole('button', { name: /Resend code in 60s/ })).toBeDisabled();
+  expect(resendRequests).toBe(1);
+});
+
+test('OTP resend rate limits show a toast and restart the cooldown', async ({ page }) => {
+  await page.route('**/auth/v1/resend**', (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: 'application/json',
+      headers: { 'X-Supabase-Api-Version': '2024-01-01' },
+      body: JSON.stringify({
+        error_code: 'over_email_send_rate_limit',
+        msg: 'Too many emails sent',
+      }),
+    }),
+  );
+  await page.goto('/verify-email?email=player%40example.invalid');
+  await page.getByRole('button', { name: 'Resend code' }).click();
+  await expect(page.getByRole('alert')).toContainText('Wait before requesting another code.');
+  await expect(page.getByRole('button', { name: /Resend code in 60s/ })).toBeDisabled();
+});
+
 test('wrong password is announced in a dismissible error toast', async ({ page }) => {
   await page.route('**/auth/v1/token**', (route) =>
     route.fulfill({

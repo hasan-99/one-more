@@ -44,7 +44,10 @@ export default function SignUpScreen() {
       const { error } = await signUpWithPassword(email, password);
       if (error) throw error;
       showToast(copy.authSignupPending, 'success');
-      router.replace(`/verify-email?email=${encodeURIComponent(email.trim())}` as Href);
+      const resendAfter = Date.now() + 60_000;
+      router.replace(
+        `/verify-email?email=${encodeURIComponent(email.trim())}&resendAfter=${resendAfter}` as Href,
+      );
     } catch (error) {
       showToast(copy[authErrorMessageKey(error)], 'error');
     } finally {

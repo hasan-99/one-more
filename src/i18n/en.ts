@@ -261,6 +261,7 @@ export const en = {
   authSignUp: 'Create account',
   authVerify: 'Verify email',
   authResend: 'Resend code',
+  authResendCountdown: 'Resend code in {seconds}s',
   authForgotPassword: 'Forgot password?',
   authSendReset: 'Send reset link',
   authResetTitle: 'Choose a new password',

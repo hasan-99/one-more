@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { AuthButton, AuthFeedback, AuthField, AuthPage } from '@/components/auth/AuthPage';
@@ -10,15 +10,40 @@ import { authErrorMessageKey } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
+const resendCooldownMs = 60_000;
+
 export default function VerifyEmailScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
   const { isConfigured } = useAuth();
   const { showToast } = useToast();
-  const params = useLocalSearchParams<{ email?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    email?: string | string[];
+    resendAfter?: string | string[];
+  }>();
   const email = Array.isArray(params.email) ? (params.email[0] ?? '') : (params.email ?? '');
+  const resendAfterParam = Array.isArray(params.resendAfter)
+    ? (params.resendAfter[0] ?? '')
+    : (params.resendAfter ?? '');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
+  const [resendAvailableAt, setResendAvailableAt] = useState(() => {
+    const timestamp = Number(resendAfterParam);
+    return Number.isFinite(timestamp) ? Math.min(timestamp, Date.now() + resendCooldownMs) : 0;
+  });
+  const [resendSecondsRemaining, setResendSecondsRemaining] = useState(() =>
+    Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000)),
+  );
+
+  useEffect(() => {
+    const updateRemaining = () =>
+      setResendSecondsRemaining(Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000)));
+    updateRemaining();
+    if (resendAvailableAt <= Date.now()) return;
+    const interval = setInterval(updateRemaining, 1000);
+    return () => clearInterval(interval);
+  }, [resendAvailableAt]);
+
   const submit = async () => {
     setBusy(true);
     try {
@@ -37,9 +62,12 @@ export default function VerifyEmailScreen() {
     try {
       const { error } = await resendSignupOtp(email);
       if (error) throw error;
+      setResendAvailableAt(Date.now() + resendCooldownMs);
       showToast(copy.authEmailSent, 'success');
     } catch (error) {
-      showToast(copy[authErrorMessageKey(error)], 'error');
+      const messageKey = authErrorMessageKey(error);
+      if (messageKey === 'authResendWait') setResendAvailableAt(Date.now() + resendCooldownMs);
+      showToast(copy[messageKey], 'error');
     } finally {
       setBusy(false);
     }
@@ -70,8 +98,12 @@ export default function VerifyEmailScreen() {
           onPress={() => void submit()}
         />
         <AuthButton
-          label={copy.authResend}
-          disabled={busy || !isConfigured}
+          label={
+            resendSecondsRemaining > 0
+              ? copy.authResendCountdown.replace('{seconds}', String(resendSecondsRemaining))
+              : copy.authResend
+          }
+          disabled={busy || !isConfigured || resendSecondsRemaining > 0}
           onPress={() => void resend()}
         />
       </View>

@@ -35,7 +35,7 @@ Do not use an unverified personal Gmail address as a production sender. Verify a
 ## Email volume and abuse control
 
 - Auth email requests are subject to the live quotas in Supabase Authentication → Rate Limits. Current Supabase documentation lists 2 email requests/hour for the default provider and 30/hour with custom SMTP; dashboard values are authoritative for this project.
-- Respect resend cooldown and show the localized toast. Do not tell a user an email was sent unless the provider accepted the request.
+- Enforce a 60-second OTP resend cooldown in the UI after signup and after a successful resend or provider rate-limit response. This matches Supabase's documented default per-user signup-confirmation window; check the dashboard if the project value is customized ([Supabase Auth rate limits](https://supabase.com/docs/guides/auth/rate-limits)). Show the localized toast and do not claim an email was sent unless the provider accepted the request.
 - Supabase enforces IP and endpoint Auth limits. Review the live values before public signup; add CAPTCHA if exposure/abuse warrants it.
 - App email is queued in the server-owned outbox. Retry through the worker/queue rather than from the client. Inspect idempotency state before replaying an event.
 - The worker currently fails because mail secrets are missing. This blocks email notifications and reminders; do not mark delivery PASS while it returns errors.

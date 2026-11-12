@@ -262,6 +262,7 @@ export const el = {
   authSignUp: 'Δημιουργία λογαριασμού',
   authVerify: 'Επαλήθευση email',
   authResend: 'Αποστολή νέου κωδικού',
+  authResendCountdown: 'Νέος κωδικός σε {seconds} δευτ.',
   authForgotPassword: 'Ξέχασες τον κωδικό;',
   authSendReset: 'Αποστολή συνδέσμου επαναφοράς',
   authResetTitle: 'Επίλεξε νέο κωδικό',
