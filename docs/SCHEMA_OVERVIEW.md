@@ -36,6 +36,7 @@ erDiagram
 ## Access and lifecycle boundaries
 
 - `profiles`, preferences, teams, matches, roster, messages, challenges, notifications and deletion rows are protected by RLS or server-only grants. Client mutations use reviewed RPCs where the operation spans tables or enforces capacity.
+- `profiles.phone` is private to its owner. Public RPCs return display names only, never phone numbers.
 - `match_discovery` is the limited public discovery surface; it must not expose roster identity, private booking notes, chat or waitlist identities.
 - `match_booking_private_details` holds organizer-only booking reference and notes. `matches.notes` is public match copy, not a private booking field.
 - `match_participants.status = active` is the confirmed roster. A pending join request is not a reservation. A waitlist offer reserves a vacancy only until expiry or explicit acceptance.

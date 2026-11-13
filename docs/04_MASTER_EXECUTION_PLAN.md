@@ -59,7 +59,7 @@ and run relevant E2E/DB tests. Log actual results in
 
 **Goal:** Real Supabase connected, signup+email confirmation code and normal password login.
 
-**Tasks:** Setup local/staging Supabase; migration for profile trigger/safe profile lifecycle; Supabase client singleton, env validation; signup with email/password, verified email OTP using Confirm Signup template `{{ .Token }}`; `verifyOtp` correct type tested for installed SDK; resend cooldown, password login, reset password, signout; session state route guards. Storage per platform; no secrets in frontend; custom SMTP/test email provider or local mail test tool. Add password validation, user-friendly verification errors.
+**Tasks:** Setup local/staging Supabase; migration for profile trigger/safe profile lifecycle; Supabase client singleton, env validation; signup with English name and private phone plus email/password, verified email OTP using Confirm Signup template `{{ .Token }}`; `verifyOtp` correct type tested for installed SDK; resend cooldown, password login, reset password, signout; session state route guards. Storage per platform; no secrets in frontend; custom SMTP/test email provider or local mail test tool. Add password validation, user-friendly verification errors.
 
 **Gate:** Real test inbox or local Auth mail catcher receives code, signup only reaches protected screen after verification, invalid/expired code fails, login/logout/refresh and forgot password tested on Web. Backend denies unauthorized protected data. If SMTP/keys unavailable, report BLOCKED for end-to-end email (do not call success).
 
@@ -67,7 +67,7 @@ and run relevant E2E/DB tests. Log actual results in
 
 **Goal:** Real persistent profile, language/preferences and city selection.
 
-**Tasks:** Migrations: profiles, cities, areas, user_preferences, notification_preferences. Seed verified initial Nicosia areas (no fictional venue addresses), protected CRUD and RLS. Screens: required name/city/area; optional position/skill/game formats/availability; edit profile and settings; avatar placeholder. Auth route guards account for incomplete profile.
+**Tasks:** Migrations: profiles, cities, areas, user_preferences, notification_preferences. Seed verified initial Nicosia areas (no fictional venue addresses), protected CRUD and RLS. Screens: prefilled English name plus required city/area; optional position/skill/game formats/availability; edit profile and settings; avatar placeholder. Auth route guards account for incomplete profile.
 
 **Gate:** Two test accounts each see own private preferences; forbidden update of other's profile; refresh persistence; profile completion and validation, EN/EL, Dark/Light, both viewport widths.
 

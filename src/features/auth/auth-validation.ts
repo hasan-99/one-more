@@ -1,4 +1,12 @@
-export type SignupValidationError = 'email' | 'password' | 'passwordMismatch' | 'terms';
+export type SignupValidationError =
+  | 'displayName'
+  | 'displayNameEnglish'
+  | 'phoneRequired'
+  | 'phoneInvalid'
+  | 'email'
+  | 'password'
+  | 'passwordMismatch'
+  | 'terms';
 export const emailOtpLength = 8;
 export type AuthToastMessageKey =
   | 'authInvalidCredentials'
@@ -55,16 +63,30 @@ export function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
+export function validatePhone(phone: string): boolean {
+  const value = phone.trim();
+  const digits = value.replace(/\D/g, '');
+  return /^[+0-9 ()-]+$/.test(value) && digits.length >= 7 && digits.length <= 15;
+}
+
 export function validatePassword(password: string): boolean {
   return password.length >= 8;
 }
 
 export function validateSignup(
+  displayName: string,
+  phone: string,
   email: string,
   password: string,
   passwordConfirmation: string,
   termsAccepted: boolean,
 ): SignupValidationError | null {
+  const name = displayName.trim();
+  const nameLength = name.length;
+  if (nameLength < 2 || nameLength > 40) return 'displayName';
+  if (!/^[A-Za-z][A-Za-z .'-]*$/.test(name)) return 'displayNameEnglish';
+  if (!phone.trim()) return 'phoneRequired';
+  if (!validatePhone(phone)) return 'phoneInvalid';
   if (!validateEmail(email)) return 'email';
   if (!validatePassword(password)) return 'password';
   if (password !== passwordConfirmation) return 'passwordMismatch';

@@ -7,9 +7,13 @@ test('signup shows validation and localized account creation form', async ({ pag
   await page.goto('/sign-up');
   await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
   await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page.getByText('Enter a valid email address.')).toBeVisible();
+  await expect(
+    page.getByText('Enter a name in English between 2 and 40 characters.'),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss notification' }).click();
   await expect(page.getByLabel('Email address')).toBeVisible();
+  await expect(page.getByLabel('Name in English')).toBeVisible();
+  await expect(page.getByLabel('Phone number')).toBeVisible();
   await page.goto('/sign-in');
   const languageToggle = page.getByRole('button', { name: 'Switch language to Greek' });
   await expect(languageToggle).toContainText('EN');
@@ -20,8 +24,10 @@ test('signup shows validation and localized account creation form', async ({ pag
 });
 
 test('successful signup opens code verification with the resend cooldown', async ({ page }) => {
-  await page.route('**/auth/v1/signup**', (route) =>
-    route.fulfill({
+  let submittedMetadata: Record<string, unknown> | undefined;
+  await page.route('**/auth/v1/signup**', async (route) => {
+    submittedMetadata = route.request().postDataJSON().data;
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
       headers: { 'X-Supabase-Api-Version': '2024-01-01' },
@@ -38,15 +44,21 @@ test('successful signup opens code verification with the resend cooldown', async
         created_at: '2026-11-12T00:00:00Z',
         updated_at: '2026-11-12T00:00:00Z',
       }),
-    }),
-  );
+    });
+  });
   await page.goto('/sign-up');
+  await page.getByLabel('Name in English').fill('Player Example');
+  await page.getByLabel('Phone number').fill('+357 99 123456');
   await page.getByLabel('Email address').fill('player@example.invalid');
   await page.getByLabel('Password', { exact: true }).fill('safe-password-123');
   await page.getByLabel('Confirm password').fill('safe-password-123');
   await page.getByRole('checkbox', { name: 'I agree to the terms and privacy notice.' }).click();
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page).toHaveURL(/\/verify-email\?/);
+  expect(submittedMetadata).toMatchObject({
+    display_name: 'Player Example',
+    phone: '+357 99 123456',
+  });
   const verificationUrl = new URL(page.url());
   expect(verificationUrl.searchParams.get('email')).toBe('player@example.invalid');
   const resendAfter = Number(verificationUrl.searchParams.get('resendAfter'));
@@ -142,7 +154,8 @@ test('a verified signup session continues to profile onboarding', async ({ page 
             ? { onboarding_complete: false }
             : {
                 id: userId,
-                display_name: null,
+                display_name: 'Player Example',
+                phone: '+357 99 123456',
                 avatar_path: null,
                 city_id: null,
                 area_id: null,
@@ -193,6 +206,7 @@ test('a verified signup session continues to profile onboarding', async ({ page 
   await page.getByRole('button', { name: 'Verify email' }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole('heading', { name: 'Build your player profile' })).toBeVisible();
+  await expect(page.getByLabel('Player name (English)')).toHaveValue('Player Example');
 });
 
 test('OTP resend observes a 60-second cooldown and resets it after a successful send', async ({
@@ -271,6 +285,8 @@ test('an existing account receives a sign-in hint instead of a generic error', a
     }),
   );
   await page.goto('/sign-up');
+  await page.getByLabel('Name in English').fill('Player Example');
+  await page.getByLabel('Phone number').fill('+357 99 123456');
   await page.getByLabel('Email address').fill('player@example.invalid');
   await page.getByLabel('Password', { exact: true }).fill('safe-password-123');
   await page.getByLabel('Confirm password').fill('safe-password-123');

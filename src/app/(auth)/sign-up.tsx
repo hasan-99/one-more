@@ -22,15 +22,21 @@ export default function SignUpScreen() {
   const copy = translations[locale];
   const { isConfigured } = useAuth();
   const { showToast } = useToast();
+  const [displayName, setDisplayName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const submit = async () => {
-    const validation = validateSignup(email, password, confirmation, accepted);
+    const validation = validateSignup(displayName, phone, email, password, confirmation, accepted);
     if (validation) {
       const messages = {
+        displayName: copy.authNameRequired,
+        displayNameEnglish: copy.authNameEnglish,
+        phoneRequired: copy.authPhoneRequired,
+        phoneInvalid: copy.authPhoneInvalid,
         email: copy.authEmailRequired,
         password: copy.authPasswordShort,
         passwordMismatch: copy.authPasswordMismatch,
@@ -41,7 +47,7 @@ export default function SignUpScreen() {
     }
     setBusy(true);
     try {
-      const { error } = await signUpWithPassword(email, password);
+      const { error } = await signUpWithPassword(email, password, { displayName, phone });
       if (error) throw error;
       showToast(copy.authSignupPending, 'success');
       const resendAfter = Date.now() + 60_000;
@@ -57,6 +63,19 @@ export default function SignUpScreen() {
   return (
     <AuthPage title={copy.authSignUpTitle} description={copy.authSignUpDescription}>
       <View style={{ gap: 16 }}>
+        <AuthField
+          label={copy.authName}
+          value={displayName}
+          onChangeText={setDisplayName}
+          autoComplete="name"
+        />
+        <AuthField
+          label={copy.authPhone}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          autoComplete="tel"
+        />
         <AuthField
           label={copy.authEmail}
           value={email}

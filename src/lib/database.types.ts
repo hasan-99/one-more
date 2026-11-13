@@ -836,6 +836,7 @@ export type Database = {
           id: string;
           language: string;
           onboarding_complete: boolean;
+          phone: string | null;
           preferred_position: string | null;
           skill_level: string | null;
           updated_at: string;
@@ -849,6 +850,7 @@ export type Database = {
           id: string;
           language?: string;
           onboarding_complete?: boolean;
+          phone?: string | null;
           preferred_position?: string | null;
           skill_level?: string | null;
           updated_at?: string;
@@ -862,6 +864,7 @@ export type Database = {
           id?: string;
           language?: string;
           onboarding_complete?: boolean;
+          phone?: string | null;
           preferred_position?: string | null;
           skill_level?: string | null;
           updated_at?: string;

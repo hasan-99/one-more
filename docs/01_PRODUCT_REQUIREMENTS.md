@@ -39,9 +39,9 @@ A single account can be player, organizer and captain concurrently, and be in mu
 ### Guest/auth flow
 
 1. Landing with ONE MORE identity, "Find a game", "Create a match", concise CTA and language/theme controls.
-2. Sign up using email, password, password confirmation and terms consent.
+2. Sign up using name in English, phone number, email, password, password confirmation and terms consent. Save the name as the player's display name; keep the phone number private to the account and do not require SMS verification in V1.
 3. Email verification code (OTP), resend cooldown, expired/incorrect code errors.
-4. Complete profile: display name, city/area, preferred formats, preferred position (optional), skill level (optional), availability and notification consent.
+4. Complete profile: prefill the English display name collected at signup; finish city/area, preferred formats, preferred position (optional), skill level (optional), availability and notification consent.
 5. Login with email + password; forgot/reset password; sign out.
 6. Auth/verification/complete-profile route guards on refresh and deep link.
 

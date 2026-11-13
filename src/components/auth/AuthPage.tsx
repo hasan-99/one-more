@@ -86,8 +86,9 @@ export function AuthField({
   label: string;
   value: string;
   onChangeText: (value: string) => void;
-  keyboardType?: 'default' | 'email-address' | 'number-pad';
-  autoComplete?: 'off' | 'email' | 'current-password' | 'new-password' | 'one-time-code';
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
+  autoComplete?:
+    'off' | 'email' | 'name' | 'tel' | 'current-password' | 'new-password' | 'one-time-code';
   secureTextEntry?: boolean;
   maxLength?: number;
   accessibilityHint?: string;

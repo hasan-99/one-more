@@ -58,7 +58,7 @@ IDs default `uuid`; use `created_at`, `updated_at` timestamptz; enforce `NOT NUL
 
 | Table | Essential fields / notes |
 |---|---|
-| `profiles` | `id uuid PK FK auth.users`, display_name, avatar_path, city_id, area_id, position, skill_level, language, onboarding_complete, created_at |
+| `profiles` | `id uuid PK FK auth.users`, English display_name, private phone, avatar_path, city_id, area_id, position, skill_level, language, onboarding_complete, created_at |
 | `cities` | id, name_en, name_el, country_code; start with Cyprus verified place data |
 | `areas` | id, city_id, name_en, name_el, optional coords |
 | `venues` | id, name, city_id, area_id, address, latitude, longitude, created_by; manually entered or verified curated |
@@ -91,7 +91,7 @@ IDs default `uuid`; use `created_at`, `updated_at` timestamptz; enforce `NOT NUL
 
 ### Essential constraints/indexes
 
-- FK `profiles.id -> auth.users.id` with safe deletion process.
+- FK `profiles.id -> auth.users.id` with safe deletion process. Profile RLS limits row access to its owner; phone numbers are not returned from public RPCs.
 - `side_size IN (5,7,8,11)`; `duration_minutes BETWEEN 30 AND 240`; `reserved_guest_slots >= 0`; price >= 0.
 - One active membership per (`team_id`, `user_id`), one active participant per (`match_id`, `user_id`), one pending request per (`match_id`, `user_id`), one waiting/offered queue item per (`match_id`, `user_id`).
 - Index `(city_id, starts_at, event_status)` on `matches`, `(match_id, created_at)` on messages; `(recipient_id, created_at DESC)` notifications; `(status, expires_at)` offers.

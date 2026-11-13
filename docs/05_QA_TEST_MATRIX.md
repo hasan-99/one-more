@@ -14,7 +14,7 @@
 
 | ID | Scenario | Expected result |
 |---|---|---|
-| AUTH-01 | New email/password signup, receive code, verify | Profile onboarding only after real verification |
+| AUTH-01 | Signup with English name, phone, email/password; receive code and verify | English name and private phone saved to own profile; onboarding only after real verification |
 | AUTH-02 | Incorrect, expired OTP + resend cooldown | Informative error, no session bypass |
 | AUTH-03 | Password login/logout/refresh/reset | Stable session and protected route guards |
 | AUTH-04 | Deep link to private match as guest | Redirect to sign-in; return after auth if allowed |
@@ -49,6 +49,7 @@
 | NOTIF-01 | Discovery opt-out | Optional promotional alert suppressed |
 | SEC-01 | Cross-user fetch/modify direct Supabase API | Unauthorized access denied |
 | SEC-02 | Anon attempts read chat/private notes | Denied |
+| SEC-04 | Another authenticated user reads a player's phone number | Denied; only the profile owner can read it |
 | SEC-03 | Client bundle contains secrets | No service-role/SMTP/provider secrets |
 | A11Y-01 | Keyboard, focus, labels, errors | Navigable and understandable |
 

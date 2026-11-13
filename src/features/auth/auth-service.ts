@@ -10,8 +10,21 @@ function passwordRecoveryRedirectUrl(): string {
   return Linking.createURL('reset-password');
 }
 
-export function signUpWithPassword(email: string, password: string) {
-  return getSupabaseClient().auth.signUp({ email: email.trim(), password });
+export function signUpWithPassword(
+  email: string,
+  password: string,
+  profile: { displayName: string; phone: string },
+) {
+  return getSupabaseClient().auth.signUp({
+    email: email.trim(),
+    password,
+    options: {
+      data: {
+        display_name: profile.displayName.trim(),
+        phone: profile.phone.trim(),
+      },
+    },
+  });
 }
 
 export function verifySignupOtp(email: string, token: string) {

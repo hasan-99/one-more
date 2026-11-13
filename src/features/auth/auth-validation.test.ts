@@ -6,6 +6,7 @@ import {
   safeReturnTo,
   validateEmail,
   validatePassword,
+  validatePhone,
   validateSignup,
 } from './auth-validation';
 
@@ -17,12 +18,37 @@ describe('auth input validation', () => {
     expect(validatePassword('short')).toBe(false);
   });
 
+  it('accepts an international phone number with 7 to 15 digits', () => {
+    expect(validatePhone('+357 99 123456')).toBe(true);
+    expect(validatePhone('123-4567')).toBe(true);
+    expect(validatePhone('123456')).toBe(false);
+    expect(validatePhone('12345abc')).toBe(false);
+  });
+
   it('reports signup errors in a stable order', () => {
-    expect(validateSignup('bad', 'short', 'different', false)).toBe('email');
-    expect(validateSignup('a@b.co', 'short', 'short', true)).toBe('password');
-    expect(validateSignup('a@b.co', 'long-pass', 'different', true)).toBe('passwordMismatch');
-    expect(validateSignup('a@b.co', 'long-pass', 'long-pass', false)).toBe('terms');
-    expect(validateSignup('a@b.co', 'long-pass', 'long-pass', true)).toBeNull();
+    expect(validateSignup('', '', 'bad', 'short', 'different', false)).toBe('displayName');
+    expect(validateSignup('Αλέξης', '', 'bad', 'short', 'different', false)).toBe(
+      'displayNameEnglish',
+    );
+    expect(validateSignup('Alex', '', 'bad', 'short', 'different', false)).toBe('phoneRequired');
+    expect(validateSignup('Alex', '123456', 'bad', 'short', 'different', false)).toBe(
+      'phoneInvalid',
+    );
+    expect(validateSignup('Alex', '+357 99 123456', 'bad', 'short', 'different', false)).toBe(
+      'email',
+    );
+    expect(validateSignup('Alex', '+357 99 123456', 'a@b.co', 'short', 'short', true)).toBe(
+      'password',
+    );
+    expect(validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass', 'different', true)).toBe(
+      'passwordMismatch',
+    );
+    expect(
+      validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass', 'long-pass', false),
+    ).toBe('terms');
+    expect(
+      validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass', 'long-pass', true),
+    ).toBeNull();
   });
 
   it('allows only app-local return paths', () => {
