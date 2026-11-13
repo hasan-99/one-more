@@ -515,3 +515,13 @@
 - **Security verification:** No schema or RLS changes in this regression. The previously recorded hosted tests cover RPC ownership, incomplete-profile denial, private booking details and organizer update/cancel authorization.
 - **Remaining issues:** Configure working Auth SMTP and verify the authenticated form, pitch selection, create/update/cancel and success/error toast flows.
 - **Next:** Phase 07 — Request to join and approval engine; continuing per the user's instruction.
+
+### 2026-11-13 — Phase 07 regression verification
+
+- **Status:** PARTIAL — historical hosted authorization and concurrency tests pass, and the current hosted browse page resolves to its honest empty state. Real player request and organizer approval browser flow remains unverified because Auth OTP delivery is unavailable.
+- **Summary:** Confirmed the current hosted match discovery view loads through Supabase and resolves to the localized empty state when no matches are published. No test match was created. Earlier Phase 07 hosted tests include 32 assertions and a parallel final-seat approval race (one accepted, one rejected), as recorded above.
+- **Checks:** Current production-mode Web server on port 8094 served `/explore`; live Supabase city/area/discovery requests returned HTTP 200; Playwright confirmed the loading state resolves to the honest empty state. Local lint/typecheck/unit/format/export checks and full E2E were run earlier in this same follow-up under Phases 05/06. The hosted Phase 07 pgTAP suite was not rerun due Supabase's remote-test consent gate.
+- **Browser verification:** Chromium opened `/explore` against current hosted Supabase; Greek guest navigation and empty state rendered. No published match exists, so request/approval detail controls could not be exercised without creating a hosted fixture.
+- **Security verification:** No schema or policy changes in this regression. Previously tested: anon denial, private roster isolation, organizer-only review, locked-row capacity race and server-only outbox.
+- **Remaining issues:** Repeat hosted pgTAP only after consent; configure working OTP delivery and add/run two-independent-user browser flows for request, organizer approval, count refresh and withdrawal.
+- **Next:** Phase 08 — Waitlist and exclusive offers; continuing per the user's instruction.
