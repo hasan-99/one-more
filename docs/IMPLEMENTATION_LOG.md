@@ -206,6 +206,16 @@
 - **Remaining issues:** Restore Auth OTP and repeat two-browser live exchange, pending/former-member denial, reconnect, report and moderation checks; request consent before hosted pgTAP rerun.
 - **Next:** Phase 10 — Teams and team challenges; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 10 regression verification
+
+- **Status:** PARTIAL — the public team directory and protected detail route pass desktop/mobile browser checks. Authenticated invitation, member management and captain actions remain unverified because OTP delivery is blocked.
+- **Summary:** Rechecked team directory layout and team-detail auth guard against the current source. No product changes were needed.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-10-teams.spec.ts` — PASS (4/4 desktop/mobile Chromium); current follow-up lint/typecheck/unit/format/export checks passed under Phase 05. Hosted Phase 10 pgTAP remains the earlier 40-assertion run and was not repeated due Supabase remote-test consent.
+- **Browser verification:** Chromium desktop and mobile verified `/teams` loads without horizontal overflow and `/teams/private-team` redirects to sign-in.
+- **Security verification:** Previously recorded hosted assertions cover anon denial, captain/member authorization, candidate search privacy, invitation acceptance, transfer/removal/leave rules, identifier privacy and team capacity. No database or policy changes in this regression.
+- **Remaining issues:** Configure valid Auth OTP delivery and verify invite/accept, member changes and captain transfer in an authenticated browser; rerun hosted pgTAP after consent.
+- **Next:** Phase 11 — Team challenges; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
