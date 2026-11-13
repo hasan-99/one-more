@@ -2,15 +2,13 @@
 
 ## Phase 17 result
 
-- Android Expo prebuild: PASS; the generated native project currently defaults to `com.anonymous.onemore`.
-- Android debug APK: PASS for `arm64-v8a`. Built from a physical short checkout at `C:\a` with `npx expo prebuild --platform android --clean --no-install` and `gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a`. The verified APK is `android/app/build/outputs/apk/debug/app-debug.apk` in the workspace (86 MB), signed with the local debug key. The default identifier remains `com.anonymous.onemore`.
-- Other Android ABIs: BLOCKED by the Windows path limit. The full-ABI build reached `armeabi-v7a` and Ninja failed when its generated path measured 261 characters. Keep the available debug build arm64-only unless the build path is shortened further or long paths are enabled.
-- Android install/device smoke: NOT TESTED; `adb devices -l` listed no connected devices and no emulator was available. No BIOS, Windows feature or reboot changes were made.
-- iOS: NOT TESTED; this Windows host has no macOS/Xcode environment, signing identity or EAS login.
-- Email OTP: NOT TESTED natively; hosted SMTP still rejects authentication, so a verified session cannot be established.
+- Android EAS internal APK: PASS for the multi-ABI build. Artifact: <https://expo.dev/accounts/hasan-jahouse/projects/one-more/builds/e6c7a28b-30bc-484e-b4cb-4cd41881a71a>. EAS uses a remotely stored keystore. Local Windows full-ABI builds can still hit the 260-character generated-path limit.
+- Android install/device smoke: NOT TESTED; `adb devices -l` listed no connected devices. No emulator is installed or running.
+- iOS Simulator EAS build: PASS; artifact: <https://expo.dev/accounts/hasan-jahouse/projects/one-more/builds/c197b894-d75a-44d0-bad5-c0eba8e34d31>. It has not been launched in a simulator or on an iPhone because this Windows host has no macOS/Xcode runtime.
+- Auth email delivery: Resend accepted SMTP and a signup confirmation email arrived at the verified owner mailbox. The connected mail tool redacted the OTP, so app-side verification and native OTP are still NOT TESTED.
 - Native push: NOT CONFIGURED and therefore not in the smoke scope.
 
-The portable Temurin JDK 17 is under the user's local Programs folder. It was installed without changing the machine-wide PATH or JAVA_HOME. Android project files produced by Expo prebuild are ignored/generated; set a real Android application ID and iOS bundle ID before release. The default debug package is not a store identity.
+Both preview builds currently use the temporary identifier `com.anonymous.onemore`; choose the permanent Android application ID and iOS bundle ID before a store release. The iOS build warned that `ios.infoPlist.ITSAppUsesNonExemptEncryption` is unset; review Apple's export-compliance declaration before App Store submission. No final logo or store assets were introduced.
 
 ## Re-run on an Android workstation
 
