@@ -505,3 +505,13 @@
 - **Security verification:** No schema, RLS, or client credential changes in this regression. Existing Phase 05 public-view/RLS assertions remain documented in the earlier hosted test entry; updated remote fixtures still require a fresh consented run.
 - **Remaining issues:** Repeat hosted Phase 05 pgTAP after user authorizes the remote test; this is the only Phase 05 gate not revalidated in this turn. Existing SMTP 535 continues to block live authenticated browser verification.
 - **Next:** Phase 06 — Match creation/editing and booking tracker; not started in this follow-up.
+
+### 2026-11-13 — Phase 06 regression verification
+
+- **Status:** PARTIAL — the signed-out verified-profile gate passes on desktop and mobile. Authenticated create/edit/save and pitch interaction remain unverified because live OTP email delivery is blocked by SMTP 535.
+- **Summary:** Rechecked the current create route after signup profile changes. It correctly redirects signed-out players to sign-in with a return path; no product changes were needed.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (7 files / 27 tests); `npm run format:check` — PASS; `npm run build:web` — PASS; `npm run test:e2e -- --workers=1 e2e/phase-06-creation.spec.ts` — PASS (2/2 desktop and mobile Chromium); `npm run dev:web -- --port 8094 --clear` — PASS; HTTP GET `/explore` — 200. The prior hosted Phase 06 database run remains recorded above (18 assertions); not rerun in this follow-up.
+- **Browser verification:** Chromium at 375×812 and 1440×900 confirmed redirect to `/sign-in?returnTo=%2Fcreate` and no horizontal overflow. Authenticated editor controls are still inaccessible without successful OTP login.
+- **Security verification:** No schema or RLS changes in this regression. The previously recorded hosted tests cover RPC ownership, incomplete-profile denial, private booking details and organizer update/cancel authorization.
+- **Remaining issues:** Configure working Auth SMTP and verify the authenticated form, pitch selection, create/update/cancel and success/error toast flows.
+- **Next:** Phase 07 — Request to join and approval engine; continuing per the user's instruction.
