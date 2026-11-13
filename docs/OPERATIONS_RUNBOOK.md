@@ -13,13 +13,13 @@ Never put service-role, Postgres, SMTP or Resend private keys under `EXPO_PUBLIC
 
 ### Supabase Auth email
 
-Supabase Auth SMTP is separate from the app notification worker. In Supabase Dashboard → Authentication → Emails → SMTP, configure provider host/port/username/password, a verified sender email and sender name. For Resend, use `smtp.resend.com`, port `465`, username `resend`, and an active Resend API key as the password; do not use the account email as the SMTP username ([Resend SMTP setup](https://resend.com/changelog/smtp-service)). The most recent Auth attempt returned SMTP `535` authentication errors; signup verification and password-reset delivery remain blocked until a real test email arrives.
+Supabase Auth SMTP is separate from the app notification worker. The current Supabase settings use Resend (`smtp.resend.com`, port `465`, username `resend`) and a private Resend API key as the password. A live SMTP test was accepted by Resend and delivered to the account owner's mailbox. The configured sender is `onboarding@resend.dev`, which is suitable only for testing with the verified account owner; configure a verified custom domain before sending to general users. A real signup confirmation email also arrived, but the connected mail tool redacted its one-time code, so app-side OTP completion and password recovery remain unverified. Never put the API key in `EXPO_PUBLIC_*`, source, screenshots or chat. For Resend's SMTP requirements see [Resend SMTP setup](https://resend.com/changelog/smtp-service).
 
-After fixing SMTP:
+Before beta Auth sign-off:
 
-1. Verify the sender domain and SPF/DKIM/DMARC with the provider.
+1. Verify a sender domain and SPF/DKIM/DMARC with the provider before production/general-recipient use.
 2. Set Auth Site URL to the actual HTTPS preview domain; allow only required preview/production redirect patterns and `one-more://` native redirects.
-3. Use a fresh test mailbox to exercise signup, one-time code/link, password reset, expired link and sign-out.
+3. Use a fresh test mailbox to exercise signup, one-time code/link, password reset, expired link and sign-out; confirm the code in the app rather than relying only on provider acceptance.
 4. Check provider delivery/bounce logs and Supabase Auth logs. Disable click tracking if it rewrites single-use Auth links.
 
 ### App notification email

@@ -7,7 +7,7 @@ Status: staging is deployed through Expo Hosting under the owner's `hasan-jahous
 1. Expo account/project linking is complete with `npx eas-cli@latest init`; project ID is recorded in `app.json`.
 2. The Expo `preview` environment has `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the staging project. These values are intentionally public; never add a Supabase service-role key, SMTP password, or Resend API key to Expo Hosting.
 3. `npm run build:web` and `npx eas-cli@latest deploy --environment preview --alias staging --dev-domain one-more` completed successfully. The alias and deployment URLs above are available; use the unique deployment URL for rollback evidence.
-4. Supabase Auth URL Configuration now uses the verified HTTPS alias as the Site URL and allows the alias's nested return paths plus the app's `one-more://` native scheme. Test a real OTP only after the SMTP provider succeeds.
+4. Supabase Auth URL Configuration now uses the verified HTTPS alias as the Site URL and allows the alias's nested return paths plus the app's `one-more://` native scheme. Resend accepted the SMTP connection and delivered a test message to the verified account owner's mailbox; a live signup confirmation email arrived, but app-side OTP completion remains unverified because the connected mail tool redacts codes. The current `onboarding@resend.dev` sender is owner-test-only; verify a custom domain before general-recipient use.
 5. Store Resend API key, verified sender address, and app base URL in Supabase Edge Function secrets only. The notification worker currently returns `503 mail_provider_not_configured` until these are configured.
 
 ## Local production-mode check

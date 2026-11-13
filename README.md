@@ -4,8 +4,8 @@ ONE MORE is a bilingual (English/Greek) football community for finding local mat
 
 ## Current readiness
 
-- **Web:** A hosted Expo staging preview is live at [one-more--staging.expo.app](https://one-more--staging.expo.app). It serves the guest preview and live Supabase discovery query; authenticated email flows remain blocked by SMTP configuration. This is not a production or beta-ready release.
-- **Authentication:** Supabase Auth is connected, but signup verification and password recovery are blocked until a working custom SMTP provider is configured.
+- **Web:** A hosted Expo staging preview is live at [one-more--staging.expo.app](https://one-more--staging.expo.app). It serves the guest preview and live Supabase discovery query; authenticated signup/OTP acceptance is still incomplete. This is not a production or beta-ready release.
+- **Authentication:** Supabase Auth SMTP with Resend accepted and delivered a test message to the Resend account owner's mailbox. The current `onboarding@resend.dev` sender is limited to that verified owner; the verification code was redacted by the connected mail tool, so app-side OTP completion and password recovery are still unverified. A verified custom domain is needed for general recipients.
 - **Notifications:** In-app inbox is available. Email delivery needs the Edge Function Resend settings listed in [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md).
 - **Android:** Expo prebuild succeeds. A Windows debug APK build currently stops in React Native C++ code generation because Ninja hits Windows' 260-character path limit. No Android device/emulator is connected.
 - **iOS:** Not tested; this Windows machine has no macOS/Xcode build environment.
