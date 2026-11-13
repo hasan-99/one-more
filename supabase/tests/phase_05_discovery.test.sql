@@ -4,12 +4,12 @@ create extension if not exists pgtap with schema extensions;
 select plan(14);
 
 insert into auth.users (
-  id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data
+  id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data
 )
 values
-  ('00000000-0000-4000-8000-000000000051', 'authenticated', 'authenticated', 'phase5-organizer@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000052', 'authenticated', 'authenticated', 'phase5-player-a@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000053', 'authenticated', 'authenticated', 'phase5-player-b@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb);
+  ('00000000-0000-4000-8000-000000000051', 'authenticated', 'authenticated', 'phase5-organizer@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000052', 'authenticated', 'authenticated', 'phase5-player-a@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000053', 'authenticated', 'authenticated', 'phase5-player-b@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 
 insert into public.matches (
   id, organizer_id, title, side_size, city_id, area_id, venue_display_name, venue_address,

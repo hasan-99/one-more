@@ -11,7 +11,7 @@ insert into auth.users (
   email,
   encrypted_password,
   email_confirmed_at,
-  raw_app_meta_data
+  raw_app_meta_data, raw_user_meta_data
 )
 values
   (
@@ -21,7 +21,7 @@ values
     'phase3-a@example.invalid',
     '',
     now(),
-    '{"provider":"email","providers":["email"]}'::jsonb
+    '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb
   ),
   (
     '00000000-0000-4000-8000-000000000032',
@@ -30,7 +30,7 @@ values
     'phase3-b@example.invalid',
     '',
     now(),
-    '{"provider":"email","providers":["email"]}'::jsonb
+    '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb
   );
 
 select is(

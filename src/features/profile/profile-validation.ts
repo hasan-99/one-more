@@ -27,7 +27,8 @@ export type ProfileInput = {
   language: 'en' | 'el';
 };
 
-export type ProfileValidationError = 'profileValidationName' | 'profileValidationLocation';
+export type ProfileValidationError =
+  'profileValidationName' | 'profileValidationNameEnglish' | 'profileValidationLocation';
 
 export function validateProfileInput(
   input: ProfileInput,
@@ -35,6 +36,9 @@ export function validateProfileInput(
 ): ProfileValidationError | null {
   const nameLength = input.displayName.trim().length;
   if (nameLength < 2 || nameLength > 40) return 'profileValidationName';
+  if (!/^[A-Za-z][A-Za-z .'-]*$/.test(input.displayName.trim())) {
+    return 'profileValidationNameEnglish';
+  }
   if (!input.cityId || !input.areaId || areaCityById.get(input.areaId) !== input.cityId) {
     return 'profileValidationLocation';
   }

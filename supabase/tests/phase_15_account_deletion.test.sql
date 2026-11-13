@@ -5,9 +5,9 @@ create temporary table phase15_ids(label text primary key, id uuid not null);
 grant select, insert on phase15_tap, phase15_ids to authenticated;
 grant insert on phase15_tap to anon;
 
-insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data) values
- ('00000000-0000-4000-8000-000000001501','authenticated','authenticated','phase15-owner@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000001502','authenticated','authenticated','phase15-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}');
+insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data, raw_user_meta_data) values
+ ('00000000-0000-4000-8000-000000001501','authenticated','authenticated','phase15-owner@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000001502','authenticated','authenticated','phase15-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 
 select plan(24);
 insert into phase15_tap select has_table('public','account_deletion_requests','account deletion request table exists');

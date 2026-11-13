@@ -95,7 +95,9 @@ test('an expired signup code is rejected without creating a session', async ({ p
   expect(verifyRequests).toBe(1);
 });
 
-test('a verified signup session continues to profile onboarding', async ({ page }) => {
+test('a verified signup session saves profile onboarding with the signup name', async ({
+  page,
+}) => {
   const userId = 'cf48b0df-2dd8-43aa-9091-e21f0c0bd3fe';
   const email = 'player@example.invalid';
   const now = Math.floor(Date.now() / 1000);
@@ -115,6 +117,10 @@ test('a verified signup session continues to profile onboarding', async ({ page 
     }),
     'mock-signature',
   ].join('.');
+  const cityId = 'nicosia-city-id';
+  const areaId = 'strovolos-area-id';
+  let savedProfile: Record<string, unknown> | null = null;
+  let savedPreferences: Record<string, unknown> | null = null;
   await page.route('**/auth/v1/verify**', (route) =>
     route.fulfill({
       status: 200,
@@ -146,37 +152,75 @@ test('a verified signup session continues to profile onboarding', async ({ page 
     const url = new URL(route.request().url());
     const table = url.pathname.split('/').pop();
     if (table === 'profiles') {
+      if (route.request().method() === 'PATCH') {
+        savedProfile = route.request().postDataJSON();
+        await route.fulfill({ status: 204 });
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
           url.searchParams.get('select') === 'onboarding_complete'
-            ? { onboarding_complete: false }
+            ? { onboarding_complete: savedProfile?.onboarding_complete === true }
             : {
                 id: userId,
-                display_name: 'Player Example',
+                display_name: savedProfile?.display_name ?? 'Player Example',
                 phone: '+357 99 123456',
                 avatar_path: null,
-                city_id: null,
-                area_id: null,
-                preferred_position: null,
-                skill_level: null,
+                city_id: savedProfile?.city_id ?? null,
+                area_id: savedProfile?.area_id ?? null,
+                preferred_position: savedProfile?.preferred_position ?? null,
+                skill_level: savedProfile?.skill_level ?? null,
                 language: 'en',
-                onboarding_complete: false,
+                onboarding_complete: savedProfile?.onboarding_complete === true,
                 created_at: new Date(now * 1000).toISOString(),
                 updated_at: new Date(now * 1000).toISOString(),
               },
         ),
       });
-    } else if (table === 'cities' || table === 'areas') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    } else if (table === 'cities') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: cityId,
+            slug: 'nicosia',
+            name_en: 'Nicosia',
+            name_el: 'Λευκωσία',
+            country_code: 'CY',
+            created_at: new Date(now * 1000).toISOString(),
+          },
+        ]),
+      });
+    } else if (table === 'areas') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: areaId,
+            city_id: cityId,
+            slug: 'strovolos',
+            name_en: 'Strovolos',
+            name_el: 'Στρόβολος',
+            created_at: new Date(now * 1000).toISOString(),
+          },
+        ]),
+      });
     } else if (table === 'user_preferences') {
+      if (route.request().method() === 'PATCH') {
+        savedPreferences = route.request().postDataJSON();
+        await route.fulfill({ status: 204 });
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           user_id: userId,
-          preferred_formats: [],
+          preferred_formats: savedPreferences?.preferred_formats ?? [5, 7],
           availability_slots: [],
           max_radius_km: 25,
           created_at: new Date(now * 1000).toISOString(),
@@ -207,6 +251,17 @@ test('a verified signup session continues to profile onboarding', async ({ page 
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole('heading', { name: 'Build your player profile' })).toBeVisible();
   await expect(page.getByLabel('Player name (English)')).toHaveValue('Player Example');
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Your profile was saved.' }),
+  ).toBeVisible();
+  expect(savedProfile).toMatchObject({
+    display_name: 'Player Example',
+    city_id: cityId,
+    area_id: areaId,
+    onboarding_complete: true,
+  });
+  expect(savedPreferences).toMatchObject({ preferred_formats: [5, 7], max_radius_km: 25 });
 });
 
 test('OTP resend observes a 60-second cooldown and resets it after a successful send', async ({

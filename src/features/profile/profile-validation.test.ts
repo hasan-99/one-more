@@ -33,6 +33,15 @@ describe('validateProfileInput', () => {
     ).toBeNull();
   });
 
+  it('requires an English display name', () => {
+    expect(validateProfileInput({ ...validProfile, displayName: 'Αλέξης' }, areaCityById)).toBe(
+      'profileValidationNameEnglish',
+    );
+    expect(
+      validateProfileInput({ ...validProfile, displayName: "Mary O'Neil-Smith" }, areaCityById),
+    ).toBeNull();
+  });
+
   it('rejects an area from a different city', () => {
     expect(
       validateProfileInput({ ...validProfile, areaId: 'limassol-area-id' }, areaCityById),

@@ -138,6 +138,7 @@ export const en = {
   profileLoading: 'Loading your profile…',
   profileRetry: 'Try again',
   profileValidationName: 'Enter a name between 2 and 40 characters.',
+  profileValidationNameEnglish: 'Use English letters for your name.',
   profileValidationLocation: 'Choose a city and an area within that city.',
   profileLoadError: 'Your profile could not be loaded. Check your connection and try again.',
   profileSaveError: 'Your profile could not be saved. Please try again.',

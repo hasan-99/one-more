@@ -4,12 +4,12 @@ select plan(32);
 create temporary table phase07_tap(result text);
 grant insert on phase07_tap to authenticated, anon;
 
-insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data)
 values
-  ('00000000-0000-4000-8000-000000000101', 'authenticated', 'authenticated', 'phase7-organizer@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000102', 'authenticated', 'authenticated', 'phase7-player-a@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000103', 'authenticated', 'authenticated', 'phase7-player-b@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000104', 'authenticated', 'authenticated', 'phase7-incomplete@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb);
+  ('00000000-0000-4000-8000-000000000101', 'authenticated', 'authenticated', 'phase7-organizer@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000102', 'authenticated', 'authenticated', 'phase7-player-a@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000103', 'authenticated', 'authenticated', 'phase7-player-b@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000104', 'authenticated', 'authenticated', 'phase7-incomplete@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 
 update public.profiles profile set display_name = case profile.id
   when '00000000-0000-4000-8000-000000000101' then 'Organizer'

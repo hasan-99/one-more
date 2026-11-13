@@ -139,6 +139,7 @@ export const el = {
   profileLoading: 'Φόρτωση προφίλ…',
   profileRetry: 'Δοκίμασε ξανά',
   profileValidationName: 'Πληκτρολόγησε όνομα 2 έως 40 χαρακτήρων.',
+  profileValidationNameEnglish: 'Χρησιμοποίησε αγγλικά γράμματα για το όνομά σου.',
   profileValidationLocation: 'Επίλεξε πόλη και περιοχή που ανήκει σε αυτήν.',
   profileLoadError: 'Δεν ήταν δυνατή η φόρτωση του προφίλ. Έλεγξε τη σύνδεση και δοκίμασε ξανά.',
   profileSaveError: 'Δεν ήταν δυνατή η αποθήκευση του προφίλ. Δοκίμασε ξανά.',

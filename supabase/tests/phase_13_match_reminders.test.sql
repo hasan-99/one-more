@@ -3,11 +3,11 @@ create extension if not exists pgtap with schema extensions;
 create temporary table phase13_tap(result text);
 create temporary table phase13_ids(label text primary key, id uuid not null);
 grant select, insert on phase13_tap, phase13_ids to anon, authenticated;
-insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data) values
- ('00000000-0000-4000-8000-000000000701','authenticated','authenticated','phase13-organizer@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000702','authenticated','authenticated','phase13-player@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000703','authenticated','authenticated','phase13-late@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000704','authenticated','authenticated','phase13-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}');
+insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data, raw_user_meta_data) values
+ ('00000000-0000-4000-8000-000000000701','authenticated','authenticated','phase13-organizer@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000702','authenticated','authenticated','phase13-player@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000703','authenticated','authenticated','phase13-late@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000704','authenticated','authenticated','phase13-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 update public.profiles profile set display_name=case profile.id
  when '00000000-0000-4000-8000-000000000701' then 'Reminder Organizer'
  when '00000000-0000-4000-8000-000000000702' then 'Reminder Player'

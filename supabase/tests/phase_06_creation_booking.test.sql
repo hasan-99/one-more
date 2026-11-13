@@ -3,11 +3,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(18);
 
-insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data)
+insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data)
 values
-  ('00000000-0000-4000-8000-000000000101','authenticated','authenticated','phase6-a@example.invalid','',now(),'{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000102','authenticated','authenticated','phase6-b@example.invalid','',now(),'{"provider":"email","providers":["email"]}'::jsonb),
-  ('00000000-0000-4000-8000-000000000103','authenticated','authenticated','phase6-incomplete@example.invalid','',now(),'{"provider":"email","providers":["email"]}'::jsonb);
+  ('00000000-0000-4000-8000-000000000101','authenticated','authenticated','phase6-a@example.invalid','',now(),'{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000102','authenticated','authenticated','phase6-b@example.invalid','',now(),'{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+  ('00000000-0000-4000-8000-000000000103','authenticated','authenticated','phase6-incomplete@example.invalid','',now(),'{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 
 update public.profiles
 set display_name = 'Phase Six Organizer',

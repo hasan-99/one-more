@@ -4,12 +4,12 @@ create temporary table phase09_tap(result text);
 create temporary table phase09_message_ids(label text primary key,id uuid not null);
 create temporary table phase09_report_ids(id uuid not null);
 grant select,insert on phase09_tap,phase09_message_ids,phase09_report_ids to anon,authenticated;
-insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data) values
- ('00000000-0000-4000-8000-000000000301','authenticated','authenticated','phase9-organizer@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000302','authenticated','authenticated','phase9-player-a@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000303','authenticated','authenticated','phase9-pending@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000304','authenticated','authenticated','phase9-left@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000305','authenticated','authenticated','phase9-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}');
+insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data, raw_user_meta_data) values
+ ('00000000-0000-4000-8000-000000000301','authenticated','authenticated','phase9-organizer@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000302','authenticated','authenticated','phase9-player-a@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000303','authenticated','authenticated','phase9-pending@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000304','authenticated','authenticated','phase9-left@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000305','authenticated','authenticated','phase9-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 update public.profiles p set display_name=case p.id
  when '00000000-0000-4000-8000-000000000301' then 'Chat Organizer'
  when '00000000-0000-4000-8000-000000000302' then 'Accepted Player'

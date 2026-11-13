@@ -3,12 +3,12 @@ create extension if not exists pgtap with schema extensions;
 create temporary table phase10_tap(result text);
 create temporary table phase10_ids(label text primary key,id uuid not null);
 grant select,insert on phase10_tap,phase10_ids to anon,authenticated;
-insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data) values
- ('00000000-0000-4000-8000-000000000401','authenticated','authenticated','phase10-captain@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000402','authenticated','authenticated','phase10-player@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000403','authenticated','authenticated','phase10-second@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000404','authenticated','authenticated','phase10-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000405','authenticated','authenticated','phase10-unverified@example.invalid','',now(),'{"provider":"email","providers":["email"]}');
+insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data, raw_user_meta_data) values
+ ('00000000-0000-4000-8000-000000000401','authenticated','authenticated','phase10-captain@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000402','authenticated','authenticated','phase10-player@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000403','authenticated','authenticated','phase10-second@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000404','authenticated','authenticated','phase10-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000405','authenticated','authenticated','phase10-unverified@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 update public.profiles profile set display_name=case profile.id
  when '00000000-0000-4000-8000-000000000401' then 'Captain Alex'
  when '00000000-0000-4000-8000-000000000402' then 'Bobby Player'

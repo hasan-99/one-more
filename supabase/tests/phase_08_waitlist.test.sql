@@ -2,12 +2,12 @@ begin;
 create extension if not exists pgtap with schema extensions;
 create temporary table phase08_tap(result text);
 grant insert on phase08_tap to anon, authenticated;
-insert into auth.users (id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data) values
- ('00000000-0000-4000-8000-000000000201','authenticated','authenticated','phase8-organizer@example.invalid','',now(),'{}'),
- ('00000000-0000-4000-8000-000000000202','authenticated','authenticated','phase8-player-a@example.invalid','',now(),'{}'),
- ('00000000-0000-4000-8000-000000000203','authenticated','authenticated','phase8-player-b@example.invalid','',now(),'{}'),
- ('00000000-0000-4000-8000-000000000204','authenticated','authenticated','phase8-player-c@example.invalid','',now(),'{}'),
- ('00000000-0000-4000-8000-000000000205','authenticated','authenticated','phase8-player-d@example.invalid','',now(),'{}');
+insert into auth.users (id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data, raw_user_meta_data) values
+ ('00000000-0000-4000-8000-000000000201','authenticated','authenticated','phase8-organizer@example.invalid','',now(),'{}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000202','authenticated','authenticated','phase8-player-a@example.invalid','',now(),'{}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000203','authenticated','authenticated','phase8-player-b@example.invalid','',now(),'{}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000204','authenticated','authenticated','phase8-player-c@example.invalid','',now(),'{}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000205','authenticated','authenticated','phase8-player-d@example.invalid','',now(),'{}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 update public.profiles p set display_name=case p.id
   when '00000000-0000-4000-8000-000000000201' then 'Organizer'
   when '00000000-0000-4000-8000-000000000202' then 'Player A'

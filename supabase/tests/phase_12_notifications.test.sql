@@ -3,10 +3,10 @@ create extension if not exists pgtap with schema extensions;
 create temporary table phase12_tap(result text);
 create temporary table phase12_ids(label text primary key, id uuid not null);
 grant select, insert on phase12_tap, phase12_ids to anon, authenticated;
-insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data) values
- ('00000000-0000-4000-8000-000000000601','authenticated','authenticated','phase12-home@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000602','authenticated','authenticated','phase12-away@example.invalid','',now(),'{"provider":"email","providers":["email"]}'),
- ('00000000-0000-4000-8000-000000000603','authenticated','authenticated','phase12-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}');
+insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data, raw_user_meta_data) values
+ ('00000000-0000-4000-8000-000000000601','authenticated','authenticated','phase12-home@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000602','authenticated','authenticated','phase12-away@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb),
+ ('00000000-0000-4000-8000-000000000603','authenticated','authenticated','phase12-outsider@example.invalid','',now(),'{"provider":"email","providers":["email"]}', '{"display_name":"Test Player","phone":"+35799123456"}'::jsonb);
 update public.profiles profile set display_name=case profile.id
  when '00000000-0000-4000-8000-000000000601' then 'Home Notification Captain'
  when '00000000-0000-4000-8000-000000000602' then 'Away Notification Captain'
