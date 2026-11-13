@@ -7,8 +7,8 @@ ONE MORE is a bilingual (English/Greek) football community for finding local mat
 - **Web:** A hosted Expo staging preview is live at [one-more--staging.expo.app](https://one-more--staging.expo.app). It serves the guest preview and live Supabase discovery query; authenticated signup/OTP acceptance is still incomplete. This is not a production or beta-ready release.
 - **Authentication:** Supabase Auth SMTP with Resend accepted and delivered a test message to the Resend account owner's mailbox. The current `onboarding@resend.dev` sender is limited to that verified owner; the verification code was redacted by the connected mail tool, so app-side OTP completion and password recovery are still unverified. A verified custom domain is needed for general recipients.
 - **Notifications:** In-app inbox is available. Email delivery needs the Edge Function Resend settings listed in [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md).
-- **Android:** An internal multi-ABI APK builds successfully with EAS; local Windows native builds can still hit the 260-character path limit. Device install/smoke is pending because no Android device or emulator is connected.
-- **iOS:** An iOS Simulator build completes on EAS. It has not been launched in a simulator or tested on an iPhone; this Windows machine has no macOS/Xcode environment.
+- **Android:** An internal multi-ABI APK builds successfully with EAS; local Windows native builds can still hit the 260-character path limit. Expo's cloud simulator is not enabled for this account, and no local device/emulator is connected.
+- **iOS:** An iOS Simulator build completes on EAS. Expo's cloud simulator is not enabled for this account; this Windows machine also has no macOS/Xcode environment for a local simulator.
 - **Policies:** Privacy and Terms routes are drafts awaiting qualified Cyprus/EU legal review.
 
 Do not treat this workspace as a production deployment or store-ready release. See the [phase log](docs/IMPLEMENTATION_LOG.md) and [beta operations runbook](docs/OPERATIONS_RUNBOOK.md) for current blockers and evidence.

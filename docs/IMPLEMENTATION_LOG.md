@@ -697,3 +697,14 @@
 - **Security verification:** EAS received only the public Supabase URL and publishable key; no service-role, SMTP or Resend secret was uploaded. EAS generated/stored the Android signing keystore remotely. App identifiers remain temporary; no signing key or private credential was committed.
 - **Remaining issues:** Install and smoke-test Android on a real device/emulator; launch iOS on macOS/Xcode or a device; obtain and enter a real OTP in the app; choose permanent store identifiers; review Apple's export-compliance declaration before App Store submission; configure native push only if required for beta.
 - **Next phase:** 18 — beta acceptance/sign-off; not started.
+
+### 2026-11-13 — Phase 17 Expo Simulators access check
+
+- **Status:** PARTIAL — the Android APK and iOS Simulator build are ready, but Expo has not enabled cloud simulator sessions for `hasan-jahouse`.
+- **Summary:** Followed the current Expo Simulators setup path requested by the owner. Read-only `npx eas-cli@latest simulator:availability --json` returned `available: false` and the account billing URL. Expo's current documentation says to check availability before starting and not to start a session when access is false; the service page also describes access as a limited beta/waitlist. Therefore no simulator session was started and no billing plan was changed. Added the exact start commands for the two finished build IDs to `docs/NATIVE_SMOKE.md`, and ignored `.env.eas-simulator` because it contains session controller credentials.
+- **Changed files:** `.gitignore`, `README.md`, `docs/NATIVE_SMOKE.md`, and this log.
+- **Checks:** Read-only Expo availability check — BLOCKED (`available: false`); no session resources were started or billed. `npx prettier --check README.md docs/NATIVE_SMOKE.md` — PASS; `git diff --check` — PASS (exit 0).
+- **Browser verification:** Inspected Expo's simulator product page and account dashboard session; no running simulator session exists. Native app screenshots/interaction remain unavailable until account access is enabled.
+- **Security verification:** No session token/config file was created. `.env.eas-simulator` is ignored before any future simulator command. No billing upgrade or external waitlist/contact submission was made.
+- **Remaining issues:** Request/receive Expo Simulators access for `hasan-jahouse` (the current product page advertises a limited beta/waitlist); the Expo contact form requires accurate last name, company and work email, so no request was sent with guessed details. Then start the documented Android and iOS sessions and run the native smoke flows.
+- **Next:** Continue Phase 17 native smoke when Expo enables simulator access; Phase 18 not started.
