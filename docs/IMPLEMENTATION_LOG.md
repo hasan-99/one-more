@@ -246,6 +246,16 @@
 - **Remaining issues:** Configure Auth SMTP and Resend provider values, then verify authenticated inbox/reminder delivery; rerun hosted pgTAP after consent.
 - **Next:** Phase 14 — Web quality and accessibility; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 14 regression verification
+
+- **Status:** PARTIAL — the full guest UI/accessibility matrix passes. Authenticated screens remain limited by OTP delivery; hosted performance, compression and deployment checks are not measured in this local run.
+- **Summary:** Re-ran the EN/EL × dark/light screenshot/accessibility review for landing, home, explore, match detail, teams, challenges, sign-in and signup, plus 320px layout and landing CLS. No product UI changes were needed. Reverted three incidental screenshot output differences so this review does not alter unrelated baselines.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-14-quality.spec.ts` — PASS (6 passed, 6 intentionally skipped; desktop Chromium runs the matrix, duplicate mobile-project cases are skipped); prior lint/typecheck/unit/format/export checks in this follow-up passed. Historical Lighthouse values and local limitations remain documented above.
+- **Browser verification:** Chromium checked all eight guest routes at 375/768/1440px across EN/EL and dark/light, plus 320px layout and CLS threshold. Screenshots remain in `docs/screenshots/phase-14/{dark-en,dark-el,light-en,light-el}/`.
+- **Security verification:** No product/security changes. Existing fixed-event error reporting continues to avoid exception content, route and user data.
+- **Remaining issues:** Measure mobile performance on deployed HTTPS hosting, verify authenticated screens after OTP repair, and review current browser accessibility on the target deployment.
+- **Next:** Phase 15 — Security/integration regression and full Web E2E; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
