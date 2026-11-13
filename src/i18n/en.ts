@@ -255,7 +255,7 @@ export const en = {
   authEmail: 'Email address',
   authPassword: 'Password',
   authConfirmPassword: 'Confirm password',
-  authOtp: '6-digit email code',
+  authOtp: 'Email verification code',
   authAcceptTerms: 'I agree to the terms and privacy notice.',
   authSignIn: 'Sign in',
   authSignUp: 'Create account',

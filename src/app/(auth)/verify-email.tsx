@@ -6,7 +6,7 @@ import { AuthButton, AuthFeedback, AuthField, AuthPage } from '@/components/auth
 import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
 import { resendSignupOtp, verifySignupOtp } from '@/features/auth/auth-service';
-import { authErrorMessageKey } from '@/features/auth/auth-validation';
+import { authErrorMessageKey, emailOtpLength } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -94,12 +94,12 @@ export default function VerifyEmailScreen() {
           onChangeText={setToken}
           keyboardType="number-pad"
           autoComplete="one-time-code"
-          maxLength={6}
+          maxLength={emailOtpLength}
         />
         {!isConfigured ? <AuthFeedback kind="info">{copy.authUnavailable}</AuthFeedback> : null}
         <AuthButton
           label={busy ? copy.authSessionLoading : copy.authVerify}
-          disabled={busy || !isConfigured || token.trim().length !== 6}
+          disabled={busy || !isConfigured || token.trim().length !== emailOtpLength}
           onPress={() => void submit()}
         />
         <AuthButton

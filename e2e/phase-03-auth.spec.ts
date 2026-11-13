@@ -70,7 +70,10 @@ test('an expired signup code is rejected without creating a session', async ({ p
     });
   });
   await page.goto('/verify-email?email=player%40example.invalid');
-  await page.getByLabel('6-digit email code').fill('123456');
+  const codeField = page.getByLabel('Email verification code');
+  await codeField.fill('1234567');
+  await expect(page.getByRole('button', { name: 'Verify email' })).toBeDisabled();
+  await codeField.fill('12345678');
   await page.getByRole('button', { name: 'Verify email' }).click();
   await expect(page.getByRole('alert')).toContainText(
     'That code is invalid or expired. Request another code.',
@@ -84,7 +87,8 @@ test('a verified signup session continues to profile onboarding', async ({ page 
   const userId = 'cf48b0df-2dd8-43aa-9091-e21f0c0bd3fe';
   const email = 'player@example.invalid';
   const now = Math.floor(Date.now() / 1000);
-  const encodeJwtPart = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const encodeJwtPart = (value: unknown) =>
+    Buffer.from(JSON.stringify(value)).toString('base64url');
   const accessToken = [
     encodeJwtPart({ alg: 'HS256', typ: 'JWT' }),
     encodeJwtPart({
@@ -185,7 +189,7 @@ test('a verified signup session continues to profile onboarding', async ({ page 
   });
 
   await page.goto(`/verify-email?email=${encodeURIComponent(email)}`);
-  await page.getByLabel('6-digit email code').fill('123456');
+  await page.getByLabel('Email verification code').fill('12345678');
   await page.getByRole('button', { name: 'Verify email' }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole('heading', { name: 'Build your player profile' })).toBeVisible();

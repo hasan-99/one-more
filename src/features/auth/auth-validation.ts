@@ -1,4 +1,5 @@
 export type SignupValidationError = 'email' | 'password' | 'passwordMismatch' | 'terms';
+export const emailOtpLength = 8;
 export type AuthToastMessageKey =
   | 'authInvalidCredentials'
   | 'authEmailUnconfirmed'

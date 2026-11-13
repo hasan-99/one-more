@@ -256,7 +256,7 @@ export const el = {
   authEmail: 'Διεύθυνση email',
   authPassword: 'Κωδικός πρόσβασης',
   authConfirmPassword: 'Επιβεβαίωση κωδικού',
-  authOtp: '6ψήφιος κωδικός email',
+  authOtp: 'Κωδικός επιβεβαίωσης email',
   authAcceptTerms: 'Συμφωνώ με τους όρους και την ενημέρωση απορρήτου.',
   authSignIn: 'Σύνδεση',
   authSignUp: 'Δημιουργία λογαριασμού',
