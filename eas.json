@@ -12,6 +12,12 @@
       "ios": {
         "simulator": true
       }
+    },
+    "preview-device": {
+      "extends": "preview",
+      "ios": {
+        "simulator": false
+      }
     }
   }
 }

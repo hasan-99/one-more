@@ -8,7 +8,7 @@ ONE MORE is a bilingual (English/Greek) football community for finding local mat
 - **Authentication:** Supabase Auth SMTP with Resend accepted and delivered a test message to the Resend account owner's mailbox. The current `onboarding@resend.dev` sender is limited to that verified owner; the verification code was redacted by the connected mail tool, so app-side OTP completion and password recovery are still unverified. A verified custom domain is needed for general recipients.
 - **Notifications:** In-app inbox is available. Email delivery needs the Edge Function Resend settings listed in [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md).
 - **Android:** An internal multi-ABI APK builds successfully with EAS; local Windows native builds can still hit the 260-character path limit. Expo's cloud simulator is not enabled for this account, and no local device/emulator is connected.
-- **iOS:** An iOS Simulator build completes on EAS. Expo's cloud simulator is not enabled for this account; this Windows machine also has no macOS/Xcode environment for a local simulator.
+- **iOS:** An iOS Simulator build completes on EAS, but it cannot be installed on an iPhone. Expo Go on iPhone does not support this project's SDK 58. A physical-device `.ipa` needs an Apple Developer team and registered iPhone; details are in [`docs/NATIVE_SMOKE.md`](docs/NATIVE_SMOKE.md).
 - **Policies:** Privacy and Terms routes are drafts awaiting qualified Cyprus/EU legal review.
 
 Do not treat this workspace as a production deployment or store-ready release. See the [phase log](docs/IMPLEMENTATION_LOG.md) and [beta operations runbook](docs/OPERATIONS_RUNBOOK.md) for current blockers and evidence.

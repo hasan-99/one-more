@@ -5,6 +5,7 @@
 - Android EAS internal APK: PASS for the multi-ABI build. Artifact: <https://expo.dev/accounts/hasan-jahouse/projects/one-more/builds/e6c7a28b-30bc-484e-b4cb-4cd41881a71a>. EAS uses a remotely stored keystore. Local Windows full-ABI builds can still hit the 260-character generated-path limit.
 - Android install/device smoke: NOT TESTED; `adb devices -l` listed no connected devices. No emulator is installed or running.
 - iOS Simulator EAS build: PASS; artifact: <https://expo.dev/accounts/hasan-jahouse/projects/one-more/builds/c197b894-d75a-44d0-bad5-c0eba8e34d31>. It has not been launched in a simulator or on an iPhone because this Windows host has no macOS/Xcode runtime.
+- Physical iPhone build: NOT BUILT; the iOS Simulator artifact cannot install on a real iPhone. EAS reports `No Apple teams found for account hasan-jahouse`, so there is no Apple team/device registration available for an internal `.ipa` yet.
 - Expo Simulators cloud session: BLOCKED; `eas simulator:availability --json` returned `available: false` for `hasan-jahouse`. Do not call `simulator:start` until Expo enables access.
 - Auth email delivery: Resend accepted SMTP and a signup confirmation email arrived at the verified owner mailbox. The connected mail tool redacted the OTP, so app-side verification and native OTP are still NOT TESTED.
 - Native push: NOT CONFIGURED and therefore not in the smoke scope.
@@ -20,6 +21,15 @@ npx eas-cli@latest simulator:start --platform ios --type agent-device --build-id
 ```
 
 The simulator session configuration contains controller credentials; `.env.eas-simulator` is ignored by Git. See [Expo's simulator installation guide](https://docs.expo.dev/eas/simulators/how-to/install-your-app/) and [availability instructions](https://docs.expo.dev/eas/simulators/get-started/).
+
+Expo Go on the iPhone cannot run this project: its App Store build supports SDK 54, while this app uses SDK 58. The grey project entry also has no running development server to connect to. For a real iPhone, register the device with the Apple Developer team, then create and install an internal device build:
+
+```powershell
+npx eas-cli@latest device:create
+npx eas-cli@latest build --platform ios --profile preview-device
+```
+
+The `preview-device` profile creates a physical-device build; it is separate from the existing iOS Simulator artifact. A development build on a physical iPhone requires Apple Developer Program membership and device provisioning. See [Expo's iOS device build guide](https://docs.expo.dev/tutorial/eas/ios-development-build-for-devices/) and [Expo Go SDK compatibility](https://docs.expo.dev/troubleshooting/expo-go-version-mismatch/).
 
 ## Re-run on an Android workstation
 

@@ -708,3 +708,14 @@
 - **Security verification:** No session token/config file was created. `.env.eas-simulator` is ignored before any future simulator command. No billing upgrade or external waitlist/contact submission was made.
 - **Remaining issues:** Request/receive Expo Simulators access for `hasan-jahouse` (the current product page advertises a limited beta/waitlist); the Expo contact form requires accurate last name, company and work email, so no request was sent with guessed details. Then start the documented Android and iOS sessions and run the native smoke flows.
 - **Next:** Continue Phase 17 native smoke when Expo enables simulator access; Phase 18 not started.
+
+### 2026-11-13 — Phase 17 iPhone install path
+
+- **Status:** PARTIAL — confirmed why the project does not open from the shown Expo Go screen; the current iPhone has no registered device build.
+- **Summary:** The screenshot is Expo Go's home screen with no development server active. This project uses SDK 58, while the current Expo Go App Store build supports SDK 54, so the project cannot launch from that app even when a server is started. The finished iOS artifact is an iOS Simulator build, not an iPhone `.ipa`. `eas device:list` returned `No Apple teams found for account hasan-jahouse`. Added an internal `preview-device` profile for a future physical-device build and documented the Apple Developer/device registration requirements. No iOS device build was started because there is no Apple team or registered device available in EAS.
+- **Changed files:** `eas.json`, `README.md`, `docs/NATIVE_SMOKE.md`, and this log.
+- **Checks:** Expo Go compatibility confirmed against current Expo docs; `eas device:list` — BLOCKED (no Apple teams found); Prettier checks for `eas.json`, README and native smoke guide — PASS; `git diff --check` — PASS (exit 0).
+- **Browser verification:** Interpreted the supplied Expo Go screenshot; no local development server is running. Expo Go would still reject SDK 58 on the physical iPhone.
+- **Security verification:** No Apple credentials, device UDID, or provisioning profile was read or stored.
+- **Remaining issues:** Register the user's iPhone with an Apple Developer team, then build/install using the documented `preview-device` profile. For quick web access, use the hosted preview; for native iOS, the Simulator artifact must run in an iOS Simulator.
+- **Next:** Continue Phase 17 iPhone install after device registration; Phase 18 not started.
