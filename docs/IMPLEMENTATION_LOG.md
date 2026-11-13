@@ -226,6 +226,16 @@
 - **Remaining issues:** Configure working Auth OTP and verify captain lifecycle plus generated match in a signed-in browser; rerun hosted pgTAP after consent.
 - **Next:** Phase 12 — Notifications; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 12 regression verification
+
+- **Status:** PARTIAL — private inbox route and locale switch pass on desktop/mobile. Authenticated inbox state and real email delivery are not verified; Auth SMTP returns 535 and the notification worker reports `mail_provider_not_configured`.
+- **Summary:** Rechecked the notification inbox sign-in gate, Greek locale switch and responsive width. No code changes were needed.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-12-notifications.spec.ts` — PASS (2/2 desktop/mobile Chromium); previous lint/typecheck/unit/format/export checks passed in this follow-up. Historical hosted notification test passed 25 assertions; not rerun because remote pgTAP requires consent.
+- **Browser verification:** Chromium desktop and mobile verified private inbox redirects to sign-in, Greek copy appears after switching language, and no horizontal overflow.
+- **Security verification:** Previously recorded hosted checks cover owner-only inbox rows, safe links, mark-read ownership, opt-out and service-role-only worker RPC. No schema or credential changes in this regression.
+- **Remaining issues:** Configure Auth SMTP and Resend provider key/from address/app URL, then verify user-owned inbox interactions and actual email rendering; rerun pgTAP after consent.
+- **Next:** Phase 13 — Match reminders; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
