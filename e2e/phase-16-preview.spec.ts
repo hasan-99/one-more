@@ -63,3 +63,16 @@ test('preview legal placeholders and response headers are bilingual and explicit
     });
   }
 });
+
+test('landing language switcher stays visible at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto('/');
+  const languageSwitcher = page.locator('#language-switcher');
+  await expect(languageSwitcher).toBeVisible();
+  const box = await languageSwitcher.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+  await expect(page.getByRole('button', { name: 'Language: English' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Language: Ελληνικά' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});

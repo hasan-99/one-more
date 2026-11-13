@@ -1,15 +1,7 @@
 import { useFonts } from 'expo-font';
 import { Link, router, type Href } from 'expo-router';
 import { useMemo, useRef, useState, type ElementRef } from 'react';
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
 import { LanguageSwitcher } from '@/components/preferences-switchers';
@@ -27,7 +19,7 @@ export default function LandingScreen() {
     Inter_600SemiBold: require('@/assets/fonts/Inter-SemiBold.ttf'),
   });
   const { width } = useWindowDimensions();
-  const isCompact = Platform.OS !== 'web' && width < 760;
+  const isCompact = width < 760;
   const scrollRef = useRef<ElementRef<typeof ScrollView>>(null);
   const [howOffset, setHowOffset] = useState(0);
 
@@ -43,9 +35,9 @@ export default function LandingScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View nativeID="page-shell" style={[styles.shell, isCompact && styles.shellCompact]}>
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, isCompact && styles.topBarCompact]}>
           <BrandMark fontsLoaded={fontsLoaded} />
-          <View style={styles.topControls}>
+          <View style={[styles.topControls, isCompact && styles.topControlsCompact]}>
             <Text style={[styles.location, fontsLoaded && styles.interSemibold]}>
               {copy.locationLabel}
             </Text>
@@ -254,6 +246,7 @@ const createStyles = (theme: ThemeColors) => {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
+    topBarCompact: { flexDirection: 'column', alignItems: 'stretch' },
     topControls: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -261,6 +254,7 @@ const createStyles = (theme: ThemeColors) => {
       justifyContent: 'flex-end',
       gap: 16,
     },
+    topControlsCompact: { width: '100%', justifyContent: 'space-between', gap: 8 },
     location: { color: colors.muted, fontSize: 10, letterSpacing: 1.5 },
     hero: {
       minHeight: 620,

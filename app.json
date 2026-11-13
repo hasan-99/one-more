@@ -76,6 +76,68 @@
     },
     "android": {
       "package": "com.anonymous.onemore"
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        },
+        "headers": {
+          "Cache-Control": "no-store",
+          "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+          "X-Content-Type-Options": "nosniff",
+          "X-Frame-Options": "DENY"
+        },
+        "pageHeaders": [
+          {
+            "source": "/settings",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          },
+          {
+            "source": "/profile",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          },
+          {
+            "source": "/notifications",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          },
+          {
+            "source": "/chat/[id]",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          },
+          {
+            "source": "/teams/[id]",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          },
+          {
+            "source": "/matches/[id]",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          },
+          {
+            "source": "/challenges/[id]",
+            "headers": {
+              "Cache-Control": "no-store"
+            }
+          }
+        ]
+      },
+      "eas": {
+        "projectId": "21afe9e8-5fec-4af0-baa0-3d0c4a8c2835"
+      }
+    },
+    "owner": "hasan-jahouse"
   }
 }
