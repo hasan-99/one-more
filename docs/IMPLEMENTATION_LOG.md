@@ -266,6 +266,16 @@
 - **Remaining issues:** Request consent to rerun hosted pgTAP suites; configure Auth/Resend credentials and execute authenticated flows; fix pending notification worker provider health.
 - **Next:** Phase 16 — Production-like Web preview deployment; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 16 regression verification
+
+- **Status:** PARTIAL — local production export, bilingual legal placeholders and security headers pass. A shareable hosted deployment remains unavailable because Expo Hosting authentication is not configured (previous EAS CLI check: not logged in); SMTP/Resend provider configuration is also outstanding.
+- **Summary:** Rechecked the local production-like preview's privacy/terms routes, explicit legal-review wording, response headers, EN/EL behavior and narrow layouts. No code changes were required.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-16-preview.spec.ts` — PASS (1 desktop Chromium; mobile duplicate intentionally skipped); earlier lint/typecheck/unit/format/export checks passed in this follow-up. The export and server startup were verified in the Phase 05 run.
+- **Browser verification:** Chromium validated privacy and terms in English/Greek, security response headers, and 375px/320px layout. Screenshots remain under `docs/screenshots/phase-16/`.
+- **Security verification:** `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, strict referrer policy and no-store were asserted by the browser test. No secret or deployment credential was added.
+- **Remaining issues:** Sign into Expo Hosting to publish a staging preview, configure redirect allowlist and environment secrets, then verify HTTPS headers/deep links on the hosted URL. Legal text still needs qualified review; SMTP/Resend mail setup remains incomplete.
+- **Next:** Phase 17 — Native readiness; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
