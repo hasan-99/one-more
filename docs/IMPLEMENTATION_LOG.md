@@ -216,6 +216,16 @@
 - **Remaining issues:** Configure valid Auth OTP delivery and verify invite/accept, member changes and captain transfer in an authenticated browser; rerun hosted pgTAP after consent.
 - **Next:** Phase 11 — Team challenges; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 11 regression verification
+
+- **Status:** PARTIAL — challenge directory and protected detail gate pass desktop/mobile. Authenticated captain request, accept/decline, withdrawal and challenge-to-match creation remain unverified because OTP email delivery fails.
+- **Summary:** Rechecked the current challenge directory empty state and detail auth gate after the latest profile changes. No code changes were needed.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-11-challenges.spec.ts` — PASS (4/4 desktop/mobile Chromium); earlier in this follow-up lint/typecheck/unit/format/export passed. The historical hosted challenge transaction has 41 passing assertions; it was not rerun due the Supabase pgTAP consent gate.
+- **Browser verification:** Chromium desktop and mobile confirmed the localized guest directory empty state has no horizontal overflow and protected detail redirects to sign-in.
+- **Security verification:** Previously recorded hosted checks cover captain authorization, RLS, city/window/field requirements, idempotency, lifecycle transitions and linked-match privacy. No database changes in this regression.
+- **Remaining issues:** Configure working Auth OTP and verify captain lifecycle plus generated match in a signed-in browser; rerun hosted pgTAP after consent.
+- **Next:** Phase 12 — Notifications; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
