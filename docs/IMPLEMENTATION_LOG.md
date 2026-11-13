@@ -256,6 +256,16 @@
 - **Remaining issues:** Measure mobile performance on deployed HTTPS hosting, verify authenticated screens after OTP repair, and review current browser accessibility on the target deployment.
 - **Next:** Phase 15 — Security/integration regression and full Web E2E; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 15 regression verification
+
+- **Status:** PARTIAL — desktop Chromium, Firefox and WebKit public navigation smoke pass. Hosted RLS assertions were not rerun because Supabase requires explicit remote pgTAP consent; real authenticated flows and email remain blocked by provider configuration.
+- **Summary:** Rechecked EN/EL navigation, mobile labels, create auth redirect, viewport overflow and page errors across browser engines. No product changes were required. The prior full E2E regression on the current source passed 61 tests with 9 intentional skips.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-15-crossbrowser.spec.ts` — PASS (3 passed: Chromium, Firefox, WebKit; 1 intentional mobile-Chromium duplicate skipped); prior lint/typecheck/unit/format/export checks passed under Phase 05. Hosted security tests for Phase 03–15 are recorded in the earlier log and were not rerun in this follow-up.
+- **Browser verification:** Chromium, Firefox and WebKit checked desktop landing, 375px home/mobile navigation, Greek switching and sign-in redirect, with zero page errors.
+- **Security verification:** Historical hosted tests cover owner-only account deletion requests, anon/direct-write denial, cross-user cancellation denial and idempotence. Existing no-secret-in-client check is recorded in the Phase 15 entry. No security code changed in this regression.
+- **Remaining issues:** Request consent to rerun hosted pgTAP suites; configure Auth/Resend credentials and execute authenticated flows; fix pending notification worker provider health.
+- **Next:** Phase 16 — Production-like Web preview deployment; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
