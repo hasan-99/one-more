@@ -236,6 +236,16 @@
 - **Remaining issues:** Configure Auth SMTP and Resend provider key/from address/app URL, then verify user-owned inbox interactions and actual email rendering; rerun pgTAP after consent.
 - **Next:** Phase 13 — Match reminders; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 13 regression verification
+
+- **Status:** PARTIAL — public reminder deep links and locale switching pass desktop/mobile. Authenticated inbox and real reminder email delivery remain unverified because OTP and Resend mail configuration are unavailable.
+- **Summary:** Rechecked the public match link fallback and Greek localization; no code changes were required.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-13-reminders.spec.ts` — PASS (2/2 desktop/mobile Chromium); previous lint/typecheck/unit/format/export checks passed under Phase 05. Historical hosted reminder test passed 41 assertions; not rerun due remote pgTAP consent.
+- **Browser verification:** Chromium desktop and mobile verified invalid/expired match link fallback, Greek translation and no horizontal overflow.
+- **Security verification:** Previously tested hosted cases cover reminder scheduling only for authorized organizers/participants, UTC offsets/DST, dedupe, reschedule/cancel/leave and invalid worker token rejection. No schema or secret changes in this regression.
+- **Remaining issues:** Configure Auth SMTP and Resend provider values, then verify authenticated inbox/reminder delivery; rerun hosted pgTAP after consent.
+- **Next:** Phase 14 — Web quality and accessibility; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
