@@ -276,6 +276,16 @@
 - **Remaining issues:** Sign into Expo Hosting to publish a staging preview, configure redirect allowlist and environment secrets, then verify HTTPS headers/deep links on the hosted URL. Legal text still needs qualified review; SMTP/Resend mail setup remains incomplete.
 - **Next:** Phase 17 — Native readiness; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 17 regression verification
+
+- **Status:** PARTIAL — Android debug APK exists and Expo configuration passes health checks. No Android device/ADB or iOS/macOS build environment is available for native UI smoke; release signing and package identity are still outstanding.
+- **Summary:** Rechecked native project health and the previously built Android debug artifact. No native source changes were needed.
+- **Checks:** `npx expo-doctor` — PASS (20/20); APK exists at `android/app/build/outputs/apk/debug/app-debug.apk` (88,451,766 bytes, generated 2026-11-12). `adb` is unavailable in the current shell. Android compilation and debug signature verification are recorded in the earlier Phase 17 entries.
+- **Browser verification:** Native screens cannot be verified in a browser; prior Web UI suites passed. No connected Android device or iOS simulator was available.
+- **Security verification:** Existing APK is debug-signed with temporary package `com.anonymous.onemore`; do not distribute it. No release keys or device permissions were added.
+- **Remaining issues:** Set a production package identifier, configure secure release signing, test Android on a device, and build/test iOS on macOS with credentials; restore OTP for native authentication smoke.
+- **Next:** Phase 18 — Beta sign-off and backlog; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
