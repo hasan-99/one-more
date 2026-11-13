@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
-import { PreferenceSwitchers } from '@/components/preferences-switchers';
+import { LanguageSwitcher } from '@/components/preferences-switchers';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
@@ -55,7 +55,7 @@ export default function LandingScreen() {
             >
               {copy.authEntry}
             </Link>
-            <PreferenceSwitchers />
+            <LanguageSwitcher />
           </View>
         </View>
 

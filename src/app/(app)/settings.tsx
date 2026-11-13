@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
 import { AuthButton, AuthFeedback } from '@/components/auth/AuthPage';
 import { AppCard, AppPage } from '@/components/layout/AppPage';
+import { AppearanceSwitcher } from '@/components/preferences-switchers';
 import { useToast } from '@/components/toast/ToastProvider';
 import {
   cancelAccountDeletionRequest,
@@ -127,6 +128,18 @@ export default function SettingsScreen() {
 
   return (
     <AppPage title={copy.appSettingsTitle} description={copy.appSettingsIntro}>
+      {user ? (
+        <AppCard>
+          <Text
+            accessibilityRole="header"
+            style={[styles.sectionTitle, { color: colors.textPrimary }]}
+          >
+            {copy.themeLabel}
+          </Text>
+          <Text style={{ color: colors.textSecondary }}>{copy.themeSettingsIntro}</Text>
+          <AppearanceSwitcher />
+        </AppCard>
+      ) : null}
       {user ? (
         <AppCard>
           <Text

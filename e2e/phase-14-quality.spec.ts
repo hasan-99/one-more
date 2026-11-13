@@ -39,8 +39,12 @@ for (const theme of ['Dark', 'Light'] as const) {
       await mkdir(directory, { recursive: true });
 
       await page.setViewportSize({ width: 1440, height: 900 });
+      await page.addInitScript(
+        (value) => localStorage.setItem('one-more.theme', value),
+        theme.toLowerCase(),
+      );
       await page.goto('/');
-      await page.getByRole('button', { name: `Appearance: ${theme}` }).click();
+      await expect(page.locator('html')).toHaveCSS('color-scheme', theme.toLowerCase());
       await page
         .getByRole('button', {
           name: locale === 'en' ? 'Language: English' : 'Language: Ελληνικά',
@@ -138,20 +142,17 @@ for (const theme of ['Dark', 'Light'] as const) {
           if (screen.path === '/explore') {
             const preferences = page
               .getByRole('button', {
-                name:
-                  locale === 'en'
-                    ? `Appearance: ${theme}`
-                    : `Εμφάνιση: ${theme === 'Dark' ? 'Σκούρο' : 'Φωτεινό'}`,
+                name: locale === 'en' ? 'Language: English' : 'Γλώσσα: English',
               })
               .first();
             const box = await preferences.boundingBox();
             expect(
               box?.height ?? 0,
-              'theme controls must meet the 44px target',
+              'language controls must meet the 44px target',
             ).toBeGreaterThanOrEqual(44);
             expect(
               box?.width ?? 0,
-              'theme controls must meet the 44px target',
+              'language controls must meet the 44px target',
             ).toBeGreaterThanOrEqual(44);
           }
 

@@ -636,3 +636,14 @@
 - **Security verification:** No secrets in client bundle per prior Phase 15 audit; `npm audit --omit=dev` reports zero vulnerabilities; local Phase 16 headers pass. Hosted RLS/security suites passed historically, but no remote pgTAP was run during this follow-up because Supabase explicitly requires user approval before retrying with `--yes`.
 - **Remaining issues:** (1) Supabase remote pgTAP consent gate, (2) valid Auth SMTP/Resend credentials and real OTP, (3) Expo Hosting sign-in/deployment and Auth redirect allowlist, (4) legal review/support contact, (5) backup/restore rehearsal, (6) Android device smoke/release signing and iOS build on macOS, (7) true authenticated two-user and concurrent-load acceptance. Beta is not approved until these are closed.
 - **Next:** Phase plan 00–18 implementation is complete; beta sign-off remains PARTIAL pending the external and device gates above.
+
+### 2026-11-13 — UI preference controls refinement
+
+- **Status:** PASS — the language selector remains in the app header as an English/Greek two-option switch; Dark/Light/System selection is now available in a dedicated Appearance card under Settings.
+- **Summary:** Split the shared preference controls, removed the theme toggle from auth pages and the global header, added the bilingual Appearance settings card and intro, and updated responsive screenshot coverage. Theme persistence and success/failure toasts remain covered.
+- **Changed files:** Preference switcher, app shell, landing/design-review header, auth page, Settings, EN/EL strings, E2E specs for shell/auth/accessibility, and refreshed Phase 03/14 screenshots plus `docs/screenshots/phase-02/settings-appearance-{375,1440}.png`.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (7 files / 27 tests); `npm run format:check` — PASS; `npm run build:web` — PASS; `npm run test:e2e -- --workers=1 e2e/phase-02.spec.ts` — PASS (7 passed, 1 intentional skip; rechecked Appearance settings on desktop and mobile); `e2e/phase-03-auth.spec.ts` — PASS (22/22 desktop/mobile); `e2e/phase-14-quality.spec.ts` — PASS (6 passed, 6 intentional mobile-project skips); `git diff --check` — PASS.
+- **Browser verification:** Chromium verified language selection in the app header and auth pages, Appearance choices/persistence in Settings at 375×812 and 1440×900, 320px layout, EN/EL and dark/light screenshots. Screenshots: `docs/screenshots/phase-02/`, `phase-03/`, and the Phase 14 locale/theme matrix.
+- **Security verification:** No backend, auth, or secret changes. Settings test uses mocked Auth/PostgREST; no live user or database row was created.
+- **Remaining issues:** None for this UI request.
+- **Next:** Continue the previously documented external beta gates when credentials/device access are available.

@@ -31,6 +31,7 @@ export const el = {
   legalBackHome: 'Επιστροφή στο ONE MORE',
   preferencesSavedError: 'Δεν ήταν δυνατή η αποθήκευση της προτίμησης. Δοκίμασε ξανά.',
   themeLabel: 'Εμφάνιση',
+  themeSettingsIntro: 'Επίλεξε Σύστημα, Σκούρο ή Φωτεινό για άνετη προβολή.',
   themeSystem: 'Σύστημα',
   themeDark: 'Σκούρο',
   themeLight: 'Φωτεινό',
@@ -194,7 +195,7 @@ export const el = {
   notificationReminder2hBody: 'Δες τα στοιχεία του αγώνα πριν ξεκινήσεις για το γήπεδο.',
   appNoNotificationsTitle: 'Είσαι ενημερωμένος',
   appNoNotificationsCopy: 'Δεν υπάρχουν ακόμη ειδοποιήσεις.',
-  appSettingsIntro: 'Διαχειρίσου τις ρυθμίσεις λογαριασμού και ειδοποιήσεων email.',
+  appSettingsIntro: 'Διαχειρίσου την εμφάνιση, τον λογαριασμό και τις ειδοποιήσεις σου.',
   commonCancel: 'Ακύρωση',
   settingsDeletionTitle: 'Διαγραφή λογαριασμού',
   settingsDeletionDescription:
@@ -312,8 +313,6 @@ export const el = {
   authEmailUnconfirmed: 'Επαλήθευσε το email σου πριν συνδεθείς.',
   authSwitchToEnglish: 'Αλλαγή γλώσσας σε English',
   authSwitchToGreek: 'Αλλαγή γλώσσας σε Ελληνικά',
-  authSwitchToDark: 'Αλλαγή εμφάνισης σε σκούρα',
-  authSwitchToLight: 'Αλλαγή εμφάνισης σε φωτεινή',
   matchListTitle: 'Βρες τον επόμενο αγώνα σου',
   matchListIntro:
     'Δες επερχόμενους αγώνες στη Λευκωσία. Η θέση σου δεν επιβεβαιώνεται πριν την έγκριση του διοργανωτή.',

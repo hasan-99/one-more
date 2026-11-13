@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 
 test('signup shows validation and localized account creation form', async ({ page }) => {
   await page.goto('/sign-up');
+  await expect(page.getByRole('button', { name: /^Switch theme to/ })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(
@@ -356,15 +357,17 @@ test('a failed preference save shows a dismissible error toast', async ({ page }
   await page.addInitScript(() => {
     const originalSetItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
-      if (key === 'one-more.theme') throw new Error('storage unavailable');
+      if (key === 'one-more.locale') throw new Error('storage unavailable');
       return originalSetItem.call(this, key, value);
     };
   });
   await page.goto('/sign-up');
-  await page.getByRole('button', { name: /^Switch theme to (dark|light)$/ }).click();
+  await page.getByRole('button', { name: 'Switch language to Greek' }).click();
   const errorToast = page.getByRole('alert');
-  await expect(errorToast).toContainText('Your preference could not be saved. Please try again.');
-  await errorToast.getByRole('button', { name: 'Dismiss notification' }).click();
+  await expect(errorToast).toContainText(
+    'Δεν ήταν δυνατή η αποθήκευση της προτίμησης. Δοκίμασε ξανά.',
+  );
+  await errorToast.getByRole('button', { name: 'Κλείσιμο ειδοποίησης' }).click();
   await expect(errorToast).toHaveCount(0);
 });
 
@@ -381,16 +384,14 @@ test('auth screens fit mobile and desktop in dark and light themes', async ({ pa
   mkdirSync(screenshotDirectory, { recursive: true });
   await page.setViewportSize({ width, height });
   for (const theme of ['Dark', 'Light'] as const) {
+    await page.goto('/');
+    await page.evaluate(
+      (value) => localStorage.setItem('one-more.theme', value),
+      theme.toLowerCase(),
+    );
+    await page.reload();
     await page.goto('/sign-up');
-    const themeToggle = page.getByRole('button', {
-      name: `Switch theme to ${theme.toLowerCase()}`,
-    });
-    if (await themeToggle.isVisible()) {
-      await themeToggle.click();
-      const toast = page.getByRole('status').filter({ hasText: 'preference saved' });
-      await expect(toast.last()).toBeVisible();
-      await toast.last().getByRole('button', { name: 'Dismiss notification' }).click();
-    }
+    await expect(page.locator('html')).toHaveCSS('color-scheme', theme.toLowerCase());
     await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,

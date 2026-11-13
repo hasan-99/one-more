@@ -3,10 +3,80 @@ import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-test('main navigation opens every shell section and secondary route', async ({ page }, testInfo) => {
+async function seedCompletedSession(page: import('@playwright/test').Page) {
+  const userId = 'e1ac8110-73a3-4f8b-a885-c6fc601e5a0d';
+  const email = 'settings-player@example.invalid';
+  const now = Math.floor(Date.now() / 1000);
+  const encodeJwtPart = (value: unknown) =>
+    Buffer.from(JSON.stringify(value)).toString('base64url');
+  const accessToken = [
+    encodeJwtPart({ alg: 'HS256', typ: 'JWT' }),
+    encodeJwtPart({
+      aud: 'authenticated',
+      role: 'authenticated',
+      sub: userId,
+      email,
+      exp: now + 3600,
+      iat: now,
+      app_metadata: { provider: 'email', providers: ['email'] },
+      user_metadata: { display_name: 'Settings Player', phone: '+35799123456' },
+    }),
+    'mock-signature',
+  ].join('.');
+  const session = {
+    access_token: accessToken,
+    refresh_token: 'mock-refresh-token',
+    expires_in: 3600,
+    expires_at: now + 3600,
+    token_type: 'bearer',
+    user: {
+      id: userId,
+      aud: 'authenticated',
+      role: 'authenticated',
+      email,
+      email_confirmed_at: new Date(now * 1000).toISOString(),
+      app_metadata: { provider: 'email', providers: ['email'] },
+      user_metadata: { display_name: 'Settings Player', phone: '+35799123456' },
+      identities: [],
+      created_at: new Date(now * 1000).toISOString(),
+      updated_at: new Date(now * 1000).toISOString(),
+    },
+  };
+  await page.addInitScript(
+    ({ storageKey, savedSession }) =>
+      localStorage.setItem(storageKey, JSON.stringify(savedSession)),
+    { storageKey: 'sb-ejlyaerurkjgsylrsthl-auth-token', savedSession: session },
+  );
+  await page.route('**/rest/v1/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const rows: Record<string, unknown> = {
+      profiles: { onboarding_complete: true },
+      notification_preferences: {
+        user_id: userId,
+        in_app_enabled: true,
+        discovery_email_enabled: false,
+        chat_email_enabled: false,
+        created_at: new Date(now * 1000).toISOString(),
+        updated_at: new Date(now * 1000).toISOString(),
+      },
+      account_deletion_requests: null,
+    };
+    const table = path.split('/').pop() ?? '';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(rows[table] ?? []),
+    });
+  });
+}
+
+test('main navigation opens every shell section and secondary route', async ({
+  page,
+}, testInfo) => {
   const mobile = testInfo.project.name === 'mobile-chromium';
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Appearance: System' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Language: English' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Language: Ελληνικά' })).toBeEnabled();
   await page.getByRole('button', { name: 'Find a game' }).click();
   await expect(page).toHaveURL(/\/explore$/);
 
@@ -45,12 +115,12 @@ test('private routes require sign-in at mobile and desktop sizes in both themes'
     await page.setViewportSize({ width, height: width === 375 ? 812 : 900 });
     for (const theme of ['Dark', 'Light'] as const) {
       await page.goto('/');
-      await expect(page.getByRole('button', { name: `Appearance: ${theme}` })).toBeEnabled();
-      await page.getByRole('button', { name: `Appearance: ${theme}` }).click();
-      await page.waitForFunction(
-        (value) => localStorage.getItem('one-more.theme') === value,
+      await page.evaluate(
+        (value) => localStorage.setItem('one-more.theme', value),
         theme.toLowerCase(),
       );
+      await page.reload();
+      await expect(page.locator('html')).toHaveCSS('color-scheme', theme.toLowerCase());
 
       for (const route of routes) {
         await page.goto(route.path);
@@ -76,6 +146,47 @@ test('private routes require sign-in at mobile and desktop sizes in both themes'
       }
     }
   }
+});
+
+test('appearance choices live in settings and persist across navigation', async ({
+  page,
+}, testInfo) => {
+  await seedCompletedSession(page);
+  const width = testInfo.project.name === 'mobile-chromium' ? 375 : 1440;
+  await page.setViewportSize({ width, height: width === 375 ? 812 : 900 });
+  await page.goto('/settings');
+  await expect(page.getByRole('heading', { name: 'Appearance', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Language: English' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Switch theme to dark' })).toHaveCount(0);
+
+  for (const theme of ['dark', 'light', 'system'] as const) {
+    const button = page.getByRole('button', {
+      name: `Appearance: ${theme[0].toUpperCase()}${theme.slice(1)}`,
+    });
+    await button.click();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('one-more.theme')))
+      .toBe(theme);
+    const toast = page.getByRole('status').filter({ hasText: 'Appearance preference saved.' });
+    await expect(toast.last()).toBeVisible();
+    await toast.last().getByRole('button', { name: 'Dismiss notification' }).click();
+    if (theme !== 'system') {
+      await expect(page.locator('html')).toHaveCSS('color-scheme', theme);
+    }
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+    width,
+  );
+  const screenshotDirectory = join(process.cwd(), 'docs', 'screenshots', 'phase-02');
+  mkdirSync(screenshotDirectory, { recursive: true });
+  await page.screenshot({
+    path: join(screenshotDirectory, `settings-appearance-${width}.png`),
+    fullPage: true,
+  });
+  await page.goto('/home');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('one-more.theme')))
+    .toBe('system');
 });
 
 test('main screens localize in Greek', async ({ page }, testInfo) => {

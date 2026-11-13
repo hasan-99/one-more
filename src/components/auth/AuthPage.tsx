@@ -11,8 +11,7 @@ export function AuthPage({
   description,
   children,
 }: PropsWithChildren<{ title: string; description: string }>) {
-  const { colors, locale, setLocale, theme, setThemePreference, preferencesReady } =
-    useAppPreferences();
+  const { colors, locale, setLocale, preferencesReady } = useAppPreferences();
   const copy = translations[locale];
   return (
     <ScrollView
@@ -40,22 +39,6 @@ export function AuthPage({
             >
               <Text style={[styles.languageCode, { color: colors.textPrimary }]}>
                 {locale === 'en' ? 'EN' : 'EL'}
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={theme === 'dark' ? copy.authSwitchToLight : copy.authSwitchToDark}
-              accessibilityState={{ disabled: !preferencesReady }}
-              disabled={!preferencesReady}
-              onPress={() => setThemePreference(theme === 'dark' ? 'light' : 'dark')}
-              style={({ pressed }) => [
-                styles.compactControl,
-                { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
-                pressed && styles.pressedControl,
-              ]}
-            >
-              <Text style={[styles.themeIcon, { color: colors.textPrimary }]}>
-                {theme === 'dark' ? '☀' : '☾'}
               </Text>
             </Pressable>
           </View>
@@ -235,7 +218,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   languageCode: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
-  themeIcon: { fontSize: 21, lineHeight: 26 },
   pressedControl: { opacity: 0.7 },
   heading: { gap: 8 },
   title: { fontSize: 30, lineHeight: 36, fontWeight: '800' },

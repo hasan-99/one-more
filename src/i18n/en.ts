@@ -31,6 +31,7 @@ export const en = {
   legalBackHome: 'Back to ONE MORE',
   preferencesSavedError: 'Your preference could not be saved. Please try again.',
   themeLabel: 'Appearance',
+  themeSettingsIntro: 'Choose System, Dark, or Light for a comfortable view.',
   themeSystem: 'System',
   themeDark: 'Dark',
   themeLight: 'Light',
@@ -193,7 +194,7 @@ export const en = {
   notificationReminder2hBody: 'Check the match details before you head to the field.',
   appNoNotificationsTitle: 'You are all caught up',
   appNoNotificationsCopy: 'There are no notifications yet.',
-  appSettingsIntro: 'Manage your account and email update preferences.',
+  appSettingsIntro: 'Manage your appearance, account, and notification preferences.',
   commonCancel: 'Cancel',
   settingsDeletionTitle: 'Account deletion',
   settingsDeletionDescription:
@@ -311,8 +312,6 @@ export const en = {
   authEmailUnconfirmed: 'Verify your email before signing in.',
   authSwitchToEnglish: 'Switch language to English',
   authSwitchToGreek: 'Switch language to Greek',
-  authSwitchToDark: 'Switch theme to dark',
-  authSwitchToLight: 'Switch theme to light',
   matchListTitle: 'Find your next game',
   matchListIntro:
     'Browse upcoming matches around Nicosia. Your place is never confirmed until the organizer approves you.',

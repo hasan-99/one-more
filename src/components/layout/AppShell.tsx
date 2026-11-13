@@ -4,7 +4,7 @@ import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/brand-mark';
-import { PreferenceSwitchers } from '@/components/preferences-switchers';
+import { LanguageSwitcher } from '@/components/preferences-switchers';
 import { AppNavigation } from '@/components/layout/AppNavigation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
@@ -82,7 +82,7 @@ export function AppShell({ children }: PropsWithChildren) {
               {title}
             </Text>
           </View>
-          <PreferenceSwitchers />
+          <LanguageSwitcher />
         </View>
         {showRow ? (
           <View nativeID="app-tablet-nav" style={styles.tabletNav}>

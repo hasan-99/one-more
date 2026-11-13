@@ -14,7 +14,7 @@ import {
 
 import { BrandMark } from '@/components/brand-mark';
 import { ResponsiveNav } from '@/components/layout/ResponsiveNav';
-import { PreferenceSwitchers } from '@/components/preferences-switchers';
+import { LanguageSwitcher } from '@/components/preferences-switchers';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -36,7 +36,7 @@ function DesignReviewGallery() {
       <View nativeID="design-review-shell" style={[styles.shell, compact && styles.shellCompact]}>
         <View style={styles.header}>
           <BrandMark />
-          <PreferenceSwitchers />
+          <LanguageSwitcher />
         </View>
         <ResponsiveNav active="review" />
         <Text accessibilityRole="header" style={styles.title}>
