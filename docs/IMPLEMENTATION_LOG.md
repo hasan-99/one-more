@@ -525,3 +525,13 @@
 - **Security verification:** No schema or policy changes in this regression. Previously tested: anon denial, private roster isolation, organizer-only review, locked-row capacity race and server-only outbox.
 - **Remaining issues:** Repeat hosted pgTAP only after consent; configure working OTP delivery and add/run two-independent-user browser flows for request, organizer approval, count refresh and withdrawal.
 - **Next:** Phase 08 — Waitlist and exclusive offers; continuing per the user's instruction.
+
+### 2026-11-13 — Phase 08 regression verification
+
+- **Status:** PARTIAL — the existing hosted waitlist/offer suite and concurrency check passed in the earlier run. Current signed-in waitlist and offer interactions cannot be reverified because OTP delivery is unavailable; no published match or test fixture is available in the project now.
+- **Summary:** Reviewed the implemented FIFO queue, exclusive offer, explicit acceptance, expiration handoff, leave/withdraw and organizer cancellation paths against the phase gate. No code changes were required in this follow-up. The current hosted discovery view has no published matches, so no hosted test match was created.
+- **Checks:** Existing local lint/typecheck/unit/format/export checks and targeted browser checks passed earlier in this follow-up; the Phase 08 hosted run remains the previously recorded 30 pgTAP assertions plus concurrent double-accept test. The hosted database suite was not rerun because the Supabase consent gate requires explicit approval.
+- **Browser verification:** Current web app loads and resolves the discovery query to an honest empty state. Historical Phase 08 guest detail screens passed desktop/mobile and Greek labels; authenticated waitlist controls remain unavailable without OTP.
+- **Security verification:** Previously recorded: waitlist direct table access denied, RPC ownership and capacity checks, no auto-confirmation, and outbox privacy. No schema or grant changes in this regression.
+- **Remaining issues:** Obtain working Auth OTP delivery and Supabase pgTAP consent, then verify queue ordering, exclusive offer, acceptance/decline/expiry and organizer cleanup in browser.
+- **Next:** Phase 09 — Private match chat; continuing per the user's instruction.
