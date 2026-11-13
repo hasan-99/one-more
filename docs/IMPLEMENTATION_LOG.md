@@ -464,3 +464,13 @@
 - **Security verification:** CLI token and SMTP password were not printed or added to repository files. No project secrets, SMTP settings, Auth users, or production data were changed. The existing `SUPABASE_ACCESS_TOKEN` environment value remains invalid; CLI commands were run with that inherited value removed for the process.
 - **Remaining issues:** Perform one real signup/OTP delivery check. Restore `notification-outbox-worker` delivery by configuring the missing `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `APP_BASE_URL`; its deployed 503 guard remains unchanged. Hosted CI, native-device, backup/restore, legal, and load gates remain outstanding as noted above.
 - **Next:** Continue Phase 03 live OTP delivery verification, then proceed only after the phase gate is complete.
+
+### 2026-11-13 — Phase 03 live OTP delivery attempt
+
+- **Status:** PARTIAL — the real signup path reaches Supabase, but SMTP authentication is rejected.
+- **Summary:** Submitted one live signup from the local web app using the owner's mailbox. Supabase returned HTTP 500 `unexpected_failure` / `Error sending confirmation email`. The matching `auth_logs` entry at 2026-11-13 07:13 UTC reports SMTP `535 "Authentication credentials invalid"`. The target's SMTP settings show Resend host, port 465, and username `resend`; the stored password is not readable through the dashboard or config pull. The local LABBAYK project uses Gmail SMTP and has no Resend Edge Function secret, so it does not supply a usable Resend key. Resend redirects to sign-in. No user was created (`auth.users` remains empty); no credential was retrieved or changed.
+- **Checks:** Real signup request — FAIL (HTTP 500); Supabase Auth log — confirms SMTP 535; post-attempt user count — 0; Phase 03 lint/typecheck/unit/E2E/export remain PASS as recorded above.
+- **Browser verification:** Local web signup page submitted successfully to the Auth endpoint, but stayed on signup after the provider failure; browser reports one 500 response. No verification email arrived because SMTP rejected authentication.
+- **Security verification:** The temporary test password was random and not saved. No stored SMTP password or API key was read, printed, or modified. No test Auth user remains.
+- **Remaining issues:** Replace the invalid Resend SMTP credential with a valid credential, set the notification worker secrets, then repeat live signup and verify the OTP in the app.
+- **Next:** Continue Phase 03 after the Resend credential is available; do not mark real OTP delivery PASS until the code is received and verified.
