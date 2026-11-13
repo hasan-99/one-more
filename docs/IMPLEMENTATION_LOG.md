@@ -196,6 +196,16 @@
 - **Remaining issues:** Repair Phase 03 OTP email delivery to exercise signed-in waitlist, acceptance and organizer controls in the browser. Existing favicon 404 remains for Phase 14.
 - **Next:** Phase 09 — Private match chat; continuing per the user's instruction.
 
+### 2026-11-13 — Phase 09 regression verification
+
+- **Status:** PARTIAL — signed-out access gate passes on desktop and mobile. Authenticated live messaging, realtime delivery, report/moderation and access revocation remain unverified in browser because OTP delivery is unavailable.
+- **Summary:** Rechecked the private chat deep-link guard against the current app; it redirects to sign-in before loading chat content. No code changes were needed.
+- **Checks:** `npm run test:e2e -- --workers=1 e2e/phase-09-chat.spec.ts` — PASS (2/2 desktop/mobile Chromium); prior lint, typecheck, unit, format and web export checks in this follow-up passed. The hosted Phase 09 test remains the earlier 32-assertion run and was not repeated due remote pgTAP consent.
+- **Browser verification:** Chromium desktop and mobile confirmed `/chat/phase-09-test-match` redirects to sign-in. No authenticated match/session exists to test realtime.
+- **Security verification:** Previously recorded hosted tests verify only organizer/accepted-player access, pending/former/unrelated denial, no direct client writes, plain-text safety, moderation ownership and revoked access after leaving/cancellation. No policy changes in this regression.
+- **Remaining issues:** Restore Auth OTP and repeat two-browser live exchange, pending/former-member denial, reconnect, report and moderation checks; request consent before hosted pgTAP rerun.
+- **Next:** Phase 10 — Teams and team challenges; continuing per the user's instruction.
+
 ### 2026-11-12 — Phase 09: Private match chat
 
 - **Status:** PARTIAL — database authorization, message lifecycle, Web export, guest protection and regression tests pass; live authenticated player/organizer conversations remain blocked by Phase 03 OTP email delivery.
