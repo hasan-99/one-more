@@ -1264,14 +1264,14 @@
 ### 2026-11-14 — Phase 04 Cyprus-wide city and area choices
 
 - **Phase:** 04 — profile location catalog; Phase 18 not started.
-- **Status:** PARTIAL — Supabase data and app changes are verified; Expo Preview publication and physical iPhone review are pending.
+- **Status:** PARTIAL — Supabase data and app changes are verified and the Expo Preview update is published; physical iPhone review is pending.
 - **Summary:** Expanded the location catalog from Nicosia only to Nicosia, Limassol, Larnaca, Paphos, Famagusta and Kyrenia, each with selectable areas. Kept existing Nicosia rows and added an idempotent location-data migration. City choices now wrap across three columns on onboarding; the copy now describes the football community as Cyprus-wide in English and Greek. The profile, Explore and creation screens load cities/areas from Supabase, so no other picker data is hardcoded.
 - **Changed files:** `supabase/migrations/20261114184303_cyprus_city_areas.sql`, `supabase/tests/phase_04_profile_preferences.test.sql`, `src/features/profile/PlayerOnboarding.tsx`, `src/i18n/en.ts`, `src/i18n/el.ts`, `README.md`, `docs/01_PRODUCT_REQUIREMENTS.md`, `docs/04_MASTER_EXECUTION_PLAN.md`, and this log.
-- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (38/38); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-onboarding-steps.spec.ts --project=mobile-chromium --workers=1` — PASS (2/2); `git diff --check` — pending.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (38/38); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-onboarding-steps.spec.ts --project=mobile-chromium --workers=1` — PASS (2/2); `git diff --check` — PASS; `npx eas-cli@latest update --channel preview --environment preview --message "Add Cyprus cities and areas"` — PASS, group `f985c218-377d-4c22-8570-35a146fb3d45`, iOS update `01a1db65-72ba-79af-afef-0052a65c1426`, Android update `01a1db65-72ba-7594-9dba-a19d464d726d`.
 - **Supabase:** Applied migration `cyprus_city_areas` to ONE MORE (`ejlyaerurkjgsylrsthl`), recorded remotely as `20261114184303`. Verified six city rows and their area counts (8 Nicosia, 9 Limassol, 9 Larnaca, 10 Paphos, 8 Famagusta, 4 Kyrenia). Verified public client access to `cities` with nested areas via the publishable key; RLS/grants were not changed.
 - **Browser verification:** Web signup inspected at 393×852 in English and Greek; Cyprus-wide copy is present and there are zero console errors. Mobile Chromium onboarding verified all six city options, Famagusta → Paralimni area filtering, full four-step flow, and optional skip path. The physical iPhone was not inspected.
 - **Security verification:** Additive location catalog only; existing RLS, grants, and user data were unchanged. No secret values were exposed. No store build or submission.
-- **Remaining issues:** Publish this code to Expo Preview, then ask the user to confirm the city list on iPhone Expo Go.
+- **Remaining issues:** Ask the user to confirm the city and area selectors on iPhone Expo Go.
 - **Next phase:** Continue Phase 17 after Expo Go review; Phase 18 not started.
 
 ### 2026-11-14 — Phase 17 Persist Supabase sessions across app reloads
