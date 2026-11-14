@@ -1185,26 +1185,20 @@ function Crest({
   );
 }
 
-/** Floats the crest (st-float) and replays a 3D flip whenever its design changes. */
+/** Floats the crest (st-float) and gives it a small in-place pop when its design changes. */
 function FloatingCrest({ flips, children }: { flips: number; children: ReactNode }) {
   const float = useLoop(1800, { alternate: true });
-  const flip = useEntrance(700, 0, Easing.bezier(0.3, 0.9, 0.3, 1), flips);
+  const pop = useEntrance(260, 0, Easing.out(Easing.quad), flips);
   const played = flips === 0;
   return (
     <Animated.View
       style={{
         transform: [
           { translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) },
-          { perspective: 500 },
-          {
-            rotateY: played
-              ? '0deg'
-              : flip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
-          },
           {
             scale: played
               ? 1
-              : flip.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.18, 1] }),
+              : pop.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.94, 1.07, 1] }),
           },
         ],
       }}
