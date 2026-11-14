@@ -1639,3 +1639,10 @@
 - Card export logic extracted to `usePlayerCardActions` (shared by the profile and the share modal).
 - The first-run Nicosia preselect was tried and reverted at the user's request (city and area are chosen by the player).
 - Checks: tsc, eslint (0 warnings), vitest 39 passed, Playwright profile/onboarding/auth/create-team 38 passed.
+
+## Phase 17 — Teams page content redesign
+
+- Teams content now has clear sections with counters: Create team button, My teams (crest initials, city, player count, Captain/Member badge), Team invitations (highlighted card, full-width Accept/Decline, green counter when pending) and Teams near you (city filter chips + cards). Empty sections are compact dashed rows.
+- Only the page content changed; the top bar (logo, language) and bottom navigation are untouched.
+- Added en/el keys for the empty rows, filter and player count.
+- Checks: tsc, eslint (0 warnings), vitest, Playwright teams/nav/create-team; browser screenshots at 393 px (empty and with data).

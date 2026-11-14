@@ -1,10 +1,10 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/toast/ToastProvider';
-import { AppCard, AppPage, EmptyState } from '@/components/layout/AppPage';
+import { AppPage } from '@/components/layout/AppPage';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import {
   listMyTeamInvites,
@@ -81,8 +81,16 @@ export default function TeamsScreen() {
   };
 
   const styles = makeStyles(colors);
+  const [cityFilter, setCityFilter] = useState<string | null>(null);
   const cityName = (team: TeamDirectoryItem | MyTeam) =>
     locale === 'el' ? team.cityNameEl : team.cityNameEn;
+  const players = (count: number) => copy.teamPlayersCount.replace('{count}', String(count));
+  const cityOptions = Array.from(
+    new Map(directory.map((team) => [team.cityId, cityName(team)])).entries(),
+  );
+  const shownDirectory = cityFilter
+    ? directory.filter((team) => team.cityId === cityFilter)
+    : directory;
   return (
     <AppPage title={copy.appTeamsTitle} description={copy.appTeamsIntro}>
       {loading ? (
@@ -93,87 +101,124 @@ export default function TeamsScreen() {
         <>
           {session ? (
             <>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                {copy.teamMine}
-              </Text>
+              {profileComplete ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push('/teams/create' as Href)}
+                  style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.85 }]}
+                >
+                  <Text style={styles.createText}>{`+  ${copy.teamCreateAction}`}</Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.meta}>{copy.teamCreateSignIn}</Text>
+              )}
+              <SectionHeader title={copy.teamMine} count={teams.length} styles={styles} />
               {teams.length ? (
                 teams.map((team) => (
                   <TeamCard
                     key={team.teamId}
                     title={team.name}
-                    meta={`${cityName(team)} · ${team.memberCount}`}
+                    meta={`${cityName(team)} · ${players(team.memberCount)}`}
                     role={team.role === 'captain' ? copy.teamCaptain : copy.teamMember}
+                    highlight={team.role === 'captain'}
                     onPress={() => router.push(`/teams/${team.teamId}` as Href)}
                     styles={styles}
                   />
                 ))
               ) : (
-                <EmptyState title={copy.teamNoMine} description={copy.teamNoDirectory} />
+                <EmptyRow title={copy.teamNoMineShort} hint={copy.teamNoMineHint} styles={styles} />
               )}
-              <Text accessibilityRole="header" style={styles.sectionTitle}>
-                {copy.teamInvites}
-              </Text>
+              <SectionHeader
+                title={copy.teamInvites}
+                count={invites.length}
+                hot={invites.length > 0}
+                styles={styles}
+              />
               {invites.length ? (
                 invites.map((invite) => (
-                  <AppCard key={invite.inviteId}>
-                    <Text style={styles.cardTitle}>{invite.teamName}</Text>
-                    <Text style={styles.meta}>
-                      {locale === 'el' ? invite.cityNameEl : invite.cityNameEn} ·{' '}
-                      {invite.invitedByName}
-                    </Text>
-                    <View style={styles.actions}>
-                      <Action
-                        label={copy.teamInviteAccept}
-                        onPress={() => void respond(invite.inviteId, 'accept')}
-                        colors={colors}
-                      />
-                      <Action
-                        label={copy.teamInviteDecline}
-                        onPress={() => void respond(invite.inviteId, 'decline')}
-                        colors={colors}
-                        secondary
-                      />
+                  <View key={invite.inviteId} style={styles.inviteCard}>
+                    <View style={styles.cardRow}>
+                      <Crest name={invite.teamName} styles={styles} />
+                      <View style={styles.cardCopy}>
+                        <Text style={styles.cardTitle}>{invite.teamName}</Text>
+                        <Text style={styles.meta}>
+                          {locale === 'el' ? invite.cityNameEl : invite.cityNameEn} ·{' '}
+                          {invite.invitedByName}
+                        </Text>
+                      </View>
                     </View>
-                  </AppCard>
+                    <View style={styles.actions}>
+                      <View style={styles.actionHalf}>
+                        <Action
+                          label={copy.teamInviteAccept}
+                          onPress={() => void respond(invite.inviteId, 'accept')}
+                          colors={colors}
+                        />
+                      </View>
+                      <View style={styles.actionHalf}>
+                        <Action
+                          label={copy.teamInviteDecline}
+                          onPress={() => void respond(invite.inviteId, 'decline')}
+                          colors={colors}
+                          secondary
+                        />
+                      </View>
+                    </View>
+                  </View>
                 ))
               ) : (
-                <EmptyState title={copy.teamNoInvites} description={copy.appTeamsIntro} />
-              )}
-              {profileComplete ? (
-                <AppCard>
-                  <Text accessibilityRole="header" style={styles.cardTitle}>
-                    {copy.teamCreateTitle}
-                  </Text>
-                  <Text style={styles.meta}>{copy.teamWizardPrompt}</Text>
-                  <Action
-                    label={copy.teamCreateAction}
-                    onPress={() => router.push('/teams/create' as Href)}
-                    colors={colors}
-                  />
-                </AppCard>
-              ) : (
-                <Text style={styles.meta}>{copy.teamCreateSignIn}</Text>
+                <EmptyRow
+                  title={copy.teamNoInvitesShort}
+                  hint={copy.teamNoInvitesHint}
+                  styles={styles}
+                />
               )}
             </>
           ) : (
             <Text style={styles.meta}>{copy.teamCreateSignIn}</Text>
           )}
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
-            {copy.teamDirectory}
-          </Text>
-          {directory.length ? (
-            directory.map((team) => (
+          <SectionHeader title={copy.teamDirectory} count={directory.length} styles={styles} />
+          {cityOptions.length > 1 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chips}
+              accessibilityRole="radiogroup"
+            >
+              {[[null, copy.teamFilterAll] as const, ...cityOptions].map(([id, label]) => {
+                const on = cityFilter === id;
+                return (
+                  <Pressable
+                    key={id ?? 'all'}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: on }}
+                    aria-checked={on}
+                    onPress={() => setCityFilter(id)}
+                    style={[styles.chip, on && styles.chipOn]}
+                  >
+                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : null}
+          {shownDirectory.length ? (
+            shownDirectory.map((team) => (
               <TeamCard
                 key={team.teamId}
                 title={team.name}
-                meta={`${cityName(team)} · ${team.memberCount}`}
+                meta={`${cityName(team)} · ${players(team.memberCount)}`}
                 role=""
                 onPress={() => router.push(`/teams/${team.teamId}` as Href)}
                 styles={styles}
               />
             ))
           ) : (
-            <EmptyState title={copy.teamNoDirectory} description={copy.appTeamsIntro} />
+            <EmptyRow
+              title={copy.teamNoDirectory}
+              hint={cityFilter ? copy.teamNoCityTeams : copy.appTeamsIntro}
+              styles={styles}
+            />
           )}
         </>
       )}
@@ -181,26 +226,88 @@ export default function TeamsScreen() {
   );
 }
 
+type Styles = ReturnType<typeof makeStyles>;
+const crestColors = ['#cfff4a', '#3db8ff', '#ffb347', '#c79bff', '#3ff0c0'];
+
+function Crest({ name, styles }: { name: string; styles: Styles }) {
+  const initials = name
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('');
+  const colour =
+    crestColors[
+      Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0) % crestColors.length
+    ];
+  return (
+    <View accessible={false} style={[styles.crest, { backgroundColor: colour }]}>
+      <Text style={styles.crestText}>{initials}</Text>
+    </View>
+  );
+}
+
+function SectionHeader({
+  title,
+  count,
+  hot = false,
+  styles,
+}: {
+  title: string;
+  count: number;
+  hot?: boolean;
+  styles: Styles;
+}) {
+  return (
+    <View style={styles.sectionHead}>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>
+        {title}
+      </Text>
+      <Text style={[styles.count, hot && styles.countHot]}>{count}</Text>
+    </View>
+  );
+}
+
+function EmptyRow({ title, hint, styles }: { title: string; hint: string; styles: Styles }) {
+  return (
+    <View style={styles.emptyRow}>
+      <View style={styles.cardCopy}>
+        <Text style={styles.emptyTitle}>{title}</Text>
+        <Text style={styles.meta}>{hint}</Text>
+      </View>
+    </View>
+  );
+}
+
 function TeamCard({
   title,
   meta,
   role,
+  highlight = false,
   onPress,
   styles,
 }: {
   title: string;
   meta: string;
   role: string;
+  highlight?: boolean;
   onPress: () => void;
-  styles: ReturnType<typeof makeStyles>;
+  styles: Styles;
 }) {
   return (
     <Pressable accessibilityRole="link" onPress={onPress} style={styles.teamCard}>
       <View style={styles.cardRow}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        {role ? <Text style={styles.badge}>{role}</Text> : null}
+        <Crest name={title} styles={styles} />
+        <View style={styles.cardCopy}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          <Text style={styles.meta}>{meta}</Text>
+        </View>
+        {role ? (
+          <Text style={[styles.badge, highlight && styles.badgeHot]}>{role}</Text>
+        ) : (
+          <Text style={styles.chevron}>›</Text>
+        )}
       </View>
-      <Text style={styles.meta}>{meta}</Text>
     </Pressable>
   );
 }
@@ -249,33 +356,95 @@ function Action({
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
-    sectionTitle: { color: colors.textPrimary, fontSize: 21, fontWeight: '800', marginTop: 8 },
+    createButton: {
+      alignSelf: 'flex-start',
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+      borderRadius: 14,
+      backgroundColor: colors.primaryButton,
+    },
+    createText: { color: colors.primaryButtonText, fontSize: 15, fontWeight: '700' },
+    sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
+    sectionTitle: { color: colors.textPrimary, fontSize: 21, fontWeight: '800' },
+    count: {
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceRaised,
+      borderColor: colors.border,
+      borderWidth: 1,
+      overflow: 'hidden',
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    countHot: {
+      color: colors.primaryButtonText,
+      backgroundColor: colors.primaryButton,
+      borderColor: colors.primaryButton,
+    },
     teamCard: {
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 18,
-      gap: 8,
+      borderRadius: 18,
+      padding: 12,
     },
-    cardRow: {
-      flexDirection: 'row',
+    inviteCard: {
+      borderWidth: 1,
+      borderColor: colors.primaryButton,
+      backgroundColor: colors.surface,
+      borderRadius: 18,
+      padding: 12,
+      gap: 12,
+    },
+    emptyRow: {
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      borderRadius: 18,
+      padding: 14,
+    },
+    emptyTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+    cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    cardCopy: { flexShrink: 1, flexGrow: 1, gap: 2 },
+    crest: {
+      width: 46,
+      height: 46,
+      borderRadius: 14,
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 10,
+      justifyContent: 'center',
     },
-    cardTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '700', flexShrink: 1 },
+    crestText: { color: '#10170f', fontSize: 16, fontWeight: '800' },
+    cardTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '700' },
     meta: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
+    chevron: { color: colors.textSecondary, fontSize: 24 },
     badge: {
-      color: colors.primaryButtonText,
-      backgroundColor: colors.primaryButton,
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceRaised,
       overflow: 'hidden',
       paddingHorizontal: 10,
       paddingVertical: 5,
-      borderRadius: 12,
+      borderRadius: 10,
       fontSize: 12,
       fontWeight: '700',
     },
-    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+    badgeHot: { color: colors.accentText, backgroundColor: colors.cardTop },
+    actions: { flexDirection: 'row', gap: 8 },
+    actionHalf: { flex: 1 },
+    chips: { gap: 8, paddingVertical: 2 },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      minHeight: 36,
+      justifyContent: 'center',
+    },
+    chipOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+    chipText: { color: colors.textSecondary, fontSize: 13 },
+    chipTextOn: { color: colors.primaryButtonText, fontWeight: '700' },
   });
 }
