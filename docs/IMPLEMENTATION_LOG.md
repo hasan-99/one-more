@@ -1236,6 +1236,18 @@
 - **Remaining issues:** Run the complete visual matrix with a larger timeout when practical; owner should refresh Expo Go to inspect the published update on iPhone.
 - **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
 
+### 2026-11-14 — Phase 17 Onboarding keyboard visibility and dismissal
+
+- **Phase:** 17 — onboarding form interaction; Phase 18 not started.
+- **Status:** PARTIAL — responsive keyboard behavior is implemented and validated by lint/typecheck/export; physical iPhone review and Expo Preview publication remain pending.
+- **Summary:** Wrapped the onboarding form in a platform-aware `KeyboardAvoidingView`, made the controls scrollable while the keyboard is open, preserved taps on form controls, and dismisses the keyboard when tapping outside. No profile data flow or backend behavior changed.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx` and this log.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run build:web` — PASS; `git diff --check` — PASS; automated tests were not run in this session; `npm run dev:web -- --host localhost` — PASS (localhost:8083); Playwright sign-in page opened with zero browser errors.
+- **Browser verification:** Web sign-in rendered as expected at localhost:8083 with zero console errors. Native keyboard interaction is not available to verify on this Windows host; the user must confirm it in Expo Go on iPhone after publication.
+- **Security verification:** No database, auth, permissions, secrets, or account flows changed. No migration required.
+- **Remaining issues:** Confirm the name field remains visible while typing and tapping outside dismisses the keyboard on iPhone; Expo Preview publication pending.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
 ### 2026-11-14 — Phase 17 Persist Supabase sessions across app reloads
 
 - **Phase:** 17 — Authentication session persistence; Phase 18 not started.

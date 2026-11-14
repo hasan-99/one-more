@@ -4,10 +4,15 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Keyboard,
+  KeyboardAvoidingView,
   Pressable,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -324,7 +329,7 @@ export function PlayerOnboarding() {
   const disabled = !canContinue;
 
   return (
-    <View
+    <KeyboardAvoidingView
       style={[
         own.root,
         {
@@ -333,7 +338,10 @@ export function PlayerOnboarding() {
           paddingHorizontal: horizontalPad,
         },
       ]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={own.dismissSurface}>
       <View style={own.column}>
         <Header
           own={own}
@@ -346,7 +354,13 @@ export function PlayerOnboarding() {
         />
         <View style={own.preview}>{card}</View>
 
-        <View style={own.controls}>
+        <ScrollView
+          style={own.controlsScroll}
+          contentContainerStyle={own.controls}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          showsVerticalScrollIndicator={false}
+        >
           {step === 0 ? (
             <>
               <View style={own.group}>
@@ -694,7 +708,7 @@ export function PlayerOnboarding() {
               </View>
             </>
           ) : null}
-        </View>
+        </ScrollView>
 
         <View style={own.footer}>
           {optional ? (
@@ -728,7 +742,9 @@ export function PlayerOnboarding() {
           </Pressable>
         </View>
       </View>
-    </View>
+      </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -1063,7 +1079,9 @@ function makeStyles(
       textAlign: 'right',
     },
     preview: { flex: 1, minHeight: 120 },
-    controls: { gap: 10 },
+    dismissSurface: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center' },
+    controlsScroll: { flex: 1, minHeight: 0 },
+    controls: { gap: 10, paddingBottom: 8 },
     titleBlock: { gap: 2 },
     kicker: {
       color: accent,
