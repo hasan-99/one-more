@@ -84,6 +84,8 @@ export function AppNavigation({ active, variant }: { active: string; variant: Na
                   styles.linkText,
                   { fontFamily: bodyFont(locale, 'semibold') },
                   bottom && styles.bottomText,
+                  // Greek labels are wider: a touch smaller so they are never cut on narrow phones.
+                  bottom && locale === 'el' && { fontSize: 11 },
                   createAction && styles.createBottomText,
                   { color: selected ? colors.accentText : colors.textMuted },
                   selected && styles.selectedText,

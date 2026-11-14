@@ -108,7 +108,48 @@ export default function TeamsScreen() {
     ? directory.filter((team) => team.cityId === cityFilter)
     : directory;
   return (
-    <AppPage title={copy.appTeamsTitle} description={copy.appTeamsIntro}>
+    <AppPage
+      title={copy.appTeamsTitle}
+      heading={
+        <View style={styles.headWrap}>
+          <View style={styles.headRow}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.headTitle, locale === 'el' && styles.headTitleGreek]}
+            >
+              {copy.appTeamsTitle}
+            </Text>
+            {session && profileComplete ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/teams/create' as Href)}
+                style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={styles.createText}>{`+  ${copy.teamCreateAction}`}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {session && !loading && !loadError ? (
+            <View style={styles.tiles}>
+              <SummaryTile label={copy.teamMine} value={teams.length} styles={styles} />
+              <SummaryTile
+                label={copy.teamInvites}
+                value={invites.length}
+                hot={invites.length > 0}
+                styles={styles}
+              />
+              {isCaptain ? (
+                <SummaryTile
+                  label={copy.challengeDirectory}
+                  value={openChallenges.length}
+                  styles={styles}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      }
+    >
       {loading ? (
         <View accessibilityRole="progressbar" accessibilityLabel={copy.teamDetailLoading} />
       ) : loadError ? (
@@ -117,17 +158,7 @@ export default function TeamsScreen() {
         <>
           {session ? (
             <>
-              {profileComplete ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push('/teams/create' as Href)}
-                  style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.85 }]}
-                >
-                  <Text style={styles.createText}>{`+  ${copy.teamCreateAction}`}</Text>
-                </Pressable>
-              ) : (
-                <Text style={styles.meta}>{copy.teamCreateSignIn}</Text>
-              )}
+              {profileComplete ? null : <Text style={styles.meta}>{copy.teamCreateSignIn}</Text>}
               <SectionHeader title={copy.teamMine} count={teams.length} styles={styles} />
               {teams.length ? (
                 teams.map((team) => (
@@ -351,6 +382,31 @@ function Crest({ name, styles }: { name: string; styles: Styles }) {
   );
 }
 
+function SummaryTile({
+  label,
+  value,
+  hot = false,
+  styles,
+}: {
+  label: string;
+  value: number;
+  hot?: boolean;
+  styles: Styles;
+}) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
+      style={[styles.tile, hot && styles.tileHot]}
+    >
+      <Text style={[styles.tileValue, hot && styles.tileValueHot]}>{value}</Text>
+      <Text numberOfLines={2} style={styles.tileLabel}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 function SectionHeader({
   title,
   count,
@@ -460,6 +516,37 @@ function Action({
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
+    headWrap: { gap: 14 },
+    headRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    headTitle: {
+      color: colors.textPrimary,
+      fontFamily: 'BarlowCondensed_700Bold',
+      fontSize: 40,
+      lineHeight: 44,
+      fontWeight: '700',
+      flexShrink: 1,
+    },
+    headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 30, lineHeight: 38 },
+    tiles: { flexDirection: 'row', gap: 8 },
+    tile: {
+      flex: 1,
+      minWidth: 0,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      paddingVertical: 9,
+      paddingHorizontal: 12,
+    },
+    tileHot: { borderColor: colors.primaryButton },
+    tileValue: { color: colors.textPrimary, fontSize: 22, lineHeight: 26, fontWeight: '800' },
+    tileValueHot: { color: colors.accentText },
+    tileLabel: { color: colors.textSecondary, fontSize: 12, lineHeight: 15 },
     createButton: {
       alignSelf: 'flex-start',
       minHeight: 44,

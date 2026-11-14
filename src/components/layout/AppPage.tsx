@@ -1,5 +1,5 @@
 import { Link, type Href } from 'expo-router';
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -10,8 +10,14 @@ import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 export function AppPage({
   title,
   description,
+  heading: customHeading,
   children,
-}: PropsWithChildren<{ title: string; description?: string }>) {
+}: PropsWithChildren<{
+  title: string;
+  description?: string;
+  /** Replaces the standard title block (for pages with a compact header of their own). */
+  heading?: ReactNode;
+}>) {
   const { colors, locale } = useAppPreferences();
   const styles = makeStyles(colors);
   return (
@@ -21,23 +27,25 @@ export function AppPage({
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.content}>
-        <View style={[styles.heading, !description && styles.headingCompact]}>
-          <View style={[styles.headingRule, { backgroundColor: colors.primaryButton }]} />
-          <View style={styles.headingCopy}>
-            <Text
-              accessibilityRole="header"
-              style={[styles.title, locale === 'el' && styles.titleGreek]}
-            >
-              {title}
-            </Text>
-            {description ? <Text style={styles.description}>{description}</Text> : null}
+        {customHeading ?? (
+          <View style={[styles.heading, !description && styles.headingCompact]}>
+            <View style={[styles.headingRule, { backgroundColor: colors.primaryButton }]} />
+            <View style={styles.headingCopy}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.title, locale === 'el' && styles.titleGreek]}
+              >
+                {title}
+              </Text>
+              {description ? <Text style={styles.description}>{description}</Text> : null}
+            </View>
+            <View pointerEvents="none" style={styles.pitchMark}>
+              <View style={[styles.pitchHalfLine, { backgroundColor: colors.border }]} />
+              <View style={[styles.pitchCenter, { borderColor: colors.border }]} />
+              <View style={[styles.pitchSpot, { backgroundColor: colors.accentText }]} />
+            </View>
           </View>
-          <View pointerEvents="none" style={styles.pitchMark}>
-            <View style={[styles.pitchHalfLine, { backgroundColor: colors.border }]} />
-            <View style={[styles.pitchCenter, { borderColor: colors.border }]} />
-            <View style={[styles.pitchSpot, { backgroundColor: colors.accentText }]} />
-          </View>
-        </View>
+        )}
         {children}
       </View>
     </ScrollView>

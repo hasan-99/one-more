@@ -1690,3 +1690,10 @@
 - Migration `20261114210000_team_details_crest.sql` makes `get_team_details` return the crest design, format and recruiting flag (emblem read via `to_jsonb` so it works before the emblem migration). NOT applied from this environment; until applied the team page shows the default crest.
 - Singular "1 player" copy on Teams and the team page.
 - Checks: tsc, eslint, vitest 39, Playwright create-team 12 (new team-page test), onboarding/profile/auth passed.
+
+## Phase 17 — Compact Teams header and a layout audit
+
+- Teams page: the large title block is replaced by one row (title + "Create team") and summary tiles (my teams, invitations, open challenges for captains). `AppPage` gained an optional `heading` slot; the top bar and bottom navigation are unchanged apart from the item below.
+- Greek fit fixes found by the new audit: bottom-nav labels are 11 px in Greek (the Create label was cut at 360 px) and the create-team Shape/Pattern options now stack icon over label with a 14 px label, so no Greek name is clipped.
+- New `phase-17-layout-audit.spec.ts` (phone widths 360/393/430, en + el): teams (empty/captain), team page, profile and the three create-team steps are checked for sideways scroll, controls outside the screen, controls under 30 px high and clipped text. All clean.
+- Checks: tsc, eslint (0 warnings), vitest 39, Playwright 50 passed (6 desktop skips of the audit).

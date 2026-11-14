@@ -1534,10 +1534,10 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    optionTall: { minHeight: 46, gap: 8, flexDirection: 'row' },
-    optionRow: { flexDirection: 'row', gap: 8 },
+    optionTall: { minHeight: 62, gap: 4, flexDirection: 'column', paddingHorizontal: 4 },
+    optionRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 6 },
     optionSelected: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
-    optionText: { fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    optionText: { fontFamily: semibold, fontSize: 14, fontWeight: '600' },
     swatchRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, padding: 6 },
     openCard: {
       flexDirection: 'row',
