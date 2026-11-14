@@ -6,6 +6,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/toast/ToastProvider';
 import { AppPage } from '@/components/layout/AppPage';
 import { listTeamChallenges, type TeamChallenge } from '@/features/teams/challenge-service';
+import { CaptainBadge, Crest as CrestArt, crestInitials } from '@/features/teams/TeamCrest';
 import { isSkillLevel, levelLabel } from '@/features/profile/PlayerProfile';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import {
@@ -14,6 +15,7 @@ import {
   listTeamDirectory,
   respondTeamInvite,
   type MyTeam,
+  type TeamCrestDesign,
   type TeamDirectoryItem,
   type TeamInvite,
 } from '@/features/teams/team-service';
@@ -119,15 +121,6 @@ export default function TeamsScreen() {
             >
               {copy.appTeamsTitle}
             </Text>
-            {session && profileComplete ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push('/teams/create' as Href)}
-                style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.85 }]}
-              >
-                <Text style={styles.createText}>{`+  ${copy.teamCreateAction}`}</Text>
-              </Pressable>
-            ) : null}
           </View>
           {session && !loading && !loadError ? (
             <View style={styles.tiles}>
@@ -166,6 +159,8 @@ export default function TeamsScreen() {
                     key={team.teamId}
                     title={team.name}
                     meta={`${cityName(team)} · ${players(team.memberCount)}`}
+                    crest={team.crest}
+                    captain={team.role === 'captain'}
                     role={team.role === 'captain' ? copy.teamCaptain : copy.teamMember}
                     highlight={team.role === 'captain'}
                     onPress={() => router.push(`/teams/${team.teamId}` as Href)}
@@ -185,7 +180,7 @@ export default function TeamsScreen() {
                 invites.map((invite) => (
                   <View key={invite.inviteId} style={styles.inviteCard}>
                     <View style={styles.cardRow}>
-                      <Crest name={invite.teamName} styles={styles} />
+                      <NameTile name={invite.teamName} styles={styles} />
                       <View style={styles.cardCopy}>
                         <Text style={styles.cardTitle}>{invite.teamName}</Text>
                         <Text style={styles.meta}>
@@ -256,7 +251,7 @@ export default function TeamsScreen() {
                       style={styles.teamCard}
                     >
                       <View style={styles.cardRow}>
-                        <Crest name={challenge.homeTeamName} styles={styles} />
+                        <NameTile name={challenge.homeTeamName} styles={styles} />
                         <View style={styles.cardCopy}>
                           <Text style={styles.cardTitle}>{challenge.homeTeamName}</Text>
                           <Text style={styles.meta}>
@@ -324,6 +319,7 @@ export default function TeamsScreen() {
                 title={team.name}
                 meta={`${cityName(team)} · ${players(team.memberCount)}`}
                 role=""
+                crest={team.crest}
                 onPress={() => router.push(`/teams/${team.teamId}` as Href)}
                 styles={styles}
               />
@@ -364,7 +360,7 @@ function formatWindow(challenge: TeamChallenge, locale: string) {
 }
 const crestColors = ['#cfff4a', '#3db8ff', '#ffb347', '#c79bff', '#3ff0c0'];
 
-function Crest({ name, styles }: { name: string; styles: Styles }) {
+function NameTile({ name, styles }: { name: string; styles: Styles }) {
   const initials = name
     .split(/\s+/u)
     .filter(Boolean)
@@ -443,6 +439,8 @@ function TeamCard({
   title,
   meta,
   role,
+  crest = null,
+  captain = false,
   highlight = false,
   onPress,
   styles,
@@ -450,6 +448,8 @@ function TeamCard({
   title: string;
   meta: string;
   role: string;
+  crest?: TeamCrestDesign | null;
+  captain?: boolean;
   highlight?: boolean;
   onPress: () => void;
   styles: Styles;
@@ -457,12 +457,20 @@ function TeamCard({
   return (
     <Pressable accessibilityRole="link" onPress={onPress} style={styles.teamCard}>
       <View style={styles.cardRow}>
-        <Crest name={title} styles={styles} />
+        {crest ? (
+          <View style={styles.crestSlot}>
+            <CrestArt {...crest} initials={crestInitials(title)} size={44} />
+          </View>
+        ) : (
+          <NameTile name={title} styles={styles} />
+        )}
         <View style={styles.cardCopy}>
           <Text style={styles.cardTitle}>{title}</Text>
           <Text style={styles.meta}>{meta}</Text>
         </View>
-        {role ? (
+        {captain ? (
+          <CaptainBadge label={role} />
+        ) : role ? (
           <Text style={[styles.badge, highlight && styles.badgeHot]}>{role}</Text>
         ) : (
           <Text style={styles.chevron}>›</Text>
@@ -600,6 +608,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     emptyTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
     cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     cardCopy: { flexShrink: 1, flexGrow: 1, gap: 2 },
+    crestSlot: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
     crest: {
       width: 46,
       height: 46,

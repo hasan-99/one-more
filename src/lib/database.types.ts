@@ -1395,6 +1395,10 @@ export type Database = {
       get_my_teams: {
         Args: never;
         Returns: {
+          crest_color?: string;
+          crest_emblem?: string;
+          crest_pattern?: string;
+          crest_shape?: string;
           city_id: string;
           city_name_el: string;
           city_name_en: string;
@@ -1444,6 +1448,10 @@ export type Database = {
       list_team_directory: {
         Args: never;
         Returns: {
+          crest_color?: string;
+          crest_emblem?: string;
+          crest_pattern?: string;
+          crest_shape?: string;
           city_id: string;
           city_name_el: string;
           city_name_en: string;

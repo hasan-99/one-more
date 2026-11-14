@@ -26,7 +26,13 @@ import {
   type TeamCandidate,
   type TeamDetails,
 } from '@/features/teams/team-service';
-import { Crest, scoreOf, scoreTiers } from '@/features/teams/TeamCrest';
+import {
+  CaptainBadge,
+  Crest,
+  crestInitials,
+  scoreOf,
+  scoreTiers,
+} from '@/features/teams/TeamCrest';
 import { validateTeamInput } from '@/features/teams/team-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
@@ -150,12 +156,7 @@ export default function TeamDetailsScreen() {
     pattern: 'plain',
     emblem: 'initials',
   };
-  const initials = team.name
-    .split(/\s+/u)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => Array.from(word)[0]?.toUpperCase() ?? '')
-    .join('');
+  const initials = crestInitials(team.name);
   const score = scoreOf(crest);
   const tier = scoreTiers.find((item) => score >= item.from) ?? scoreTiers[scoreTiers.length - 1];
   const subtitle = [
@@ -288,9 +289,11 @@ export default function TeamDetailsScreen() {
                     </View>
                   ) : null}
                 </View>
-                <Text style={[styles.badge, member.role === 'captain' && styles.badgeHot]}>
-                  {member.role === 'captain' ? copy.teamCaptain : copy.teamMember}
-                </Text>
+                {member.role === 'captain' ? (
+                  <CaptainBadge label={copy.teamCaptain} />
+                ) : (
+                  <Text style={styles.badge}>{copy.teamMember}</Text>
+                )}
               </View>
             ))}
           </View>

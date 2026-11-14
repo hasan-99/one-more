@@ -7,6 +7,12 @@ export type TeamCrestShape = 'shield' | 'round' | 'hex';
 export type TeamCrestPattern = 'plain' | 'stripes' | 'half';
 export type TeamCrestEmblem = 'initials' | 'ball' | 'bolt' | 'star' | 'crown';
 export type TeamCrestColor = '#cfff4a' | '#f2f5ec' | '#ffa94d' | '#5cc8ff' | '#ff8fc0' | '#b79cff';
+export type TeamCrestDesign = {
+  shape: TeamCrestShape;
+  color: TeamCrestColor;
+  pattern: TeamCrestPattern;
+  emblem: TeamCrestEmblem;
+};
 export type TeamDirectoryItem = {
   teamId: string;
   name: string;
@@ -16,6 +22,8 @@ export type TeamDirectoryItem = {
   description: string | null;
   memberCount: number;
   createdAt: string;
+  /** Null until the database returns crest designs. */
+  crest: TeamCrestDesign | null;
 };
 export type MyTeam = {
   teamId: string;
@@ -26,6 +34,7 @@ export type MyTeam = {
   description: string | null;
   memberCount: number;
   role: string;
+  crest: TeamCrestDesign | null;
 };
 export type TeamInvite = {
   inviteId: string;
@@ -56,12 +65,7 @@ export type TeamDetails = {
   members: TeamMember[];
   invites: TeamPendingInvite[];
   /** Crest design; null when the database does not return it yet. */
-  crest: {
-    shape: TeamCrestShape;
-    color: TeamCrestColor;
-    pattern: TeamCrestPattern;
-    emblem: TeamCrestEmblem;
-  } | null;
+  crest: TeamCrestDesign | null;
   format: number | null;
   openToPlayers: boolean | null;
 };
@@ -78,9 +82,13 @@ const crestColors: readonly string[] = [
   '#b79cff',
 ];
 
-function toCrest(value: { [key: string]: Json | undefined }): TeamDetails['crest'] {
-  const { crest_shape: shape, crest_color: color, crest_pattern: pattern } = value;
-  const emblem = typeof value.crest_emblem === 'string' ? value.crest_emblem : 'initials';
+function parseCrest(
+  shape: unknown,
+  color: unknown,
+  pattern: unknown,
+  emblemValue: unknown,
+): TeamCrestDesign | null {
+  const emblem = typeof emblemValue === 'string' ? emblemValue : 'initials';
   if (
     typeof shape === 'string' &&
     crestShapes.includes(shape) &&
@@ -97,6 +105,10 @@ function toCrest(value: { [key: string]: Json | undefined }): TeamDetails['crest
       emblem: emblem as TeamCrestEmblem,
     };
   return null;
+}
+
+function toCrest(value: { [key: string]: Json | undefined }): TeamCrestDesign | null {
+  return parseCrest(value.crest_shape, value.crest_color, value.crest_pattern, value.crest_emblem);
 }
 
 function isRecord(value: Json): value is { [key: string]: Json | undefined } {
@@ -179,6 +191,7 @@ export async function listTeamDirectory(): Promise<TeamDirectoryItem[]> {
     description: row.description,
     memberCount: row.member_count,
     createdAt: row.created_at,
+    crest: parseCrest(row.crest_shape, row.crest_color, row.crest_pattern, row.crest_emblem),
   }));
 }
 
@@ -194,6 +207,7 @@ export async function listMyTeams(): Promise<MyTeam[]> {
     description: row.description,
     memberCount: row.member_count,
     role: row.role,
+    crest: parseCrest(row.crest_shape, row.crest_color, row.crest_pattern, row.crest_emblem),
   }));
 }
 

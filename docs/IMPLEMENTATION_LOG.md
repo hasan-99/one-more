@@ -1697,3 +1697,10 @@
 - Greek fit fixes found by the new audit: bottom-nav labels are 11 px in Greek (the Create label was cut at 360 px) and the create-team Shape/Pattern options now stack icon over label with a 14 px label, so no Greek name is clipped.
 - New `phase-17-layout-audit.spec.ts` (phone widths 360/393/430, en + el): teams (empty/captain), team page, profile and the three create-team steps are checked for sideways scroll, controls outside the screen, controls under 30 px high and clipped text. All clean.
 - Checks: tsc, eslint (0 warnings), vitest 39, Playwright 50 passed (6 desktop skips of the audit).
+
+## Phase 17 — Teams page: crests on cards, captain badge, no Create button
+
+- Removed the "Create team" button from the Teams header (the centre Create button in the bottom navigation already starts the wizard).
+- Team cards (My teams and Teams near you) draw the team's real crest instead of two letters; captains get a round "C" armband badge instead of the word. The team page's player list uses the same captain badge.
+- Migration `20261114220000_team_lists_crest.sql` makes `list_team_directory` and `get_my_teams` return the crest design (drop + recreate with grants). NOT applied from this environment; until applied the cards fall back to the coloured initials tile (the app parses the fields defensively).
+- Layout audit mocks now include crests; tsc, eslint, vitest 39, Playwright layout audit + create-team 18 passed.

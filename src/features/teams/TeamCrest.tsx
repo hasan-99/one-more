@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { ClipPath, Defs, G, Path, Rect, Svg, Text as SvgText } from 'react-native-svg';
+import { Circle, ClipPath, Defs, G, Path, Rect, Svg, Text as SvgText } from 'react-native-svg';
 
 import type {
   TeamCrestColor,
@@ -139,6 +139,44 @@ export function Crest({
             />
           </G>
         )}
+      </Svg>
+    </View>
+  );
+}
+
+/** Up to two capital letters from a team name, for crests that show initials. */
+export function crestInitials(name: string) {
+  return name
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => Array.from(word)[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/** The captain's armband: a round "C" badge instead of the word. */
+export function CaptainBadge({ size = 28, label }: { size?: number; label: string }) {
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label}
+      style={{ width: size, height: size }}
+    >
+      <Svg width={size} height={size} viewBox="0 0 28 28">
+        <Circle cx="14" cy="14" r="13" fill="#cfff4a" />
+        <Circle cx="14" cy="14" r="10.4" fill="none" stroke={ink} strokeWidth={1.2} opacity={0.4} />
+        <Path
+          d="M18.6 9.6A6.4 6.4 0 1 0 18.6 18.4"
+          fill="none"
+          stroke={ink}
+          strokeWidth={3.4}
+          strokeLinecap="round"
+        />
+        <Path
+          d="M21.2 5.2l.7 1.5 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z"
+          fill={ink}
+        />
       </Svg>
     </View>
   );
