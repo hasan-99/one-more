@@ -1063,6 +1063,7 @@ export type Database = {
           city_id: string;
           created_at: string;
           crest_color: string;
+          crest_emblem: string;
           crest_pattern: string;
           crest_shape: string;
           description: string | null;
@@ -1079,6 +1080,7 @@ export type Database = {
           city_id: string;
           created_at?: string;
           crest_color?: string;
+          crest_emblem?: string;
           crest_pattern?: string;
           crest_shape?: string;
           description?: string | null;
@@ -1095,6 +1097,7 @@ export type Database = {
           city_id?: string;
           created_at?: string;
           crest_color?: string;
+          crest_emblem?: string;
           crest_pattern?: string;
           crest_shape?: string;
           description?: string | null;
@@ -1313,6 +1316,7 @@ export type Database = {
           p_area_id: string;
           p_city_id: string;
           p_crest_color: string;
+          p_crest_emblem?: string;
           p_crest_pattern: string;
           p_crest_shape: string;
           p_format: number;

@@ -5,6 +5,7 @@ export { validateTeamInput } from './team-validation';
 export type TeamCity = Pick<Tables<'cities'>, 'id' | 'name_en' | 'name_el'>;
 export type TeamCrestShape = 'shield' | 'round' | 'hex';
 export type TeamCrestPattern = 'plain' | 'stripes' | 'half';
+export type TeamCrestEmblem = 'initials' | 'ball' | 'bolt' | 'star' | 'crown';
 export type TeamCrestColor = '#cfff4a' | '#f2f5ec' | '#ffa94d' | '#5cc8ff' | '#ff8fc0' | '#b79cff';
 export type TeamDirectoryItem = {
   teamId: string;
@@ -192,6 +193,7 @@ export async function createTeamWithDesign(values: {
   crestShape: TeamCrestShape;
   crestColor: TeamCrestColor;
   crestPattern: TeamCrestPattern;
+  crestEmblem?: TeamCrestEmblem;
   format: 5 | 7 | 8 | 11;
   openToPlayers: boolean;
 }): Promise<string> {
@@ -202,6 +204,10 @@ export async function createTeamWithDesign(values: {
     p_crest_shape: values.crestShape,
     p_crest_color: values.crestColor,
     p_crest_pattern: values.crestPattern,
+    // Initials are the default: leaving the argument out keeps older databases working.
+    ...(values.crestEmblem && values.crestEmblem !== 'initials'
+      ? { p_crest_emblem: values.crestEmblem }
+      : {}),
     p_format: values.format,
     p_open_to_players: values.openToPlayers,
   });

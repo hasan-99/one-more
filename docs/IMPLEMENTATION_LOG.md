@@ -1661,3 +1661,9 @@
 - Bug: in the create-team steps (and anywhere using `useEntrance`/`useLoop`), every state change replayed the slide-in because callers pass a new easing function each render and the hooks restarted on it. The hooks now keep the first easing (`components/motion.tsx`). Regression test: "choosing an option does not replay the step animation" (failed before with opacity 0.25 after a tap, passes now).
 - Teams page: empty directory text shortened to "No teams listed yet" + "Create one to get started."
 - Checks: tsc, eslint, vitest 39, Playwright create-team/onboarding/profile/auth 40 passed.
+
+## Phase 17 — Crest step: Surprise me, Undo, Quick looks, Emblem
+
+- Create-team crest step now has a "Surprise me" dice button and an Undo button beside the preview, a "Quick looks" row of six ready crests, and a one-row Emblem picker (initials, ball, bolt, star, crown). Colors stay in one row.
+- Migration `20261114200000_team_crest_emblem.sql` adds `teams.crest_emblem` and replaces `create_team_with_design` with a 9th defaulted argument `p_crest_emblem`. The client omits that argument for plain initials, so creating a team keeps working on a database that does not have the migration yet; picking an icon needs the migration applied (otherwise the save shows the usual retryable error). Migration NOT applied from this environment.
+- Checks: tsc, eslint, vitest 39, Playwright create-team 10 passed (new test for looks/undo/surprise/emblem). Screenshot: docs/screenshots/phase-17/create-team-crest-mobile.png. Step 2 now scrolls slightly on a 393x852 screen.

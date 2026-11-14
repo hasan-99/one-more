@@ -26,48 +26,68 @@ const fixtureAreas = [
 }));
 
 async function seedSession(page: Page) {
-  await page.addInitScript(({ id }) => {
-    const now = Math.floor(Date.now() / 1000);
-    const user = {
-      id,
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: 'captain@example.invalid',
-      email_confirmed_at: '2026-01-01T00:00:00Z',
-      phone: '',
-      app_metadata: { provider: 'email', providers: ['email'] },
-      user_metadata: {},
-      identities: [],
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    };
-    localStorage.setItem(
-      'sb-ejlyaerurkjgsylrsthl-auth-token',
-      JSON.stringify({
-        access_token: 'mock-access-token',
-        token_type: 'bearer',
-        expires_in: 86400,
-        expires_at: now + 86400,
-        refresh_token: 'mock-refresh-token',
-        user,
-      }),
-    );
-    localStorage.setItem('one-more.theme', 'dark');
-    localStorage.setItem('one-more.locale', 'en');
-  }, { id: userId });
+  await page.addInitScript(
+    ({ id }) => {
+      const now = Math.floor(Date.now() / 1000);
+      const user = {
+        id,
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'captain@example.invalid',
+        email_confirmed_at: '2026-01-01T00:00:00Z',
+        phone: '',
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: {},
+        identities: [],
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      };
+      localStorage.setItem(
+        'sb-ejlyaerurkjgsylrsthl-auth-token',
+        JSON.stringify({
+          access_token: 'mock-access-token',
+          token_type: 'bearer',
+          expires_in: 86400,
+          expires_at: now + 86400,
+          refresh_token: 'mock-refresh-token',
+          user,
+        }),
+      );
+      localStorage.setItem('one-more.theme', 'dark');
+      localStorage.setItem('one-more.locale', 'en');
+    },
+    { id: userId },
+  );
 
   await page.route('**/rest/v1/profiles**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ onboarding_complete: true }) }),
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ onboarding_complete: true }),
+    }),
   );
   await page.route('**/rest/v1/cities**', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([{ id: cityId, slug: 'nicosia', name_en: 'Nicosia', name_el: 'Λευκωσία', country_code: 'CY', created_at: '2026-01-01T00:00:00Z' }]),
+      body: JSON.stringify([
+        {
+          id: cityId,
+          slug: 'nicosia',
+          name_en: 'Nicosia',
+          name_el: 'Λευκωσία',
+          country_code: 'CY',
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      ]),
     }),
   );
   await page.route('**/rest/v1/areas**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fixtureAreas) }),
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(fixtureAreas),
+    }),
   );
 }
 
@@ -86,12 +106,18 @@ async function finishWizard(page: Page) {
   await page.getByRole('switch', { name: 'Open to new players' }).click();
 }
 
-test('Create navigation opens the team wizard, and the 3 steps save their design', async ({ page }) => {
+test('Create navigation opens the team wizard, and the 3 steps save their design', async ({
+  page,
+}) => {
   await seedSession(page);
   let savedDesign: Record<string, unknown> | undefined;
   await page.route('**/rest/v1/rpc/create_team_with_design', async (route) => {
     savedDesign = route.request().postDataJSON();
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(teamId) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(teamId),
+    });
   });
 
   const screenshots = join(process.cwd(), 'docs', 'screenshots', 'phase-17');
@@ -104,12 +130,20 @@ test('Create navigation opens the team wizard, and the 3 steps save their design
     await page.goto('/teams/create');
     await expect(page.getByRole('heading', { name: 'Name your team' })).toBeVisible();
     await page.waitForTimeout(150);
-    await page.screenshot({ path: join(screenshots, `create-team-step1-${viewport.name}.png`), fullPage: true });
+    await page.screenshot({
+      path: join(screenshots, `create-team-step1-${viewport.name}.png`),
+      fullPage: true,
+    });
     await finishWizard(page);
-    await page.screenshot({ path: join(screenshots, `create-team-${viewport.name}.png`), fullPage: true });
+    await page.screenshot({
+      path: join(screenshots, `create-team-${viewport.name}.png`),
+      fullPage: true,
+    });
     await page.getByRole('button', { name: 'Create team' }).click();
     await expect(page.getByRole('heading', { name: 'Nicosia Rovers' })).toBeVisible();
-    await expect(page.getByText('Your team is ready. Invite your players and post your first challenge.')).toBeVisible();
+    await expect(
+      page.getByText('Your team is ready. Invite your players and post your first challenge.'),
+    ).toBeVisible();
     expect(savedDesign).toMatchObject({
       p_name: 'Nicosia Rovers',
       p_city_id: cityId,
@@ -127,13 +161,19 @@ test('Create navigation opens the team wizard, and the 3 steps save their design
 test('Create a team reports a retryable save failure', async ({ page }) => {
   await seedSession(page);
   await page.route('**/rest/v1/rpc/create_team_with_design', (route) =>
-    route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'temporary backend failure' }) }),
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'temporary backend failure' }),
+    }),
   );
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/teams/create');
   await finishWizard(page);
   await page.getByRole('button', { name: 'Create team' }).click();
-  await expect(page.getByRole('alert').getByText('Your team could not be created. Please try again.')).toBeVisible();
+  await expect(
+    page.getByRole('alert').getByText('Your team could not be created. Please try again.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create team' })).toBeEnabled();
 });
 
@@ -156,7 +196,7 @@ test('choosing an option does not replay the step animation', async ({ page }) =
   await page.waitForTimeout(900);
   const fadeOf = () =>
     heading.evaluate((element) => {
-      for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+      for (let node: Element | null = element; node; node = node.parentElement) {
         const opacity = Number(getComputedStyle(node).opacity);
         if (opacity < 1) return opacity;
       }
@@ -167,4 +207,45 @@ test('choosing an option does not replay the step animation', async ({ page }) =
     // A replayed slide-in would reset the step to transparent right after the tap.
     expect(await fadeOf()).toBe(1);
   }
+});
+
+test('the crest step offers surprise, undo, quick looks and emblems and saves the emblem', async ({
+  page,
+}) => {
+  await seedSession(page);
+  let saved: Record<string, unknown> | undefined;
+  await page.route('**/rest/v1/rpc/create_team_with_design', async (route) => {
+    saved = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(teamId),
+    });
+  });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/teams/create');
+  await page.getByLabel('Team name').fill('Nicosia Rovers');
+  await page.getByRole('radio', { name: 'Aglantzia' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'Design your crest' })).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'create-team-crest-mobile.png'),
+  });
+
+  const undo = page.getByRole('button', { name: 'Undo' });
+  await expect(undo).toBeDisabled();
+  await page.getByRole('button', { name: 'Thunder' }).click();
+  await expect(page.getByRole('radio', { name: 'Bolt' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Hex', exact: true })).toBeChecked();
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect(page.getByRole('radio', { name: 'Shield', exact: true })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Initials' })).toBeChecked();
+  await page.getByRole('button', { name: 'Surprise me' }).click();
+  await expect(undo).toBeEnabled();
+  await page.getByRole('radio', { name: 'Crown' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Create team' }).click();
+  await expect.poll(() => saved?.p_crest_emblem).toBe('crown');
 });

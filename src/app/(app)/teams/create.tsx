@@ -39,6 +39,7 @@ import { loadMatchFilters, type MatchArea, type MatchCity } from '@/features/mat
 import {
   createTeamWithDesign,
   type TeamCrestColor,
+  type TeamCrestEmblem,
   type TeamCrestPattern,
   type TeamCrestShape,
 } from '@/features/teams/team-service';
@@ -64,6 +65,54 @@ const crestPaths: Record<TeamCrestShape, string> = {
   hex: 'M50 5 L92 29 V81 L50 105 L8 81 V29 Z',
 };
 const ink = '#0c1210';
+type CrestLook = {
+  shape: TeamCrestShape;
+  color: TeamCrestColor;
+  pattern: TeamCrestPattern;
+  emblem: TeamCrestEmblem;
+};
+/** Simple solid icons on a 24-unit grid, drawn instead of the initials. */
+const emblemPaths: Record<Exclude<TeamCrestEmblem, 'initials'>, string> = {
+  ball: 'M12 2.5a9.5 9.5 0 1 0 .01 0ZM12 7.2l4 2.9-1.5 4.7h-5L8 10.1ZM12 2.5v4.7M20.6 9.3 16 10.1M17.4 19.2l-2.9-4.4M6.6 19.2l2.9-4.4M3.4 9.3l4.6.8',
+  bolt: 'M13.5 2 4.5 13.5h6L9.5 22l10-12.5h-6.3Z',
+  star: 'M12 2l3.1 6.6 7 .9-5.2 4.9 1.4 7L12 17.9 5.7 21.4l1.4-7L1.9 9.5l7-.9Z',
+  crown: 'M2.5 8l4.8 4.2L12 4.5l4.7 7.7L21.5 8l-2 12h-15Z',
+};
+const emblems: TeamCrestEmblem[] = ['initials', 'ball', 'bolt', 'star', 'crown'];
+const looks: { key: string; label: keyof typeof translations.en; design: CrestLook }[] = [
+  {
+    key: 'classic',
+    label: 'teamWizardLookClassic',
+    design: { shape: 'shield', color: '#cfff4a', pattern: 'plain', emblem: 'initials' },
+  },
+  {
+    key: 'thunder',
+    label: 'teamWizardLookThunder',
+    design: { shape: 'hex', color: '#5cc8ff', pattern: 'half', emblem: 'bolt' },
+  },
+  {
+    key: 'royal',
+    label: 'teamWizardLookRoyal',
+    design: { shape: 'shield', color: '#b79cff', pattern: 'stripes', emblem: 'crown' },
+  },
+  {
+    key: 'fire',
+    label: 'teamWizardLookFire',
+    design: { shape: 'round', color: '#ffa94d', pattern: 'half', emblem: 'ball' },
+  },
+  {
+    key: 'ice',
+    label: 'teamWizardLookIce',
+    design: { shape: 'hex', color: '#f2f5ec', pattern: 'stripes', emblem: 'star' },
+  },
+  {
+    key: 'striker',
+    label: 'teamWizardLookStriker',
+    design: { shape: 'round', color: '#ff8fc0', pattern: 'plain', emblem: 'ball' },
+  },
+];
+const pickRandom = <T,>(items: readonly T[]): T =>
+  items[Math.floor(Math.random() * items.length)] as T;
 /** Header height the preview stage extends underneath (reference: margin-top -68px). */
 const headerOverlap = 68;
 const stageHeight = 232;
@@ -81,6 +130,8 @@ export default function CreateTeamScreen() {
   const [crestShape, setCrestShape] = useState<TeamCrestShape>('shield');
   const [crestColor, setCrestColor] = useState<TeamCrestColor>('#cfff4a');
   const [crestPattern, setCrestPattern] = useState<TeamCrestPattern>('plain');
+  const [crestEmblem, setCrestEmblem] = useState<TeamCrestEmblem>('initials');
+  const [history, setHistory] = useState<CrestLook[]>([]);
   const [format, setFormat] = useState<Format>(5);
   const [openToPlayers, setOpenToPlayers] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -114,7 +165,13 @@ export default function CreateTeamScreen() {
   }, [trimmedName]);
   const styles = useMemo(() => makeStyles(colors, locale), [colors, locale]);
   const canNext = step > 1 || (trimmedName.length >= 2 && Boolean(areaId));
-  const crest = { color: crestColor, pattern: crestPattern, shape: crestShape, initials };
+  const crest = {
+    color: crestColor,
+    pattern: crestPattern,
+    shape: crestShape,
+    emblem: crestEmblem,
+    initials,
+  };
 
   const loadAreas = useCallback(async () => {
     setLoading(true);
@@ -135,12 +192,37 @@ export default function CreateTeamScreen() {
     return () => clearTimeout(task);
   }, [loadAreas]);
 
-  const designChange =
-    <T,>(setter: (value: T) => void) =>
-    (value: T) => {
-      setter(value);
-      setFlips((count) => count + 1);
-    };
+  const look: CrestLook = {
+    shape: crestShape,
+    color: crestColor,
+    pattern: crestPattern,
+    emblem: crestEmblem,
+  };
+  const showLook = (next: CrestLook) => {
+    setCrestShape(next.shape);
+    setCrestColor(next.color);
+    setCrestPattern(next.pattern);
+    setCrestEmblem(next.emblem);
+    setFlips((count) => count + 1);
+  };
+  /** Applies a design change, keeping the previous design so it can be undone. */
+  const changeLook = (patch: Partial<CrestLook>) => {
+    setHistory((past) => [...past.slice(-19), look]);
+    showLook({ ...look, ...patch });
+  };
+  const surprise = () =>
+    changeLook({
+      shape: pickRandom(['shield', 'round', 'hex'] as const),
+      color: pickRandom(palette).color,
+      pattern: pickRandom(['plain', 'stripes', 'half'] as const),
+      emblem: pickRandom(emblems),
+    });
+  const undo = () => {
+    const previous = history[history.length - 1];
+    if (!previous) return;
+    setHistory(history.slice(0, -1));
+    showLook(previous);
+  };
 
   const onCreate = async () => {
     if (!city || !selectedArea) {
@@ -156,6 +238,7 @@ export default function CreateTeamScreen() {
         crestShape,
         crestColor,
         crestPattern,
+        crestEmblem,
         format,
         openToPlayers,
       });
@@ -229,6 +312,24 @@ export default function CreateTeamScreen() {
             </FloatingCrest>
             <FloorShadow />
           </View>
+          <View style={styles.crestTools}>
+            <ToolButton
+              label={copy.teamWizardSurprise}
+              onPress={surprise}
+              primary
+              colors={colors}
+              styles={styles}
+              glyph="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4ZM8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"
+            />
+            <ToolButton
+              label={copy.teamWizardUndo}
+              onPress={undo}
+              disabled={history.length === 0}
+              colors={colors}
+              styles={styles}
+              glyph="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"
+            />
+          </View>
           <Text numberOfLines={2} style={styles.previewName}>
             {trimmedName || copy.teamWizardPreviewName}
           </Text>
@@ -286,9 +387,13 @@ export default function CreateTeamScreen() {
                 color={crestColor}
                 colors={colors}
                 copy={copy}
-                onPattern={designChange(setCrestPattern)}
-                onShape={designChange(setCrestShape)}
-                onColor={designChange(setCrestColor)}
+                emblem={crestEmblem}
+                look={look}
+                onEmblem={(value) => changeLook({ emblem: value })}
+                onLook={(next) => changeLook(next)}
+                onPattern={(value) => changeLook({ pattern: value })}
+                onShape={(value) => changeLook({ shape: value })}
+                onColor={(value) => changeLook({ color: value })}
                 pattern={crestPattern}
                 shape={crestShape}
                 styles={styles}
@@ -438,6 +543,10 @@ function StepCrest({
   color,
   colors,
   copy,
+  emblem,
+  look,
+  onEmblem,
+  onLook,
   onPattern,
   onShape,
   onColor,
@@ -448,6 +557,10 @@ function StepCrest({
   color: TeamCrestColor;
   colors: ThemeColors;
   copy: Copy;
+  emblem: TeamCrestEmblem;
+  look: CrestLook;
+  onEmblem: (value: TeamCrestEmblem) => void;
+  onLook: (value: CrestLook) => void;
   onPattern: (value: TeamCrestPattern) => void;
   onShape: (value: TeamCrestShape) => void;
   onColor: (value: TeamCrestColor) => void;
@@ -465,8 +578,45 @@ function StepCrest({
     { key: 'stripes', label: copy.teamWizardStripes },
     { key: 'half', label: copy.teamWizardHalf },
   ];
+  const emblemLabels: Record<TeamCrestEmblem, string> = {
+    initials: copy.teamWizardEmblemInitials,
+    ball: copy.teamWizardEmblemBall,
+    bolt: copy.teamWizardEmblemBolt,
+    star: copy.teamWizardEmblemStar,
+    crown: copy.teamWizardEmblemCrown,
+  };
   return (
     <>
+      <View style={styles.fieldBlock}>
+        <Text style={styles.fieldLabel}>{copy.teamWizardLooks}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.looksRow}
+          keyboardShouldPersistTaps="handled"
+        >
+          {looks.map((item) => {
+            const on =
+              item.design.shape === look.shape &&
+              item.design.color === look.color &&
+              item.design.pattern === look.pattern &&
+              item.design.emblem === look.emblem;
+            return (
+              <Pressable
+                key={item.key}
+                accessibilityRole="button"
+                accessibilityLabel={copy[item.label]}
+                accessibilityState={{ selected: on }}
+                onPress={() => onLook(item.design)}
+                style={[styles.lookCard, on && styles.lookCardOn]}
+              >
+                <Crest {...item.design} initials="FC" size={42} />
+                <Text style={styles.lookText}>{copy[item.label]}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{copy.teamWizardShape}</Text>
         <View
@@ -528,6 +678,40 @@ function StepCrest({
               icon={() => <PatternSample pattern={item.key} />}
             />
           ))}
+        </View>
+      </View>
+      <View style={styles.fieldBlock}>
+        <Text style={styles.fieldLabel}>{copy.teamWizardEmblem}</Text>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel={copy.teamWizardEmblem}
+          style={styles.emblemRow}
+        >
+          {emblems.map((item) => {
+            const on = emblem === item;
+            return (
+              <Pressable
+                key={item}
+                accessibilityRole="radio"
+                accessibilityLabel={emblemLabels[item]}
+                accessibilityState={{ checked: on }}
+                aria-checked={on}
+                onPress={() => onEmblem(item)}
+                style={[styles.emblemButton, on && styles.emblemButtonOn]}
+              >
+                {item === 'initials' ? (
+                  <Text style={[styles.emblemText, on && styles.emblemTextOn]}>Aa</Text>
+                ) : (
+                  <Svg width={22} height={22} viewBox="0 0 24 24">
+                    <Path
+                      d={emblemPaths[item]}
+                      fill={on ? colors.primaryButtonText : colors.textPrimary}
+                    />
+                  </Svg>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
       </View>
     </>
@@ -626,6 +810,50 @@ function OptionButton({
       <Text numberOfLines={1} style={[styles.optionText, { color: tint }]}>
         {label}
       </Text>
+    </Pressable>
+  );
+}
+
+function ToolButton({
+  label,
+  onPress,
+  glyph,
+  primary = false,
+  disabled = false,
+  colors,
+  styles,
+}: {
+  label: string;
+  onPress: () => void;
+  glyph: string;
+  primary?: boolean;
+  disabled?: boolean;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.toolButton,
+        primary && styles.toolButtonPrimary,
+        disabled && { opacity: 0.4 },
+        { transform: [{ scale: pressed ? 0.94 : 1 }] },
+      ]}
+    >
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Path
+          d={glyph}
+          stroke={primary ? colors.primaryButtonText : colors.textPrimary}
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
     </Pressable>
   );
 }
@@ -873,6 +1101,7 @@ type CrestDesign = {
   color: TeamCrestColor;
   pattern: TeamCrestPattern;
   shape: TeamCrestShape;
+  emblem?: TeamCrestEmblem;
   initials: string;
 };
 
@@ -880,6 +1109,7 @@ function Crest({
   color,
   pattern,
   shape,
+  emblem = 'initials',
   initials,
   size,
   label,
@@ -911,31 +1141,45 @@ function Crest({
           <Rect width="100" height="40" fill="#ffffff" opacity={0.16} />
         </G>
         <Path d={crestPaths[shape]} fill="none" stroke={ink} strokeWidth={3} />
-        <SvgText
-          x="50"
-          y="68"
-          textAnchor="middle"
-          fontSize="36"
-          fontWeight="800"
-          fontFamily="BarlowCondensed_800ExtraBold"
-          stroke={color}
-          strokeWidth={5}
-          strokeLinejoin="round"
-          fill={color}
-        >
-          {initials}
-        </SvgText>
-        <SvgText
-          x="50"
-          y="68"
-          textAnchor="middle"
-          fontSize="36"
-          fontWeight="800"
-          fontFamily="BarlowCondensed_800ExtraBold"
-          fill={ink}
-        >
-          {initials}
-        </SvgText>
+        {emblem === 'initials' ? (
+          <>
+            <SvgText
+              x="50"
+              y="68"
+              textAnchor="middle"
+              fontSize="36"
+              fontWeight="800"
+              fontFamily="BarlowCondensed_800ExtraBold"
+              stroke={color}
+              strokeWidth={5}
+              strokeLinejoin="round"
+              fill={color}
+            >
+              {initials}
+            </SvgText>
+            <SvgText
+              x="50"
+              y="68"
+              textAnchor="middle"
+              fontSize="36"
+              fontWeight="800"
+              fontFamily="BarlowCondensed_800ExtraBold"
+              fill={ink}
+            >
+              {initials}
+            </SvgText>
+          </>
+        ) : (
+          <G transform="translate(28 33) scale(1.85)">
+            <Path
+              d={emblemPaths[emblem]}
+              fill={ink}
+              stroke={color}
+              strokeWidth={0.9}
+              strokeLinejoin="round"
+            />
+          </G>
+        )}
       </Svg>
     </View>
   );
@@ -1271,6 +1515,45 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       paddingHorizontal: 18,
     },
     crestBox: { width: 112, height: 128, alignItems: 'center', justifyContent: 'center' },
+    crestTools: { position: 'absolute', right: 16, top: 14, gap: 8 },
+    toolButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    toolButtonPrimary: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+    looksRow: { gap: 10, paddingVertical: 2 },
+    lookCard: {
+      width: 88,
+      paddingVertical: 8,
+      alignItems: 'center',
+      gap: 4,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    lookCardOn: { borderColor: colors.primaryButton },
+    lookText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
+    emblemRow: { flexDirection: 'row', gap: 8 },
+    emblemButton: {
+      flex: 1,
+      height: 48,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emblemButtonOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+    emblemText: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
+    emblemTextOn: { color: colors.primaryButtonText },
     previewName: {
       color: colors.textPrimary,
       fontFamily: display,
