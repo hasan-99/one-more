@@ -61,7 +61,7 @@ type PlayerCardShareModalProps = PlayerCardData & {
 
 /** Card artwork size: the template image's own pixel size. */
 const W = 1024;
-const H = 1536;
+const H = 1469;
 const ink = '#0c1210';
 const paperWhite = '#f2f5ec';
 const lime = '#cfff4a';
@@ -157,42 +157,37 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
     width: windowWidth,
     height: windowHeight - Math.max(insets.top, 12) - Math.max(insets.bottom, 12),
   };
-  const cardWidth = Math.min(available.width, (available.height * W) / H, 560);
-  const actionButton = (action: 'share' | 'save', left: number) => (
+  const actionsHeight = 76;
+  const cardWidth = Math.min(available.width - 16, ((available.height - actionsHeight) * W) / H, 520);
+  const actionButton = (action: 'share' | 'save') => (
     <Pressable
       accessibilityRole="button"
       onPress={() => void handleAction(action)}
       disabled={busyAction !== null}
       style={({ pressed }) => [
         styles.cardButton,
-        {
-          left: `${(left / W) * 100}%`,
-          top: `${(1362 / H) * 100}%`,
-          width: `${(384 / W) * 100}%`,
-          height: `${(86 / H) * 100}%`,
-          borderRadius: cardWidth * (43 / W),
-          transform: [{ scale: pressed ? 0.96 : 1 }],
-        },
+        action === 'share' && styles.cardButtonPrimary,
+        { transform: [{ scale: pressed ? 0.96 : 1 }] },
       ]}
     >
       {busyAction === action ? (
-        <ActivityIndicator color={paperWhite} />
+        <ActivityIndicator color={action === 'share' ? ink : paperWhite} />
       ) : (
-        <Svg width={cardWidth * 0.045} height={cardWidth * 0.045} viewBox="0 0 24 24" fill="none">
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
           <Path
             d={
               action === 'share'
                 ? 'M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5'
                 : 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14'
             }
-            stroke={paperWhite}
-            strokeWidth={2}
+            stroke={action === 'share' ? ink : paperWhite}
+            strokeWidth={2.2}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </Svg>
       )}
-      <Text style={[styles.cardButtonText, { fontSize: cardWidth * 0.041, fontFamily: semibold }]}>
+      <Text style={[styles.cardButtonText, action === 'share' && { color: ink }, { fontFamily: semibold }]}>
         {action === 'share'
           ? copy.profileCardShare
           : busyAction === 'save'
@@ -230,9 +225,11 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
               <PlayerCardArt {...card} name={cardName} copy={copy} />
             </Svg>
           </View>
-          {actionButton('share', 110)}
-          {actionButton('save', 528)}
         </Animated.View>
+        <View style={[styles.actions, { width: cardWidth }]}>
+          {actionButton('share')}
+          {actionButton('save')}
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={copy.profileCardClose}
@@ -551,8 +548,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   cardButton: {
-    position: 'absolute',
+    flex: 1,
+    height: 52,
+    borderRadius: 26,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -561,5 +561,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(207,255,74,0.55)',
     backgroundColor: 'rgba(8,16,12,0.85)',
   },
-  cardButtonText: { color: paperWhite, fontWeight: '600' },
+  cardButtonPrimary: { backgroundColor: lime, borderColor: lime },
+  cardButtonText: { color: paperWhite, fontSize: 16, fontWeight: '600' },
 });

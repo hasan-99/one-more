@@ -1427,3 +1427,8 @@
 
 - **Summary:** Restored the jersey's fabric creases under the removed demo print (fold map from the original fabric/ink, glyph edges inpainted to avoid ghosting) and added a soft, feathered crease-highlight overlay above the printed surname/number so the print reads as part of the shirt. Added three recoloured templates by level (Casual teal, Regular lime, Competitive gold) with matching accents for pill, location pin, stats, days and formats. Fixed `.gitignore`: card assets under `assets/images/` were being ignored, so the previously pushed template image was missing from git.
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium). Exported all three colourways in Chromium and compared the jersey close-up with the supplied design.
+
+### 2026-11-14 — Phase 17 Player card: actions outside the card
+
+- **Summary:** Share and Save image are app buttons below the card, not part of the artwork. Removed the empty band they left inside the template so the frame closes under "Find me on ONE MORE" (all three colourways now 1024×1469). Exported images contain only the card.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile + create-team PASS (mobile + desktop Chromium).
