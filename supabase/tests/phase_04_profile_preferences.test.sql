@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(21);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data
@@ -11,6 +11,17 @@ values
   ('00000000-0000-4000-8000-000000000042', 'authenticated', 'authenticated', 'phase4-b@example.invalid', '', now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Player B","phone":"+35799223456"}'::jsonb);
 
 select ok((select count(*) >= 7 from public.areas), 'Nicosia area choices are seeded');
+select is((select count(*)::integer from public.cities where country_code = 'CY'), 6, 'six Cyprus city groups are seeded');
+select ok((
+  select bool_and(area_count > 0)
+  from (
+    select city.id, count(area.id) as area_count
+    from public.cities as city
+    left join public.areas as area on area.city_id = city.id
+    where city.country_code = 'CY'
+    group by city.id
+  ) as city_area_counts
+), 'every Cyprus city has selectable areas');
 
 set local role anon;
 select ok((select count(*) > 0 from public.cities), 'anonymous users can read city choices');

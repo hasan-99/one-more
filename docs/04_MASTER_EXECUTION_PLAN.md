@@ -67,7 +67,7 @@ and run relevant E2E/DB tests. Log actual results in
 
 **Goal:** Real persistent profile, language/preferences and city selection.
 
-**Tasks:** Migrations: profiles, cities, areas, user_preferences, notification_preferences. Seed verified initial Nicosia areas (no fictional venue addresses), protected CRUD and RLS. Screens: prefilled English name plus required city/area; optional position/skill/game formats/availability; edit profile and settings; avatar placeholder. Auth route guards account for incomplete profile.
+**Tasks:** Migrations: profiles, cities, areas, user_preferences, notification_preferences. Seed verified Cyprus city and urban-area choices (no fictional venue addresses), protected CRUD and RLS. Screens: prefilled English name plus required city/area; optional position/skill/game formats/availability; edit profile and settings; avatar placeholder. Auth route guards account for incomplete profile.
 
 **Gate:** Two test accounts each see own private preferences; forbidden update of other's profile; refresh persistence; profile completion and validation, EN/EL, Dark/Light, both viewport widths.
 

@@ -1181,10 +1181,10 @@ function makeStyles(
       justifyContent: 'center',
     },
     quickText: { color: colors.textSecondary, fontFamily: semibold, fontSize: 13 },
-    cityRow: { flexDirection: 'row', gap: 6 },
+    cityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     cityChip: {
-      flex: 1,
-      minWidth: 0,
+      width: '31%',
+      flexGrow: 0,
       height: 38,
       borderRadius: 11,
       borderWidth: 1.5,
@@ -1194,7 +1194,7 @@ function makeStyles(
       justifyContent: 'center',
       paddingHorizontal: 2,
     },
-    chipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 13.5 },
+    chipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 12.5 },
     areaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     areaChip: {
       height: 34,

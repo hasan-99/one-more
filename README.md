@@ -1,6 +1,6 @@
 # ONE MORE — Find your game
 
-ONE MORE is a bilingual (English/Greek) football community for finding local matches, building teams and arranging team challenges in Nicosia, Cyprus. It uses Expo Router, React Native, TypeScript and Supabase. Product requirements and the visual system live in [`docs/`](docs/).
+ONE MORE is a bilingual (English/Greek) football community for finding local matches, building teams and arranging team challenges across Cyprus. It uses Expo Router, React Native, TypeScript and Supabase. Product requirements and the visual system live in [`docs/`](docs/).
 
 ## Current readiness
 
