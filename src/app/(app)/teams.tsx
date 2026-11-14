@@ -190,6 +190,19 @@ export default function TeamsScreen() {
               )}
               {isCaptain ? (
                 <>
+                  <View style={styles.hero}>
+                    <View style={styles.heroRing} pointerEvents="none" />
+                    <Text style={styles.heroKicker}>{copy.teamChallengeKicker}</Text>
+                    <Text style={styles.heroTitle}>{copy.teamChallengeHeroTitle}</Text>
+                    <Text style={styles.heroCopy}>{copy.teamChallengeHeroCopy}</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push('/challenges' as Href)}
+                      style={({ pressed }) => [styles.heroButton, pressed && { opacity: 0.88 }]}
+                    >
+                      <Text style={styles.heroButtonText}>{`⚡  ${copy.challengeCreate}`}</Text>
+                    </Pressable>
+                  </View>
                   <View style={styles.sectionHead}>
                     <Text accessibilityRole="header" style={styles.sectionTitle}>
                       {copy.challengeDirectory}
@@ -218,6 +231,7 @@ export default function TeamsScreen() {
                             {`${locale === 'el' ? challenge.cityNameEl : challenge.cityNameEn} · ${formatWindow(challenge, locale)}`}
                           </Text>
                         </View>
+                        <Text style={styles.vs}>VS</Text>
                       </View>
                       <View style={styles.tags}>
                         <Text style={styles.tag}>{`${challenge.format}v${challenge.format}`}</Text>
@@ -228,6 +242,9 @@ export default function TeamsScreen() {
                           {locale === 'el' ? challenge.areaNameEl : challenge.areaNameEn}
                         </Text>
                       </View>
+                      <View style={styles.fightButton}>
+                        <Text style={styles.fightText}>{`⚔  ${copy.teamChallengeThem}`}</Text>
+                      </View>
                     </Pressable>
                   ))}
                   {openChallenges.length === 0 ? (
@@ -237,13 +254,6 @@ export default function TeamsScreen() {
                       styles={styles}
                     />
                   ) : null}
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push('/challenges' as Href)}
-                    style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.85 }]}
-                  >
-                    <Text style={styles.createText}>{`+  ${copy.challengeCreate}`}</Text>
-                  </Pressable>
                 </>
               ) : null}
             </>
@@ -526,6 +536,62 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     badgeHot: { color: colors.accentText, backgroundColor: colors.cardTop },
     actions: { flexDirection: 'row', gap: 8 },
     actionHalf: { flex: 1 },
+    hero: {
+      overflow: 'hidden',
+      borderRadius: 22,
+      padding: 18,
+      gap: 4,
+      backgroundColor: '#a8ec2a',
+    },
+    heroRing: {
+      position: 'absolute',
+      right: -40,
+      top: -40,
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      borderWidth: 18,
+      borderColor: 'rgba(16,23,15,0.1)',
+    },
+    heroKicker: {
+      color: '#10170f',
+      opacity: 0.7,
+      fontSize: 11,
+      fontWeight: '800',
+      letterSpacing: 1.6,
+    },
+    heroTitle: { color: '#10170f', fontSize: 26, lineHeight: 29, fontWeight: '800' },
+    heroCopy: { color: '#10170f', opacity: 0.85, fontSize: 14, lineHeight: 20, maxWidth: 260 },
+    heroButton: {
+      marginTop: 12,
+      minHeight: 48,
+      borderRadius: 14,
+      backgroundColor: '#10170f',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroButtonText: { color: '#cfff4a', fontSize: 16, fontWeight: '800' },
+    vs: {
+      flexShrink: 0,
+      color: '#ff8a3d',
+      borderColor: 'rgba(255,138,61,0.4)',
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      fontSize: 12,
+      fontWeight: '800',
+      overflow: 'hidden',
+    },
+    fightButton: {
+      marginTop: 12,
+      minHeight: 46,
+      borderRadius: 13,
+      backgroundColor: '#ff6a3d',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    fightText: { color: '#ffffff', fontSize: 16, fontWeight: '800' },
     seeAll: { marginLeft: 'auto', minHeight: 36, justifyContent: 'center' },
     seeAllText: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
