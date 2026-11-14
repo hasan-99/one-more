@@ -1411,3 +1411,8 @@
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium).
 - **Browser verification:** Exported 1080×1920 PNGs for all three level colourways in Chromium; fonts, logo and layout correct. Native share not device-tested.
 - **Blockers:** GitHub push still 403 (Claude GitHub App access); Supabase and Expo hosts denied by this environment's network policy.
+
+### 2026-11-14 — Phase 17 Player card v4 (user mockup)
+
+- **Summary:** Rebuilt the share card from the user's supplied mockup using only real profile data: stadium night scene (floodlights, light cones, stands), glowing jersey with surname and number, italic name, position pill, location, Foot / Level / Position panel, availability days, chosen formats, "Find me on ONE MORE" call to action and Player ID; glowing frame. Accent colour still follows level. The mockup's AI photo, goals/assists/rating, heatmap and "LVL" were not used (no such data/feature in V1).
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium). Exported 1080×1920 PNG inspected.

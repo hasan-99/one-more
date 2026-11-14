@@ -752,4 +752,6 @@ export const el = {
   profileCardNoDays: "Χωρίς μέρες",
   profileCardPlayerId: "ΚΩΔ. ΠΑΙΚΤΗ",
   profileCardMatchday: "ΕΤΟΙΜΟΣ ΓΙΑ ΑΓΩΝΑ",
+  profileCardAvailableTitle: "Διαθέσιμος",
+  profileCardFormatsTitle: "Μορφές",
 } as const;

@@ -747,4 +747,6 @@ export const en = {
   profileCardNoDays: "Days not set",
   profileCardPlayerId: "PLAYER ID",
   profileCardMatchday: "MATCHDAY READY",
+  profileCardAvailableTitle: "Available",
+  profileCardFormatsTitle: "Formats",
 } as const;
