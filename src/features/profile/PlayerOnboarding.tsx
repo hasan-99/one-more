@@ -312,7 +312,8 @@ export function PlayerOnboarding() {
   const letters = copy.profileDayLettersMonToSun.split(',');
   const horizontalPad = width < 400 ? 16 : 20;
   const topPad = Math.max(insets.top, 12) + 4;
-  const bottomPad = Math.max(insets.bottom, 16) + 24;
+  // Clear the home indicator with room to spare so the whole button is always visible.
+  const bottomPad = Math.max(insets.bottom, 20) + 32;
   // The card keeps one top and one width on every step and only grows downward as it fills
   // in, with the options right under it and the buttons pinned to the bottom. Its width is the
   // largest at which the tallest step (card plus its options) still fits the screen.
@@ -1209,7 +1210,7 @@ function makeStyles(
     preview: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', alignItems: 'center' },
     dismissSurface: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center' },
     controlsScroll: { flex: 1, minHeight: 0 },
-    controls: { gap: 6, paddingBottom: 2 },
+    controls: { flexGrow: 1, justifyContent: 'space-between', gap: 6, paddingBottom: 2 },
     groupFirstStep: { gap: 4 },
     fieldFirstStep: { height: 44 },
     stepperFirstStep: { height: 40 },
