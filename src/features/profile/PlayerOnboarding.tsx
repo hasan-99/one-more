@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   View,
   useWindowDimensions,
+  type ScrollViewInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg from 'react-native-svg';
@@ -87,6 +88,8 @@ export function PlayerOnboarding() {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const controlsScrollRef = useRef<ScrollViewInstance>(null);
   const accent = form.skillLevel ? cardThemes[form.skillLevel].accent : colors.primaryButton;
   const own = useMemo(() => makeStyles(colors, locale, accent), [colors, locale, accent]);
   const areaCityById = useMemo(
@@ -133,6 +136,23 @@ export function PlayerOnboarding() {
     const task = setTimeout(() => void load(), 0);
     return () => clearTimeout(task);
   }, [load]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true);
+      requestAnimationFrame(() => controlsScrollRef.current?.scrollTo({ y: 0, animated: true }));
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+      requestAnimationFrame(() => controlsScrollRef.current?.scrollTo({ y: 0, animated: false }));
+    });
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const update = <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -352,11 +372,13 @@ export function PlayerOnboarding() {
           onBack={step > 0 ? () => setStep(step - 1) : null}
           backLabel={copy.wizBack}
         />
-        <View style={own.preview}>{card}</View>
+        <View style={[own.preview, keyboardVisible && own.previewCompact]}>{card}</View>
 
         <ScrollView
+          ref={controlsScrollRef}
           style={own.controlsScroll}
           contentContainerStyle={own.controls}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}
@@ -1079,6 +1101,7 @@ function makeStyles(
       textAlign: 'right',
     },
     preview: { flex: 1, minHeight: 120 },
+    previewCompact: { flex: 0, height: 72, minHeight: 72 },
     dismissSurface: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center' },
     controlsScroll: { flex: 1, minHeight: 0 },
     controls: { gap: 10, paddingBottom: 8 },
