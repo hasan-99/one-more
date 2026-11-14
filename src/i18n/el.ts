@@ -746,4 +746,8 @@ export const el = {
   profileEditClose: "Κλείσιμο επεξεργασίας",
   profileAutoSaveError: "Η αλλαγή σου δεν αποθηκεύτηκε. Δοκίμασε ξανά.",
   profileLocationLine: "{position}, {place}",
+  profileCardTag: "ΚΑΡΤΑ ΠΑΙΚΤΗ",
+  profileCardAvailable: "ΔΙΑΘΕΣΙΜΟΣ",
+  profileCardPosition: "ΘΕΣΗ",
+  profileCardNoDays: "Χωρίς μέρες",
 } as const;

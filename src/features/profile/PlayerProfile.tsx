@@ -548,11 +548,15 @@ export function PlayerProfile() {
         name={form.displayName}
         location={place}
         number={form.shirtNumber}
-        position={positionName}
-        strongFoot={footLabel}
-        level={level}
-        formats={form.preferredFormats.map((value) => `${value}v${value}`)}
-        availability={days.map((day) => copy[dayKeys[day]].slice(0, 3))}
+        position={position}
+        positionLabel={positionName}
+        strongFoot={form.strongFoot}
+        strongFootLabel={footLabel}
+        skillLevel={form.skillLevel}
+        levelLabel={level}
+        formats={form.preferredFormats}
+        days={availabilityDays.map((day) => days.includes(day))}
+        dayLetters={copy.profileDayLettersMonToSun.split(',')}
         copy={copy}
       />
     </View>

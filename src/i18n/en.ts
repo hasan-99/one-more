@@ -741,4 +741,8 @@ export const en = {
   profileEditClose: "Close editor",
   profileAutoSaveError: "Your change could not be saved. Please try again.",
   profileLocationLine: "{position}, {place}",
+  profileCardTag: "PLAYER CARD",
+  profileCardAvailable: "AVAILABLE",
+  profileCardPosition: "POSITION",
+  profileCardNoDays: "Days not set",
 } as const;

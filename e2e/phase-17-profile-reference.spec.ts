@@ -102,7 +102,7 @@ test('profile matches the animated player reference and saves editable details',
   expect((await cardDownload).suggestedFilename()).toBe('one-more-player-card.png');
   await expect(page.getByRole('status').filter({ hasText: 'Player card downloaded.' })).toBeVisible();
   const shareDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: '↥ Share', exact: true }).click();
+  await page.getByRole('button', { name: 'Share', exact: true }).click();
   expect((await shareDownload).suggestedFilename()).toBe('one-more-player-card.png');
   await page.getByRole('button', { name: 'Close player card' }).click();
 

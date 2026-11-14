@@ -1398,3 +1398,9 @@
 - **Summary:** Fixed tab-bar taps on protected routes (Create `+` → team wizard, Profile) doing nothing: `(app)/_layout.tsx` replaced `<Slot />` with the auth/profile gate while checking, which made Expo Router drop the pending navigation; the gate now overlays a still-mounted, hidden `<Slot />`. Header shows only the logo and a small `EN`/`ΕΛ` button on every page (no section name). Profile shows a prominent "Share my player card" button under the player chips (opens the card with Share / Save image) and an Appearance row in Account that switches Dark/Light.
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 create-team + profile PASS (8/8, mobile + desktop Chromium).
 - **Browser verification:** 393×852 Chromium with mocked session: Home → `+` opens "Name your team"; Explore → Profile opens the profile; player card modal opened; Appearance row switched to Light. No page errors.
+
+### 2026-11-14 — Phase 17 Player card redesign
+
+- **Summary:** Redesigned the shareable player card (original artwork): dark floodlit pitch card with lime holo edge, ghost shirt number, jersey with surname and number, position badge, name and location, Foot / Level / Position tiles (foot glyph, level bars, mini pitch marker), weekday availability dots, format pills and a lime "Find me on ONE MORE" strip. The modal adds a stadium backdrop, a 3D reveal and a moving sheen (on screen only). Web export now inlines fonts and the logo and renders a sharp 1080×1920 PNG; native keeps `toDataURL` + Sharing/MediaLibrary.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile + create-team PASS (8/8).
+- **Browser verification:** 393×852 Chromium (2x): card modal opened and "Save image" downloaded a 1080×1920 PNG with correct fonts and logo. Native share/save not tested on a device.
