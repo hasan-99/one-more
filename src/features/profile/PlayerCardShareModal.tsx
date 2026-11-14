@@ -17,16 +17,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
-  ClipPath,
   Defs,
-  Ellipse,
   G,
   Image as SvgImage,
-  Line,
   LinearGradient,
   Path,
-  Polygon,
-  RadialGradient,
   Rect,
   Stop,
   Text as SvgText,
@@ -65,12 +60,11 @@ type PlayerCardShareModalProps = PlayerCardData & {
   copy: Copy;
 };
 
-const W = 360;
-const H = 640;
+/** Card artwork size: the template image's own pixel size. */
+const W = 1024;
+const H = 1536;
 const ink = '#0c1210';
 const lime = '#cfff4a';
-const jerseyPath =
-  'M70 14 C82 26 118 26 130 14 L170 30 L194 70 L166 86 L154 66 L154 176 C154 181 150 184 146 184 L54 184 C50 184 46 181 46 176 L46 66 L34 86 L6 70 L30 30 Z';
 const shortPositions: Record<Position, string> = {
   forward: 'ST',
   midfielder: 'MF',
@@ -314,15 +308,6 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
   );
 }
 
-type Palette = { accent: string; deep: string };
-/** Accent follows the player's level so cards feel collectible. */
-const palettes: Record<SkillLevel | 'none', Palette> = {
-  beginner: { accent: '#7ef0c8', deep: '#0c2a22' },
-  intermediate: { accent: lime, deep: '#1c3a12' },
-  advanced: { accent: '#ffd34d', deep: '#3a2c08' },
-  none: { accent: lime, deep: '#1c3a12' },
-};
-
 /** Stable short ID derived from the player's name and number. */
 function playerCode(text: string) {
   let hash = 2166136261;
@@ -330,7 +315,16 @@ function playerCode(text: string) {
   return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(0, 6);
 }
 
-/** The exported artwork. Pure SVG so it can be rendered to a PNG for sharing. */
+/** Rough width of a string in em for sizing text to fit a box. */
+function fitSize(text: string, maxWidth: number, maxSize: number, emPerChar: number) {
+  return Math.min(maxSize, Math.floor(maxWidth / (Math.max(text.length, 1) * emPerChar)));
+}
+
+/**
+ * The exported artwork: the supplied card design as a background template
+ * (stadium, jersey, frame and glow) with the player's own details drawn on top
+ * in the same places. Pure SVG so it renders to a PNG for sharing.
+ */
 function PlayerCardArt({
   name,
   location,
@@ -346,236 +340,131 @@ function PlayerCardArt({
   dayLetters,
   copy,
 }: PlayerCardData & { copy: Copy }) {
-  const { accent, deep } = palettes[skillLevel ?? 'none'];
   const words = name.trim().split(/\s+/u).filter(Boolean);
-  const surname = (words[words.length - 1] ?? '').toUpperCase().slice(0, 10);
-  const shownName = truncate(name.toUpperCase(), 20);
-  const nameSize = Math.min(48, Math.floor(560 / Math.max(shownName.length, 8)));
-  const bars = skillLevel === 'advanced' ? 3 : skillLevel === 'intermediate' ? 2 : skillLevel === 'beginner' ? 1 : 0;
+  const surname = (words[words.length - 1] ?? '').toUpperCase().slice(0, 12);
+  const fullName = truncate(name.toUpperCase(), 22);
+  const nameSize = fitSize(fullName, 640, 104, 0.6);
+  const surnameSize = fitSize(surname, 170, 60, 0.5);
+  const numberText = String(number);
+  const numberSize = numberText.length > 1 ? 200 : 236;
   const shortPos = shortPositions[position];
-  const pillWidth = 64 + positionLabel.length * 8.2;
-  const pillX = 180 - (56 + pillWidth) / 2;
-  const chosenFormats = [5, 7, 8, 11].filter((size) => formats.includes(size));
-  const code = `${playerCode(`${name}|${number}`)}-${String(number).padStart(2, '0')}`;
-  const crowd = Array.from({ length: 90 }, (_, index) => ({
-    x: (index * 37.3) % 360,
-    y: 168 + ((index * 13.7) % 70),
-    r: 0.8 + ((index * 7) % 5) * 0.25,
-    o: 0.08 + ((index * 11) % 7) * 0.03,
-  }));
+  const bars = skillLevel === 'advanced' ? 3 : skillLevel === 'intermediate' ? 2 : skillLevel === 'beginner' ? 1 : 0;
+  const labelWidth = Math.max(130, positionLabel.length * 19);
+  const pillWidth = 140 + labelWidth;
+  const pillX = 512 - pillWidth / 2;
+  const place = truncate(location, 30);
+  const placeWidth = place.length * 15;
+  const chosen = [5, 7, 8, 11].filter((size) => formats.includes(size));
+  const formatWidth = chosen.length > 2 ? (305 - 10 * (chosen.length - 1)) / chosen.length : 142;
+  const code = `${playerCode(`${name}|${number}`)}-${numberText.padStart(2, '0')}`;
 
   return (
     <>
       <Defs>
-        <ClipPath id="pc-clip">
-          <Rect width={W} height={H} rx="30" />
-        </ClipPath>
-        <LinearGradient id="pc-bg" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#0d1813" />
-          <Stop offset="0.45" stopColor="#0a120e" />
-          <Stop offset="1" stopColor="#050806" />
+        <LinearGradient id="pc-pill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#e6ff7a" />
+          <Stop offset="1" stopColor="#b6f21f" />
         </LinearGradient>
-        <RadialGradient id="pc-flood" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
-          <Stop offset="0.25" stopColor="#e9fbd0" stopOpacity="0.55" />
-          <Stop offset="1" stopColor="#e9fbd0" stopOpacity="0" />
-        </RadialGradient>
-        <LinearGradient id="pc-cone" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#f4ffe0" stopOpacity="0.22" />
-          <Stop offset="1" stopColor="#f4ffe0" stopOpacity="0" />
-        </LinearGradient>
-        <RadialGradient id="pc-grass" cx="50%" cy="0%" r="70%">
-          <Stop offset="0" stopColor={accent} stopOpacity="0.45" />
-          <Stop offset="0.5" stopColor={deep} stopOpacity="0.6" />
-          <Stop offset="1" stopColor="#050806" stopOpacity="0" />
-        </RadialGradient>
-        <RadialGradient id="pc-halo" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor={accent} stopOpacity="0.35" />
-          <Stop offset="1" stopColor={accent} stopOpacity="0" />
-        </RadialGradient>
-        <LinearGradient id="pc-shirt" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.35" />
-          <Stop offset="0.45" stopColor="#ffffff" stopOpacity="0" />
-          <Stop offset="1" stopColor="#000000" stopOpacity="0.22" />
-        </LinearGradient>
-        <LinearGradient id="pc-panel" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.06" />
-          <Stop offset="1" stopColor="#ffffff" stopOpacity="0.015" />
-        </LinearGradient>
-        <LinearGradient id="pc-cta" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.35" />
-          <Stop offset="0.5" stopColor="#ffffff" stopOpacity="0" />
-        </LinearGradient>
-        <LinearGradient id="pc-fade" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#060a08" stopOpacity="0" />
-          <Stop offset="1" stopColor="#060a08" stopOpacity="1" />
+        <LinearGradient id="pc-name" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#ffffff" />
+          <Stop offset="1" stopColor="#dfe4dc" />
         </LinearGradient>
       </Defs>
+      <SvgImage href={require('@/assets/images/player-card-template.jpg')} x="0" y="0" width={W} height={H} />
 
-      <G clipPath="url(#pc-clip)">
-        <Rect width={W} height={H} fill="url(#pc-bg)" />
-        {/* stadium: light cones, stands with crowd, floodlights */}
-        <Polygon points="40,96 70,96 230,300 -60,300" fill="url(#pc-cone)" />
-        <Polygon points="290,96 320,96 420,300 130,300" fill="url(#pc-cone)" />
-        <Path d="M0 150 Q180 120 360 150 L360 250 L0 250 Z" fill="#0f1c16" />
-        <Path d="M0 190 Q180 168 360 190 L360 250 L0 250 Z" fill="#132219" />
-        {crowd.map((dot, index) => (
-          <Circle key={index} cx={dot.x} cy={dot.y} r={dot.r} fill={index % 9 === 0 ? accent : '#dfe8da'} opacity={dot.o} />
-        ))}
-        {[54, 306].map((cx) => (
-          <G key={cx}>
-            <Circle cx={cx} cy="96" r="46" fill="url(#pc-flood)" />
-            {[0, 1, 2, 3].map((column) =>
-              [0, 1].map((row) => (
-                <Circle key={`${column}-${row}`} cx={cx - 15 + column * 10} cy={90 + row * 10} r="3.2" fill="#ffffff" />
-              )),
-            )}
-          </G>
-        ))}
-        <Rect x="0" y="232" width={W} height="60" fill="url(#pc-grass)" />
-        <Rect x="0" y="250" width={W} height="120" fill="url(#pc-fade)" />
-
-        {/* header */}
-        <SvgImage href={require('@/assets/images/one-more-logo.png')} x="163" y="14" width="34" height="34" />
-        <Line x1="64" y1="66" x2="104" y2="66" stroke={accent} strokeWidth="1.2" />
-        <Line x1="256" y1="66" x2="296" y2="66" stroke={accent} strokeWidth="1.2" />
-        <SvgText x="180" y="70" textAnchor="middle" fill="#d8ddd4" fontSize="11" fontWeight="700" letterSpacing="4.5" fontFamily="Barlow_600SemiBold">
-          {copy.profileCardTag}
+      {/* jersey print */}
+      {surname ? (
+        <SvgText x="517" y="336" textAnchor="middle" fill="#121612" fontSize={surnameSize} fontWeight="800" letterSpacing="1" fontFamily="BarlowCondensed_800ExtraBold">
+          {surname}
         </SvgText>
+      ) : null}
+      <SvgText x="517" y="532" textAnchor="middle" fill="#121612" fontSize={numberSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
+        {numberText}
+      </SvgText>
 
-        {/* jersey hero */}
-        <Ellipse cx="180" cy="170" rx="120" ry="100" fill="url(#pc-halo)" />
-        <Ellipse cx="180" cy="266" rx="86" ry="9" fill="#000000" opacity="0.55" />
-        <G transform="translate(80 80) scale(1)">
-          <Path d={jerseyPath} fill={accent} />
-          <Path d="M30 30 L70 14 C74 18 79 21 84 23 L44 44 Z" fill={ink} opacity="0.6" />
-          <Polygon points="6,70 34,86 38,79 10,63" fill={ink} opacity="0.75" />
-          <Path d="M170 30 L130 14 C126 18 121 21 116 23 L156 44 Z" fill={ink} opacity="0.6" />
-          <Polygon points="194,70 166,86 162,79 190,63" fill={ink} opacity="0.75" />
-          <Path d={jerseyPath} fill="url(#pc-shirt)" />
-          <Path d="M70 14 C82 32 118 32 130 14 L123 11 C113 24 87 24 77 11 Z" fill={ink} />
-          <Path d={jerseyPath} fill="none" stroke={ink} strokeOpacity="0.5" strokeWidth="2" strokeLinejoin="round" />
-          {surname ? (
-            <SvgText x="100" y="70" textAnchor="middle" fill={ink} fontSize="22" fontWeight="800" letterSpacing="1" fontFamily="BarlowCondensed_800ExtraBold">
-              {surname}
-            </SvgText>
-          ) : null}
-          <SvgText x="100" y="160" textAnchor="middle" fill={ink} fontSize={number > 9 ? 78 : 92} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-            {String(number)}
-          </SvgText>
-        </G>
+      {/* name */}
+      <SvgText x="516" y="709" textAnchor="middle" fill="#000000" opacity="0.45" fontSize={nameSize} fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
+        {fullName}
+      </SvgText>
+      <SvgText x="512" y="704" textAnchor="middle" fill="url(#pc-name)" fontSize={nameSize} fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
+        {fullName}
+      </SvgText>
 
-        {/* name, position pill, location */}
-        <G transform="translate(180 316) skewX(-9)">
-          <SvgText x="2" y="2" textAnchor="middle" fill="#000000" opacity="0.6" fontSize={nameSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-            {shownName}
-          </SvgText>
-          <SvgText x="0" y="0" textAnchor="middle" fill="#ffffff" fontSize={nameSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-            {shownName}
+      {/* position pill */}
+      <G transform={`translate(${pillX} 736)`}>
+        <Rect x="0" y="0" width={pillWidth} height="52" rx="26" fill="#0b1310" stroke={lime} strokeOpacity="0.45" strokeWidth="2" />
+        <Path d="M26 0 H140 L126 52 H26 A26 26 0 0 1 26 0 Z" fill="url(#pc-pill)" />
+        <SvgText x="74" y="38" textAnchor="middle" fill={ink} fontSize="38" fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
+          {shortPos}
+        </SvgText>
+        <SvgText x={140 + labelWidth / 2} y="37" textAnchor="middle" fill="#ffffff" fontSize="33" fontWeight="600" fontFamily="Barlow_600SemiBold">
+          {positionLabel}
+        </SvgText>
+      </G>
+
+      {/* location */}
+      {place ? (
+        <G>
+          <Path
+            d="M0 -15 C-9 -15 -15 -8 -15 -1 C-15 9 0 21 0 21 C0 21 15 9 15 -1 C15 -8 9 -15 0 -15 Z M0 -6 a5.5 5.5 0 1 0 0.01 0"
+            transform={`translate(${512 - placeWidth / 2 - 24} 818)`}
+            fill={lime}
+            fillRule="evenodd"
+          />
+          <SvgText x={512 + 8} y="832" textAnchor="middle" fill="#e1e6dd" fontSize="30" fontWeight="500" fontFamily="Barlow_500Medium">
+            {place}
           </SvgText>
         </G>
-        <G transform={`translate(${pillX} 330)`}>
-          <Rect x="0" y="0" width={56 + pillWidth} height="28" rx="14" fill="none" stroke="#ffffff" strokeOpacity="0.25" strokeWidth="1.2" />
-          <Path d="M14 0 H62 L54 28 H14 A14 14 0 0 1 14 0 Z" fill={accent} />
-          <SvgText x="34" y="20" textAnchor="middle" fill={ink} fontSize="17" fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-            {shortPos}
-          </SvgText>
-          <SvgText x={66 + pillWidth / 2 - 6} y="19" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="600" fontFamily="Barlow_600SemiBold">
-            {positionLabel}
-          </SvgText>
-        </G>
-        {location ? (
-          <G>
-            <Path
-              d="M0 -7 C-4.4 -7 -7 -3.8 -7 -0.6 C-7 4 0 10 0 10 C0 10 7 4 7 -0.6 C7 -3.8 4.4 -7 0 -7 Z"
-              transform={`translate(${180 - truncate(location, 34).length * 3.4 - 12} 375)`}
-              fill={accent}
-            />
-            <SvgText x={180 + 6} y="380" textAnchor="middle" fill="#d8ddd4" fontSize="14" fontWeight="500" fontFamily="Barlow_500Medium">
-              {truncate(location, 34)}
+      ) : null}
+
+      {/* stats */}
+      <G transform="translate(230 884)">
+        <FootMark foot={strongFoot} color={lime} scale={2.75} />
+      </G>
+      <G transform="translate(484 893)">
+        {[0, 1, 2].map((index) => (
+          <Rect key={index} x={index * 24} y={36 - index * 18} width="16" height={20 + index * 18} rx="4" fill={lime} opacity={index < bars ? 1 : 0.28} />
+        ))}
+      </G>
+      {[
+        { x: 262, value: strongFootLabel },
+        { x: 520, value: levelLabel },
+        { x: 780, value: shortPos },
+      ].map((stat) => (
+        <SvgText key={stat.x} x={stat.x} y="988" textAnchor="middle" fill="#ffffff" fontSize="31" fontWeight="600" fontFamily="Barlow_600SemiBold">
+          {truncate(stat.value, 14)}
+        </SvgText>
+      ))}
+
+      {/* availability */}
+      {days.map((on, index) => {
+        const cx = 137 + index * 62.7;
+        return (
+          <G key={index}>
+            <Circle cx={cx} cy="1135" r="26" fill={on ? lime : '#0f1714'} stroke={on ? lime : '#3d4c42'} strokeWidth="2.5" />
+            <SvgText x={cx} y="1145" textAnchor="middle" fill={on ? ink : '#c3cabf'} fontSize="27" fontWeight="600" fontFamily="Barlow_600SemiBold">
+              {dayLetters[index] ?? ''}
             </SvgText>
           </G>
-        ) : null}
+        );
+      })}
 
-        {/* stats panel */}
-        <Rect x="22" y="398" width="316" height="72" rx="16" fill="url(#pc-panel)" stroke="#ffffff" strokeOpacity="0.1" />
-        <Line x1="127" y1="410" x2="127" y2="458" stroke="#ffffff" strokeOpacity="0.12" />
-        <Line x1="233" y1="410" x2="233" y2="458" stroke="#ffffff" strokeOpacity="0.12" />
-        <G transform="translate(62 410)">
-          <FootMark foot={strongFoot} color={accent} />
-        </G>
-        <G transform="translate(167 410)">
-          {[0, 1, 2].map((index) => (
-            <Rect key={index} x={index * 9} y={18 - index * 7} width="6" height={9 + index * 7} rx="2" fill={accent} opacity={index < bars ? 1 : 0.25} />
-          ))}
-        </G>
-        <G transform="translate(268 411)">
-          <Rect x="0" y="0" width="30" height="22" rx="3" fill="none" stroke={accent} strokeWidth="1.6" />
-          <Line x1="15" y1="0" x2="15" y2="22" stroke={accent} strokeWidth="1.4" />
-          <Circle cx="15" cy="11" r="4" fill="none" stroke={accent} strokeWidth="1.4" />
-          <Rect x="0" y="6" width="5" height="10" fill="none" stroke={accent} strokeWidth="1.2" />
-          <Rect x="25" y="6" width="5" height="10" fill="none" stroke={accent} strokeWidth="1.2" />
-        </G>
-        {[
-          { x: 74.5, value: strongFootLabel },
-          { x: 180, value: levelLabel },
-          { x: 285.5, value: shortPos },
-        ].map((stat) => (
-          <SvgText key={stat.x} x={stat.x} y="456" textAnchor="middle" fill="#ffffff" fontSize="13" fontWeight="600" fontFamily="Barlow_600SemiBold">
-            {truncate(stat.value, 14)}
-          </SvgText>
-        ))}
-
-        {/* availability + formats */}
-        <SvgText x="26" y="498" fill="#ffffff" fontSize="13" fontWeight="600" fontFamily="Barlow_600SemiBold">
-          {copy.profileCardAvailableTitle}
-        </SvgText>
-        {days.map((on, index) => {
-          const cx = 36 + index * 25;
-          return (
-            <G key={index}>
-              <Circle cx={cx} cy="520" r="10.5" fill={on ? accent : 'none'} stroke={on ? accent : '#ffffff'} strokeOpacity={on ? 1 : 0.22} strokeWidth="1.2" />
-              <SvgText x={cx} y="524" textAnchor="middle" fill={on ? ink : '#c9d0c5'} fontSize="10" fontWeight="700" fontFamily="Barlow_600SemiBold">
-                {dayLetters[index] ?? ''}
-              </SvgText>
-            </G>
-          );
-        })}
-        <Line x1="214" y1="486" x2="214" y2="532" stroke="#ffffff" strokeOpacity="0.15" />
-        <SvgText x="226" y="498" fill="#ffffff" fontSize="13" fontWeight="600" fontFamily="Barlow_600SemiBold">
-          {copy.profileCardFormatsTitle}
-        </SvgText>
-        {chosenFormats.slice(0, 2).map((size, index) => (
+      {/* formats */}
+      {chosen.map((size, index) => {
+        const x = 614 + index * (formatWidth + 10);
+        return (
           <G key={size}>
-            <Rect x={226 + index * 56} y="509" width="50" height="22" rx="11" fill={accent} />
-            <SvgText x={251 + index * 56} y="524" textAnchor="middle" fill={ink} fontSize="12" fontWeight="700" fontFamily="Barlow_600SemiBold">
+            <Rect x={x} y="1106" width={formatWidth} height="58" rx="29" fill="url(#pc-pill)" />
+            <SvgText x={x + formatWidth / 2} y="1146" textAnchor="middle" fill={ink} fontSize={chosen.length > 2 ? 26 : 32} fontWeight="700" fontFamily="Barlow_600SemiBold">
               {`${size}v${size}`}
             </SvgText>
           </G>
-        ))}
-        {chosenFormats.length > 2 ? (
-          <SvgText x="338" y="498" textAnchor="end" fill={accent} fontSize="11" fontWeight="700" fontFamily="Barlow_600SemiBold">
-            {`+${chosenFormats.length - 2}`}
-          </SvgText>
-        ) : null}
+        );
+      })}
 
-        {/* call to action */}
-        <Rect x="40" y="552" width="280" height="42" rx="21" fill={accent} opacity="0.25" />
-        <Rect x="44" y="555" width="272" height="36" rx="18" fill={accent} />
-        <Rect x="44" y="555" width="272" height="36" rx="18" fill="url(#pc-cta)" />
-        <G transform="translate(172 580) skewX(-9)">
-          <SvgText x="0" y="0" textAnchor="middle" fill={ink} fontSize="17" fontWeight="800" letterSpacing="0.5" fontFamily="BarlowCondensed_800ExtraBold">
-            {copy.profileCardBrandLine}
-          </SvgText>
-        </G>
-        <Path d="M282 573 h14 M290 567 l6 6 -6 6" stroke={ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <SvgText x="180" y="620" textAnchor="middle" fill="#ffffff" opacity="0.35" fontSize="9" fontWeight="700" letterSpacing="2.4" fontFamily="Barlow_600SemiBold">
-          {`${copy.profileCardPlayerId} ${code}`}
-        </SvgText>
-      </G>
-      {/* glowing frame */}
-      <Rect x="3" y="3" width={W - 6} height={H - 6} rx="28" fill="none" stroke={accent} strokeOpacity="0.25" strokeWidth="6" />
-      <Rect x="3" y="3" width={W - 6} height={H - 6} rx="28" fill="none" stroke={accent} strokeWidth="2" />
+      <SvgText x="512" y="1410" textAnchor="middle" fill="#ffffff" opacity="0.4" fontSize="22" fontWeight="600" letterSpacing="6" fontFamily="Barlow_600SemiBold">
+        {`${copy.profileCardPlayerId} ${code}`}
+      </SvgText>
     </>
   );
 }
@@ -594,10 +483,10 @@ function FootShape({ fill }: { fill: string }) {
   );
 }
 
-function FootMark({ foot, color }: { foot: StrongFoot; color: string }) {
+function FootMark({ foot, color, scale }: { foot: StrongFoot; color: string; scale: number }) {
   if (foot === 'both') {
     return (
-      <G transform="translate(-4 0) scale(1.1)">
+      <G transform={`translate(-6 0) scale(${scale})`}>
         <G transform="translate(17 1) scale(-0.85 0.85)">
           <FootShape fill={color} />
         </G>
@@ -608,14 +497,14 @@ function FootMark({ foot, color }: { foot: StrongFoot; color: string }) {
     );
   }
   return (
-    <G transform={foot === 'left' ? 'translate(26.4 0) scale(-1.1 1.1)' : 'scale(1.1)'}>
+    <G transform={foot === 'left' ? `translate(${24 * scale} 0) scale(${-scale} ${scale})` : `scale(${scale})`}>
       <FootShape fill={color} />
     </G>
   );
 }
 
-const exportScale = 3;
-const cardFonts = ['BarlowCondensed_800ExtraBold', 'Barlow_600SemiBold', 'Barlow_500Medium'];
+const exportScale = 1;
+const cardFonts = ['BarlowCondensed_800ExtraBold', 'Barlow_800ExtraBoldItalic', 'Barlow_600SemiBold', 'Barlow_500Medium'];
 
 async function toDataUrl(url: string): Promise<string> {
   const blob = await (await fetch(url)).blob();

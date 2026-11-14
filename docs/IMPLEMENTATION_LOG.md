@@ -1416,3 +1416,9 @@
 
 - **Summary:** Rebuilt the share card from the user's supplied mockup using only real profile data: stadium night scene (floodlights, light cones, stands), glowing jersey with surname and number, italic name, position pill, location, Foot / Level / Position panel, availability days, chosen formats, "Find me on ONE MORE" call to action and Player ID; glowing frame. Accent colour still follows level. The mockup's AI photo, goals/assists/rating, heatmap and "LVL" were not used (no such data/feature in V1).
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium). Exported 1080×1920 PNG inspected.
+
+### 2026-11-14 — Phase 17 Player card v5 (user's own design as template)
+
+- **Summary:** The user's supplied card design image is now the card background (`assets/images/player-card-template.jpg`, 1024×1536). Its demo text, jersey print, position pill, location, stat labels, level bars, foot icon, days, formats and the Share/Save buttons were removed with OpenCV inpainting; the app draws each player's real data in the same positions (surname and number on the jersey, italic name, position pill, location, foot/level/position, availability days, chosen formats, Player ID). Added Barlow ExtraBold Italic (OFL). Exports a 1024×1536 PNG on web (fonts/images inlined) and via `toDataURL` on native.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium).
+- **Browser verification:** Compared the export side by side with the supplied design; checked short and long names and two levels. Native share not device-tested.

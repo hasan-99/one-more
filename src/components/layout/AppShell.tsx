@@ -39,6 +39,7 @@ export function AppShell({ children }: PropsWithChildren) {
     Barlow_400Regular: require('@/assets/fonts/Barlow-Regular.ttf'),
     Barlow_500Medium: require('@/assets/fonts/Barlow-Medium.ttf'),
     Barlow_600SemiBold: require('@/assets/fonts/Barlow-SemiBold.ttf'),
+    Barlow_800ExtraBoldItalic: require('@/assets/fonts/Barlow-ExtraBoldItalic.ttf'),
     Inter_400Regular: require('@/assets/fonts/Inter-Regular.ttf'),
     Inter_600SemiBold: require('@/assets/fonts/Inter-SemiBold.ttf'),
   });
