@@ -286,9 +286,12 @@ test('a verified signup session saves profile onboarding with the signup name', 
   await page.getByLabel('Email verification code').fill('12345678');
   await page.getByRole('button', { name: 'Verify email' }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
-  await expect(page.getByRole('heading', { name: 'Build your player profile' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Build your player card' })).toBeVisible();
   await expect(page.getByLabel('Player name (English)')).toHaveValue('Player Example');
-  await page.getByRole('button', { name: 'Save profile' }).click();
+  // Home area is required and not preselected: the card cannot be created until one is chosen.
+  await expect(page.getByRole('button', { name: 'Add your name and home area' })).toBeVisible();
+  await page.getByRole('radio', { name: 'Strovolos' }).click();
+  await page.getByRole('button', { name: 'Create my card' }).click();
   await expect(
     page.getByRole('status').filter({ hasText: 'Your profile was saved.' }),
   ).toBeVisible();

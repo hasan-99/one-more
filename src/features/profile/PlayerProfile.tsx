@@ -65,7 +65,7 @@ import {
   type CityRow,
 } from './profile-service';
 
-type Copy = { [Key in TranslationKey]: string };
+export type Copy = { [Key in TranslationKey]: string };
 
 /** Pitch zones top to bottom: band top, band height and marker centre (in % of pitch height). */
 const zones: { position: Exclude<Position, 'any'>; short: string; top: number; height: number; centre: number }[] = [
@@ -74,7 +74,7 @@ const zones: { position: Exclude<Position, 'any'>; short: string; top: number; h
   { position: 'defender', short: 'DF', top: 54, height: 24, centre: 66 },
   { position: 'goalkeeper', short: 'GK', top: 78, height: 18, centre: 87 },
 ];
-const dayKeys: Record<AvailabilityDay, TranslationKey> = {
+export const dayKeys: Record<AvailabilityDay, TranslationKey> = {
   mon: 'profileDayMon',
   tue: 'profileDayTue',
   wed: 'profileDayWed',
@@ -709,7 +709,7 @@ function PlayerHero({
   );
 }
 
-function RoundButton({
+export function RoundButton({
   label,
   disabled,
   onPress,
@@ -744,7 +744,7 @@ function RoundButton({
 }
 
 /** Shirt that drops in, sways (jr-sway) and pops its number on change (jr-numa). */
-function Jersey({ colors, number, name, label }: { colors: ThemeColors; number: number; name: string; label: string }) {
+export function Jersey({ colors, number, name, label }: { colors: ThemeColors; number: number; name: string; label: string }) {
   const drop = useEntrance(1000, 150, Easing.bezier(0.2, 1.2, 0.3, 1));
   const sway = useLoop(4200, { alternate: true });
   const pop = useEntrance(450, 0, Easing.bezier(0.2, 1.5, 0.3, 1), number);
@@ -843,7 +843,7 @@ function JerseyFloor() {
 }
 
 /** Tappable pitch: zone bands plus the shirt-number marker gliding to the chosen zone. */
-function PositionPitch({
+export function PositionPitch({
   colors,
   copy,
   locale,
@@ -1007,7 +1007,7 @@ function PositionPitch({
   );
 }
 
-function DayButton({
+export function DayButton({
   letter,
   label,
   on,
@@ -1045,7 +1045,7 @@ function DayButton({
   );
 }
 
-function FormatCard({
+export function FormatCard({
   format,
   players,
   on,
@@ -1086,7 +1086,7 @@ function FormatCard({
   );
 }
 
-function AnyPill({
+export function AnyPill({
   label,
   on,
   onPress,
@@ -1371,7 +1371,7 @@ function SheetOption({
   );
 }
 
-function CardHeader({
+export function CardHeader({
   icon,
   title,
   subtitle,
@@ -1398,7 +1398,7 @@ function CardHeader({
   );
 }
 
-function CardGradient({ id, colors }: { id: string; colors: ThemeColors }) {
+export function CardGradient({ id, colors }: { id: string; colors: ThemeColors }) {
   return (
     <Svg width="100%" height="100%" preserveAspectRatio="none" pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Defs>
@@ -1436,7 +1436,7 @@ function FootShape({ color }: { color: string }) {
   );
 }
 
-function FootIcon({ color }: { color: string }) {
+export function FootIcon({ color }: { color: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24">
       <FootShape color={color} />
@@ -1444,7 +1444,7 @@ function FootIcon({ color }: { color: string }) {
   );
 }
 
-function FootGlyph({ foot, color }: { foot: StrongFoot; color: string }) {
+export function FootGlyph({ foot, color }: { foot: StrongFoot; color: string }) {
   if (foot === 'both') {
     return (
       <Svg width={28} height={22} viewBox="0 0 30 24">
@@ -1466,7 +1466,7 @@ function FootGlyph({ foot, color }: { foot: StrongFoot; color: string }) {
   );
 }
 
-function LevelGlyph({ bars, color }: { bars: number; color: string }) {
+export function LevelGlyph({ bars, color }: { bars: number; color: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24">
       <Rect x="4" y="14" width="4" height="7" rx="1.5" fill={color} />
@@ -1476,7 +1476,7 @@ function LevelGlyph({ bars, color }: { bars: number; color: string }) {
   );
 }
 
-function PinIcon({ color }: { color: string }) {
+export function PinIcon({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
       <Path d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z" stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
@@ -1485,7 +1485,7 @@ function PinIcon({ color }: { color: string }) {
   );
 }
 
-function CalendarIcon({ color }: { color: string }) {
+export function CalendarIcon({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
       <Rect x="3.5" y="5" width="17" height="15.5" rx="3" stroke={color} strokeWidth={2.2} />
@@ -1494,7 +1494,7 @@ function CalendarIcon({ color }: { color: string }) {
   );
 }
 
-function MiniPitch({ color, width, height }: { color: string; width: number; height: number }) {
+export function MiniPitch({ color, width, height }: { color: string; width: number; height: number }) {
   return (
     <Svg width={width} height={height} viewBox="0 0 30 22" fill="none">
       <Rect x="1" y="1" width="28" height="20" rx="3" stroke={color} strokeWidth={1.6} />
@@ -1550,19 +1550,19 @@ function emptyForm(language: Locale): ProfileInput {
     language,
   };
 }
-function isPosition(value: string | null): value is Position {
+export function isPosition(value: string | null): value is Position {
   return positions.some((item) => item === value);
 }
-function isSkillLevel(value: string | null): value is SkillLevel {
+export function isSkillLevel(value: string | null): value is SkillLevel {
   return skillLevels.some((item) => item === value);
 }
-function isStrongFoot(value: string | null | undefined): value is StrongFoot {
+export function isStrongFoot(value: string | null | undefined): value is StrongFoot {
   return strongFeet.some((item) => item === value);
 }
-function isFormat(value: number): value is Format {
+export function isFormat(value: number): value is Format {
   return formats.some((item) => item === value);
 }
-function positionLabel(value: Position, copy: Copy) {
+export function positionLabel(value: Position, copy: Copy) {
   switch (value) {
     case 'goalkeeper':
       return copy.profileGoalkeeper;
@@ -1576,7 +1576,7 @@ function positionLabel(value: Position, copy: Copy) {
       return copy.profileAnyPosition;
   }
 }
-function levelLabel(value: SkillLevel, copy: Copy) {
+export function levelLabel(value: SkillLevel, copy: Copy) {
   switch (value) {
     case 'beginner':
       return copy.profileLevelCasual;
@@ -1586,7 +1586,7 @@ function levelLabel(value: SkillLevel, copy: Copy) {
       return copy.profileLevelCompetitive;
   }
 }
-function strongFootLabel(value: StrongFoot, copy: Copy) {
+export function strongFootLabel(value: StrongFoot, copy: Copy) {
   switch (value) {
     case 'left':
       return copy.profileLeftFoot;
@@ -1596,7 +1596,7 @@ function strongFootLabel(value: StrongFoot, copy: Copy) {
       return copy.profileBothFeet;
   }
 }
-function footShort(value: StrongFoot, copy: Copy) {
+export function footShort(value: StrongFoot, copy: Copy) {
   switch (value) {
     case 'left':
       return copy.profileFootLeft;
@@ -1607,9 +1607,9 @@ function footShort(value: StrongFoot, copy: Copy) {
   }
 }
 
-type Styles = ReturnType<typeof makeStyles>;
+export type Styles = ReturnType<typeof makeStyles>;
 
-function makeStyles(colors: ThemeColors, locale: Locale) {
+export function makeStyles(colors: ThemeColors, locale: Locale) {
   const body = bodyFont(locale);
   const medium = bodyFont(locale, 'medium');
   const semibold = bodyFont(locale, 'semibold');

@@ -1,5 +1,5 @@
-import { ProfileEditor } from '@/features/profile/ProfileEditor';
+import { PlayerOnboarding } from '@/features/profile/PlayerOnboarding';
 
 export default function OnboardingScreen() {
-  return <ProfileEditor onboarding />;
+  return <PlayerOnboarding />;
 }

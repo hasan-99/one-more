@@ -33,7 +33,7 @@ test('branded home screen fits mobile and desktop and localizes to Greek', async
     path: join(screenshots, `home-${mobile ? '375' : 'desktop'}-dark.png`),
   });
 
-  const languageToggle = page.getByRole('button', { name: 'Language: Ελληνικά' });
+  const languageToggle = page.getByRole('button', { name: 'Language: English' });
   await expect(languageToggle).toBeEnabled();
   await languageToggle.click();
   await expect(page.getByRole('heading', { name: 'Βρες τον επόμενο αγώνα σου.' })).toBeVisible();

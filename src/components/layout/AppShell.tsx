@@ -189,7 +189,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       paddingHorizontal: 16,
       paddingVertical: 6,
     },
-    routeContent: { flex: 1, minWidth: 0 },
+    routeContent: { flex: 1, minWidth: 0, minHeight: 0 },
     mobileNav: {
       zIndex: 20,
       paddingTop: 8,

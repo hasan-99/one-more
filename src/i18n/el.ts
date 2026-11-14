@@ -754,4 +754,12 @@ export const el = {
   profileCardMatchday: "ΕΤΟΙΜΟΣ ΓΙΑ ΑΓΩΝΑ",
   profileCardAvailableTitle: "Διαθέσιμος",
   profileCardFormatsTitle: "Μορφές",
+  onboardingTitleLead: "Φτιάξε την ",
+  onboardingTitleAccent: "κάρτα παίκτη σου",
+  onboardingSubtitle: "Δύο πράγματα για να ξεκινήσεις. Τα υπόλοιπα είναι προαιρετικά.",
+  onboardingNameHint: "Το όνομά σου όπως θα φαίνεται στη φανέλα",
+  onboardingCreate: "Δημιουργία κάρτας",
+  onboardingNeed: "Πρόσθεσε όνομα και περιοχή",
+  onboardingBasics: "Ποιος είσαι;",
+  onboardingNamePlaceholder: "Το όνομά σου στα αγγλικά",
 } as const;

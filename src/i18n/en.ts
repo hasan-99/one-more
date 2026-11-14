@@ -749,4 +749,12 @@ export const en = {
   profileCardMatchday: "MATCHDAY READY",
   profileCardAvailableTitle: "Available",
   profileCardFormatsTitle: "Formats",
+  onboardingTitleLead: "Build your ",
+  onboardingTitleAccent: "player card",
+  onboardingSubtitle: "Two things to start. Everything else is optional.",
+  onboardingNameHint: "Your name as it shows on your shirt",
+  onboardingCreate: "Create my card",
+  onboardingNeed: "Add your name and home area",
+  onboardingBasics: "Who are you?",
+  onboardingNamePlaceholder: "Your name in English",
 } as const;
