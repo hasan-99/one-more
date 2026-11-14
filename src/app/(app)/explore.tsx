@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
+  Animated,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -7,10 +9,11 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
 } from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
 
-import { AppPage, EmptyState } from '@/components/layout/AppPage';
+import { Rise, useEntrance, useLoop } from '@/components/motion';
+import { SegmentedControl } from '@/components/segmented-control';
 import { MatchCard } from '@/features/matches/MatchCard';
 import {
   loadMatchFilters,
@@ -21,8 +24,10 @@ import {
   type MatchFilters,
 } from '@/features/matches/match-service';
 import { cyprusDateRange, parseOptionalPrice } from '@/features/matches/match-validation';
-import { translations } from '@/i18n';
+import { translations, type Locale } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import type { ThemeColors } from '@/theme/tokens';
+import { bodyFont, displayFont } from '@/theme/typography';
 
 const emptyFilters: MatchFilters = {
   cityId: null,
@@ -45,12 +50,12 @@ type SearchState = {
 
 type Sheet = 'area' | 'more' | null;
 
+const formatOptions = [null, 5, 7, 8, 11] as const;
+
 export default function ExploreScreen() {
   const { locale, colors } = useAppPreferences();
   const copy = translations[locale];
-  const { width } = useWindowDimensions();
   const [filters, setFilters] = useState<MatchFilters>(emptyFilters);
-  const [draftFilters, setDraftFilters] = useState<MatchFilters>(emptyFilters);
   const [filterAttempt, setFilterAttempt] = useState(0);
   const [filterResult, setFilterResult] = useState<{
     attempt: number;
@@ -58,7 +63,6 @@ export default function ExploreScreen() {
     error: boolean;
   } | null>(null);
   const [priceText, setPriceText] = useState('');
-  const [draftPriceText, setDraftPriceText] = useState('');
   const [sheet, setSheet] = useState<Sheet>(null);
   const [searchAttempt, setSearchAttempt] = useState(0);
   const [search, setSearch] = useState<SearchState>({
@@ -71,7 +75,6 @@ export default function ExploreScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const parsedPrice = parseOptionalPrice(priceText);
-  const draftParsedPrice = parseOptionalPrice(draftPriceText);
   const dateRange = useMemo(() => {
     if (!filters.dateFrom && !filters.dateThrough) return { from: '', through: '' };
     return cyprusDateRange(
@@ -79,25 +82,16 @@ export default function ExploreScreen() {
       filters.dateThrough || filters.dateFrom,
     );
   }, [filters.dateFrom, filters.dateThrough]);
-  const draftDateRange = useMemo(() => {
-    if (!draftFilters.dateFrom && !draftFilters.dateThrough) return { from: '', through: '' };
-    return cyprusDateRange(
-      draftFilters.dateFrom || draftFilters.dateThrough,
-      draftFilters.dateThrough || draftFilters.dateFrom,
-    );
-  }, [draftFilters.dateFrom, draftFilters.dateThrough]);
   const invalidDate = dateRange === null;
   const invalidPrice = Number.isNaN(parsedPrice);
-  const invalidDraftDate = draftDateRange === null;
-  const invalidDraftPrice = Number.isNaN(draftParsedPrice);
   const queryFilters = useMemo<MatchFilters>(
     () => ({
       ...filters,
-      priceMaximum: parsedPrice,
+      priceMaximum: invalidPrice ? null : parsedPrice,
       dateFrom: dateRange?.from ?? '',
       dateThrough: dateRange?.through ?? '',
     }),
-    [filters, parsedPrice, dateRange],
+    [filters, invalidPrice, parsedPrice, dateRange],
   );
   const queryKey = JSON.stringify(queryFilters);
   const filterData = filterResult?.attempt === filterAttempt ? filterResult.data : null;
@@ -108,14 +102,24 @@ export default function ExploreScreen() {
   const hasMore = !loading && !invalidQuery && search.hasMore;
   const loadError = !loading && !invalidQuery && search.error;
   const selectedArea = filterData?.areas.find((area) => area.id === filters.areaId);
-  const appliedFilterCount =
+  const moreFilterCount =
     Number(Boolean(filters.cityId)) +
-    Number(Boolean(filters.areaId)) +
     Number(filters.minimumFreeSpots !== null) +
     Number(Boolean(priceText)) +
     Number(Boolean(filters.dateFrom || filters.dateThrough)) +
     Number(Boolean(filters.skillLevel));
-  const styles = makeStyles(colors, width);
+  const anyActive = moreFilterCount > 0 || Boolean(filters.areaId) || filters.sideSize !== null;
+  const styles = makeStyles(colors, locale);
+  const areaName = (area: MatchArea) => (locale === 'el' ? area.name_el : area.name_en);
+  const resultLabel =
+    matches.length === 1
+      ? copy.matchResultsSingle
+      : copy.matchResultsCount.replace('{count}', String(matches.length));
+  const showLabel = loading
+    ? copy.matchShowGames
+    : matches.length === 1
+      ? copy.matchShowGamesSingle
+      : copy.matchShowGamesCount.replace('{count}', String(matches.length));
 
   useEffect(() => {
     let active = true;
@@ -181,172 +185,158 @@ export default function ExploreScreen() {
 
   const resetFilters = () => {
     setFilters(emptyFilters);
-    setDraftFilters(emptyFilters);
     setPriceText('');
-    setDraftPriceText('');
   };
-  const openSheet = (next: Exclude<Sheet, null>) => {
-    setDraftFilters(filters);
-    setDraftPriceText(priceText);
-    setSheet(next);
-  };
-  const applyDraft = () => {
-    setFilters({ ...draftFilters, priceMaximum: draftParsedPrice });
-    setPriceText(draftPriceText);
-    setSheet(null);
-  };
-  const clearDraft = () => {
-    setDraftFilters({ ...emptyFilters, sideSize: filters.sideSize });
-    setDraftPriceText('');
-  };
-  const areasForCity = filterData?.areas.filter(
-    (area) => !draftFilters.cityId || area.city_id === draftFilters.cityId,
+  const update = <K extends keyof MatchFilters>(key: K, value: MatchFilters[K]) =>
+    setFilters((current) => ({ ...current, [key]: value }));
+  const visibleAreas = filterData?.areas.filter(
+    (area) => !filters.cityId || area.city_id === filters.cityId,
+  );
+  const formatIndex = Math.max(
+    0,
+    formatOptions.findIndex((size) => size === filters.sideSize),
   );
 
   return (
-    <AppPage title={copy.matchListTitle} description={copy.matchListIntro}>
-      <View style={styles.controls}>
-        <View
-          accessibilityRole="radiogroup"
-          accessibilityLabel={copy.matchFormat}
-          style={styles.formats}
-        >
-          {[
-            { size: null, label: copy.matchAllFormatsShort },
-            ...[5, 7, 8, 11].map((size) => ({ size, label: `${size}v${size}` })),
-          ].map(({ size, label }) => {
-            const selected = filters.sideSize === size;
-            return (
-              <Pressable
-                key={label}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selected }}
-                aria-checked={selected}
-                onPress={() => setFilters((current) => ({ ...current, sideSize: size }))}
-                style={[
-                  styles.formatOption,
-                  selected && {
-                    backgroundColor: colors.primaryButton,
-                    borderColor: colors.primaryButton,
-                  },
-                ]}
-              >
-                <Text style={[styles.formatText, selected && { color: colors.primaryButtonText }]}>
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.page}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          <Rise style={styles.heading}>
+            <Text accessibilityRole="header" style={styles.title}>
+              {copy.matchListTitleLead}
+              <Text style={{ color: colors.accentText }}>{copy.matchListTitleAccent}</Text>
+            </Text>
+            <Text style={styles.description}>{copy.matchListIntro}</Text>
+          </Rise>
 
-        <View style={styles.selectorRow}>
-          <SelectorButton
-            label={copy.matchArea}
-            value={
-              selectedArea
-                ? locale === 'el'
-                  ? selectedArea.name_el
-                  : selectedArea.name_en
-                : copy.matchAllAreas
-            }
-            icon="⌖"
-            onPress={() => openSheet('area')}
-            accessibilityLabel={`${copy.matchArea}: ${selectedArea ? (locale === 'el' ? selectedArea.name_el : selectedArea.name_en) : copy.matchAllAreas}`}
-          />
-          <SelectorButton
-            label={copy.matchMoreFilters}
-            value={
-              appliedFilterCount
-                ? copy.matchFilterCount.replace('{count}', String(appliedFilterCount))
-                : copy.matchNoFilters
-            }
-            icon="☷"
-            onPress={() => openSheet('more')}
-          />
-        </View>
-      </View>
+          <Rise delay={100} style={styles.controls}>
+            <SegmentedControl
+              label={copy.matchFormat}
+              index={formatIndex}
+              options={formatOptions.map((size) => ({
+                key: String(size),
+                label: size === null ? copy.matchAllFormatsShort : `${size}v${size}`,
+                onPress: () => update('sideSize', size),
+              }))}
+            />
+            <View style={styles.selectorRow}>
+              <PickerButton
+                label={copy.matchArea}
+                value={selectedArea ? areaName(selectedArea) : copy.matchAllAreas}
+                set={Boolean(filters.areaId)}
+                icon="pin"
+                onPress={() => setSheet('area')}
+              />
+              <PickerButton
+                label={copy.matchMoreFilters}
+                value={
+                  moreFilterCount
+                    ? copy.matchFilterCount.replace('{count}', String(moreFilterCount))
+                    : copy.matchNoFilters
+                }
+                set={moreFilterCount > 0}
+                icon="sliders"
+                onPress={() => setSheet('more')}
+              />
+            </View>
+          </Rise>
 
-      {filterError ? (
-        <View accessibilityRole="alert" style={styles.errorBox}>
-          <Text style={styles.errorText}>{copy.matchFiltersLoadError}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setFilterAttempt((attempt) => attempt + 1)}
-          >
-            <Text style={styles.retryText}>{copy.matchRetry}</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      <View style={styles.resultsHeader}>
-        <View style={styles.resultCount}>
-          <View style={styles.statusDot} />
-          <Text style={styles.resultText}>
-            {loading
-              ? copy.matchLoading
-              : copy.matchResultsCount.replace('{count}', String(matches.length))}
-          </Text>
-        </View>
-        {appliedFilterCount || filters.sideSize ? (
-          <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.clearButton}>
-            <Text style={styles.clearText}>{copy.matchClearFilters}</Text>
-          </Pressable>
-        ) : null}
-      </View>
-
-      {invalidDate || invalidPrice ? (
-        <View accessibilityRole="alert" style={styles.errorBox}>
-          <Text style={styles.errorText}>
-            {invalidDate ? copy.matchFilterDateInvalid : copy.matchFilterPriceInvalid}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => openSheet(invalidDate ? 'more' : 'more')}
-          >
-            <Text style={styles.retryText}>{copy.matchMoreFilters}</Text>
-          </Pressable>
-        </View>
-      ) : loading ? (
-        <View
-          accessibilityRole="progressbar"
-          accessibilityLabel={copy.matchLoading}
-          style={styles.stateBox}
-        >
-          <View style={styles.loadingBall} />
-          <Text style={styles.stateText}>{copy.matchLoading}</Text>
-        </View>
-      ) : loadError && matches.length === 0 ? (
-        <View accessibilityRole="alert" style={styles.stateBox}>
-          <Text style={styles.errorText}>{copy.matchLoadError}</Text>
-          <ActionButton
-            label={copy.matchRetry}
-            onPress={() => setSearchAttempt((attempt) => attempt + 1)}
-          />
-        </View>
-      ) : matches.length === 0 ? (
-        <EmptyState title={copy.matchEmptyTitle} description={copy.matchEmptyCopy} />
-      ) : (
-        <View style={styles.results}>
-          {matches.map((match) => (
-            <MatchCard key={match.id} match={match} />
-          ))}
-          {loadError ? (
+          {filterError ? (
             <View accessibilityRole="alert" style={styles.errorBox}>
-              <Text style={styles.errorText}>{copy.matchLoadError}</Text>
-              <Pressable accessibilityRole="button" onPress={() => void loadNextPage()}>
-                <Text style={styles.retryText}>{copy.matchRetry}</Text>
+              <Text style={styles.errorText}>{copy.matchFiltersLoadError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setFilterAttempt((attempt) => attempt + 1)}
+                style={styles.inlineButton}
+              >
+                <Text style={styles.linkText}>{copy.matchRetry}</Text>
               </Pressable>
             </View>
           ) : null}
-          {hasMore ? (
-            <ActionButton
-              label={loadingMore ? copy.matchLoading : copy.matchLoadMore}
-              onPress={() => void loadNextPage()}
-              disabled={loadingMore}
-            />
-          ) : null}
+
+          <Rise delay={180} style={styles.resultsHeader}>
+            <View style={styles.resultCount}>
+              <LiveDot color={colors.accentText} />
+              <Text accessibilityLiveRegion="polite" style={styles.resultText}>
+                {loading ? copy.matchLoading : resultLabel}
+              </Text>
+            </View>
+            {anyActive ? (
+              <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.inlineButton}>
+                <Text style={styles.linkText}>{copy.matchClearFilters}</Text>
+              </Pressable>
+            ) : null}
+          </Rise>
+
+          {invalidQuery ? (
+            <View accessibilityRole="alert" style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                {invalidDate ? copy.matchFilterDateInvalid : copy.matchFilterPriceInvalid}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSheet('more')}
+                style={styles.inlineButton}
+              >
+                <Text style={styles.linkText}>{copy.matchMoreFilters}</Text>
+              </Pressable>
+            </View>
+          ) : loading ? (
+            <View
+              accessibilityRole="progressbar"
+              accessibilityLabel={copy.matchLoading}
+              style={styles.stateBox}
+            >
+              <BouncingBall colors={colors} />
+              <Text style={styles.stateText}>{copy.matchLoading}</Text>
+            </View>
+          ) : loadError && matches.length === 0 ? (
+            <View accessibilityRole="alert" style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>{copy.matchLoadError}</Text>
+              <LimeButton
+                label={copy.matchRetry}
+                onPress={() => setSearchAttempt((attempt) => attempt + 1)}
+              />
+            </View>
+          ) : matches.length === 0 ? (
+            <Rise style={styles.emptyBox}>
+              <BouncingBall colors={colors} />
+              <Text style={styles.emptyTitle}>{copy.matchEmptyTitle}</Text>
+              <Text style={styles.emptyCopy}>{copy.matchEmptyCopy}</Text>
+              {anyActive ? <LimeButton label={copy.matchClearFilters} onPress={resetFilters} /> : null}
+            </Rise>
+          ) : (
+            <View style={styles.results}>
+              {matches.map((match, index) => (
+                <MatchCard key={match.id} match={match} index={index} />
+              ))}
+              {loadError ? (
+                <View accessibilityRole="alert" style={styles.errorBox}>
+                  <Text style={styles.errorText}>{copy.matchLoadError}</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void loadNextPage()}
+                    style={styles.inlineButton}
+                  >
+                    <Text style={styles.linkText}>{copy.matchRetry}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              {hasMore ? (
+                <LimeButton
+                  label={loadingMore ? copy.matchLoading : copy.matchLoadMore}
+                  onPress={() => void loadNextPage()}
+                  disabled={loadingMore}
+                />
+              ) : null}
+            </View>
+          )}
         </View>
-      )}
+      </ScrollView>
 
       <FilterSheet
         visible={sheet !== null}
@@ -354,178 +344,269 @@ export default function ExploreScreen() {
         onClose={() => setSheet(null)}
         footer={
           <View style={styles.sheetActions}>
-            <ActionButton label={copy.matchClear} onPress={clearDraft} secondary />
-            <ActionButton
-              label={copy.matchShowGames}
-              onPress={applyDraft}
-              disabled={invalidDraftDate || invalidDraftPrice}
-            />
+            <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.ghostButton}>
+              <Text style={styles.ghostButtonText}>{copy.matchClear}</Text>
+            </Pressable>
+            <View style={styles.flexOne}>
+              <LimeButton
+                label={showLabel}
+                onPress={() => setSheet(null)}
+                disabled={invalidQuery}
+                tall
+              />
+            </View>
           </View>
         }
       >
         {sheet === 'area' ? (
-          <View style={styles.areaGrid}>
-            <ChoiceButton
+          <OptionGrid label={copy.matchArea} columns={2}>
+            <OptionButton
               label={copy.matchAllAreas}
-              selected={!draftFilters.areaId}
-              onPress={() => setDraftFilters((current) => ({ ...current, areaId: null }))}
+              selected={!filters.areaId}
+              onPress={() => {
+                update('areaId', null);
+                setSheet(null);
+              }}
             />
-            {filterData?.areas
-              .filter((area) => !draftFilters.cityId || area.city_id === draftFilters.cityId)
-              .map((area) => (
-                <ChoiceButton
-                  key={area.id}
-                  label={locale === 'el' ? area.name_el : area.name_en}
-                  selected={draftFilters.areaId === area.id}
-                  onPress={() =>
-                    setDraftFilters((current) => ({
-                      ...current,
-                      areaId: area.id,
-                      cityId: area.city_id,
-                    }))
-                  }
-                />
-              ))}
-          </View>
+            {visibleAreas?.map((area) => (
+              <OptionButton
+                key={area.id}
+                label={areaName(area)}
+                selected={filters.areaId === area.id}
+                onPress={() => {
+                  setFilters((current) => ({ ...current, areaId: area.id, cityId: area.city_id }));
+                  setSheet(null);
+                }}
+              />
+            ))}
+            {visibleAreas?.length === 0 ? (
+              <Text style={styles.helperText}>{copy.matchNoAreas}</Text>
+            ) : null}
+          </OptionGrid>
         ) : (
           <View style={styles.sheetFields}>
             {filterData ? (
-              <FilterRow title={copy.matchCity}>
-                <FilterChip
-                  label={copy.matchAllCities}
-                  selected={!draftFilters.cityId}
-                  onPress={() =>
-                    setDraftFilters((current) => ({ ...current, cityId: null, areaId: null }))
-                  }
-                />
-                {filterData.cities.map((city) => (
-                  <FilterChip
-                    key={city.id}
-                    label={locale === 'el' ? city.name_el : city.name_en}
-                    selected={draftFilters.cityId === city.id}
+              <FieldGroup title={copy.matchCity}>
+                <OptionGrid label={copy.matchCity} columns={2}>
+                  <OptionButton
+                    label={copy.matchAllCities}
+                    selected={!filters.cityId}
                     onPress={() =>
-                      setDraftFilters((current) => ({ ...current, cityId: city.id, areaId: null }))
+                      setFilters((current) => ({ ...current, cityId: null, areaId: null }))
                     }
                   />
-                ))}
-              </FilterRow>
+                  {filterData.cities.map((city) => (
+                    <OptionButton
+                      key={city.id}
+                      label={locale === 'el' ? city.name_el : city.name_en}
+                      selected={filters.cityId === city.id}
+                      onPress={() =>
+                        setFilters((current) => ({ ...current, cityId: city.id, areaId: null }))
+                      }
+                    />
+                  ))}
+                </OptionGrid>
+              </FieldGroup>
             ) : null}
-            <FilterRow title={copy.matchMinimumOpenSpots}>
-              {[
-                { count: null, label: copy.matchAnySpots },
-                { count: 2, label: copy.matchTwoSpots },
-                { count: 4, label: copy.matchFourSpots },
-              ].map(({ count, label }) => (
-                <FilterChip
-                  key={label}
-                  label={label}
-                  selected={draftFilters.minimumFreeSpots === count}
-                  onPress={() =>
-                    setDraftFilters((current) => ({ ...current, minimumFreeSpots: count }))
-                  }
-                />
-              ))}
-            </FilterRow>
+            <FieldGroup title={copy.matchMinimumOpenSpots}>
+              <OptionGrid label={copy.matchMinimumOpenSpots} columns={3}>
+                {[
+                  { count: null, label: copy.matchAnySpots },
+                  { count: 2, label: copy.matchTwoSpots },
+                  { count: 4, label: copy.matchFourSpots },
+                ].map(({ count, label }) => (
+                  <OptionButton
+                    key={label}
+                    third
+                    label={label}
+                    selected={filters.minimumFreeSpots === count}
+                    onPress={() => update('minimumFreeSpots', count)}
+                  />
+                ))}
+              </OptionGrid>
+            </FieldGroup>
             <View style={styles.inputGrid}>
               <FilterInput
                 label={copy.matchMaximumPrice}
-                value={draftPriceText}
-                onChangeText={setDraftPriceText}
+                value={priceText}
+                onChangeText={setPriceText}
                 placeholder="€"
                 keyboardType="decimal-pad"
-                error={invalidDraftPrice}
+                error={invalidPrice}
               />
               <FilterInput
                 label={copy.matchDateFrom}
-                value={draftFilters.dateFrom}
-                onChangeText={(dateFrom) =>
-                  setDraftFilters((current) => ({ ...current, dateFrom }))
-                }
+                value={filters.dateFrom}
+                onChangeText={(dateFrom) => update('dateFrom', dateFrom)}
                 placeholder="YYYY-MM-DD"
-                error={invalidDraftDate}
-              />
-              <FilterInput
-                label={copy.matchDateThrough}
-                value={draftFilters.dateThrough}
-                onChangeText={(dateThrough) =>
-                  setDraftFilters((current) => ({ ...current, dateThrough }))
-                }
-                placeholder="YYYY-MM-DD"
-                error={invalidDraftDate}
+                error={invalidDate}
               />
             </View>
-            {invalidDraftDate ? (
+            <View style={styles.inputGrid}>
+              <FilterInput
+                label={copy.matchDateThrough}
+                value={filters.dateThrough}
+                onChangeText={(dateThrough) => update('dateThrough', dateThrough)}
+                placeholder="YYYY-MM-DD"
+                error={invalidDate}
+              />
+              <View style={styles.flexOne} />
+            </View>
+            {invalidDate ? (
               <Text accessibilityRole="alert" style={styles.errorText}>
                 {copy.matchFilterDateInvalid}
               </Text>
             ) : null}
-            {invalidDraftPrice ? (
+            {invalidPrice ? (
               <Text accessibilityRole="alert" style={styles.errorText}>
                 {copy.matchFilterPriceInvalid}
               </Text>
             ) : null}
-            <FilterRow title={copy.matchSkill}>
-              <FilterChip
-                label={copy.matchAllLevels}
-                selected={!draftFilters.skillLevel}
-                onPress={() => setDraftFilters((current) => ({ ...current, skillLevel: null }))}
-              />
-              {(
-                [
-                  ['beginner', copy.profileBeginner],
-                  ['intermediate', copy.profileIntermediate],
-                  ['advanced', copy.profileAdvanced],
-                ] as const
-              ).map(([level, label]) => (
-                <FilterChip
-                  key={level}
-                  label={label}
-                  selected={draftFilters.skillLevel === level}
-                  onPress={() => setDraftFilters((current) => ({ ...current, skillLevel: level }))}
+            <FieldGroup title={copy.matchSkill}>
+              <OptionGrid label={copy.matchSkill} columns={2}>
+                <OptionButton
+                  label={copy.matchAllLevels}
+                  selected={!filters.skillLevel}
+                  onPress={() => update('skillLevel', null)}
                 />
-              ))}
-            </FilterRow>
-            {areasForCity?.length === 0 ? (
-              <Text style={styles.helperText}>{copy.matchNoAreas}</Text>
-            ) : null}
+                {(
+                  [
+                    ['beginner', copy.profileBeginner],
+                    ['intermediate', copy.profileIntermediate],
+                    ['advanced', copy.profileAdvanced],
+                  ] as const
+                ).map(([level, label]) => (
+                  <OptionButton
+                    key={level}
+                    label={label}
+                    selected={filters.skillLevel === level}
+                    onPress={() => update('skillLevel', level)}
+                  />
+                ))}
+              </OptionGrid>
+            </FieldGroup>
           </View>
         )}
       </FilterSheet>
-    </AppPage>
+    </View>
   );
 }
 
-function SelectorButton({
+function PickerButton({
   label,
   value,
+  set,
   icon,
   onPress,
-  accessibilityLabel,
 }: {
   label: string;
   value: string;
-  icon: string;
+  set: boolean;
+  icon: 'pin' | 'sliders';
   onPress: () => void;
-  accessibilityLabel?: string;
 }) {
-  const { colors } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
+  const { colors, locale } = useAppPreferences();
+  const styles = makeStyles(colors, locale);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? `${label}: ${value}`}
+      accessibilityLabel={`${label}: ${value}`}
       onPress={onPress}
-      style={styles.selector}
+      style={({ pressed }) => [
+        styles.picker,
+        set && { borderColor: colors.accentText, backgroundColor: 'rgba(207,255,74,0.07)' },
+        { transform: [{ scale: pressed ? 0.97 : 1 }] },
+      ]}
     >
-      <Text style={styles.selectorIcon}>{icon}</Text>
-      <View style={styles.selectorCopy}>
-        <Text style={styles.selectorLabel}>{label}</Text>
-        <Text numberOfLines={1} style={styles.selectorValue}>
+      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+        {icon === 'pin' ? (
+          <>
+            <Path
+              d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z"
+              stroke={colors.accentText}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Circle cx="12" cy="9.5" r="2.5" stroke={colors.accentText} strokeWidth={2} />
+          </>
+        ) : (
+          <>
+            <Path
+              d="M4 7h10M18 7h2M4 17h2M10 17h10"
+              stroke={colors.accentText}
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            <Circle cx="16" cy="7" r="2" stroke={colors.accentText} strokeWidth={2} />
+            <Circle cx="8" cy="17" r="2" stroke={colors.accentText} strokeWidth={2} />
+          </>
+        )}
+      </Svg>
+      <View style={styles.pickerCopy}>
+        <Text style={styles.pickerLabel}>{label}</Text>
+        <Text numberOfLines={1} style={styles.pickerValue}>
           {value}
         </Text>
       </View>
-      <Text style={styles.chevron}>⌄</Text>
+      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M6 9l6 6 6-6"
+          stroke={colors.textSecondary}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
     </Pressable>
+  );
+}
+
+function LiveDot({ color }: { color: string }) {
+  const blink = useLoop(800, { alternate: true });
+  return (
+    <Animated.View
+      accessibilityElementsHidden
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: color,
+        opacity: blink.interpolate({ inputRange: [0, 1], outputRange: [1, 0.25] }),
+      }}
+    />
+  );
+}
+
+/** Bouncing ball with its squashing floor shadow (`.ap-ball` / `.ap-shadow`). */
+function BouncingBall({ colors }: { colors: ThemeColors }) {
+  const bounce = useLoop(1100, { alternate: true, easing: Easing.bezier(0.5, 0, 0.5, 1) });
+  return (
+    <View accessibilityElementsHidden style={ballStyles.wrap}>
+      <Animated.View
+        style={[
+          ballStyles.ball,
+          {
+            backgroundColor: colors.textPrimary,
+            borderColor: colors.background,
+            transform: [
+              { translateY: bounce.interpolate({ inputRange: [0, 1], outputRange: [-22, 0] }) },
+            ],
+          },
+        ]}
+      >
+        <View style={ballStyles.ballShade} />
+      </Animated.View>
+      <Animated.View
+        style={[
+          ballStyles.shadow,
+          {
+            opacity: bounce.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] }),
+            transform: [{ scaleX: bounce.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }],
+          },
+        ]}
+      />
+    </View>
   );
 }
 
@@ -537,44 +618,54 @@ function FilterSheet({
   onClose,
 }: PropsWithChildren<{ visible: boolean; title: string; footer: ReactNode; onClose: () => void }>) {
   const { colors, locale } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
+  const styles = makeStyles(colors, locale);
   const copy = translations[locale];
+  const dim = useEntrance(250, 0, Easing.ease, visible);
+  const slide = useEntrance(400, 0, Easing.bezier(0.2, 0.9, 0.2, 1), visible);
   return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
+    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.modalRoot}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.matchDismissOverlay}
-          onPress={onClose}
-          style={styles.scrim}
-        />
-        <View
+        <Animated.View style={[styles.scrim, { opacity: dim }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={copy.matchDismissOverlay}
+            onPress={onClose}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+        <Animated.View
           accessibilityViewIsModal
           accessibilityRole="dialog"
           accessibilityLabel={title}
-          style={styles.sheet}
+          style={[
+            styles.sheet,
+            {
+              transform: [
+                { translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) },
+              ],
+            },
+          ]}
         >
-          <View style={styles.sheetHeading}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetTitleRow}>
-              <Text accessibilityRole="header" style={styles.sheetTitle}>
-                {title}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={copy.matchCloseFilters}
-                onPress={onClose}
-                style={styles.closeButton}
-              >
-                <Text style={styles.closeText}>×</Text>
-              </Pressable>
-            </View>
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetTitleRow}>
+            <Text accessibilityRole="header" style={styles.sheetTitle}>
+              {title}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={copy.matchCloseFilters}
+              onPress={onClose}
+              style={styles.closeButton}
+            >
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke={colors.textPrimary}
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            </Pressable>
           </View>
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -583,78 +674,72 @@ function FilterSheet({
           >
             {children}
           </ScrollView>
-          <View style={styles.sheetFooter}>{footer}</View>
-        </View>
+          {footer}
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
-function ChoiceButton({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  const { colors } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
+function FieldGroup({ title, children }: PropsWithChildren<{ title: string }>) {
+  const { colors, locale } = useAppPreferences();
+  const styles = makeStyles(colors, locale);
   return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      aria-checked={selected}
-      onPress={onPress}
-      style={[
-        styles.choice,
-        selected && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
-      ]}
-    >
-      <Text style={[styles.choiceText, selected && { color: colors.primaryButtonText }]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function FilterRow({ title, children }: PropsWithChildren<{ title: string }>) {
-  const { colors } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
-  return (
-    <View style={styles.filterRow}>
-      <Text style={styles.filterLabel}>{title}</Text>
-      <View accessibilityRole="radiogroup" style={styles.chips}>
-        {children}
-      </View>
+    <View style={styles.fieldGroup}>
+      <Text style={styles.fieldLabel}>{title}</Text>
+      {children}
     </View>
   );
 }
 
-function FilterChip({
+function OptionGrid({
+  label,
+  columns,
+  children,
+}: PropsWithChildren<{ label: string; columns: 2 | 3 }>) {
+  const { colors, locale } = useAppPreferences();
+  const styles = makeStyles(colors, locale);
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      style={[styles.optionGrid, columns === 3 && styles.optionGridThree]}
+    >
+      {children}
+    </View>
+  );
+}
+
+function OptionButton({
   label,
   selected,
   onPress,
+  third = false,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  third?: boolean;
 }) {
-  const { colors } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
+  const { colors, locale } = useAppPreferences();
+  const styles = makeStyles(colors, locale);
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
       aria-checked={selected}
       onPress={onPress}
-      style={[
-        styles.chip,
+      style={({ pressed }) => [
+        styles.option,
+        third && styles.optionThird,
         selected && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+        { transform: [{ scale: pressed ? 0.95 : 1 }] },
       ]}
     >
-      <Text style={[styles.chipText, selected && { color: colors.primaryButtonText }]}>
+      <Text
+        numberOfLines={1}
+        style={[styles.optionText, selected && { color: colors.primaryButtonText }]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -676,11 +761,12 @@ function FilterInput({
   keyboardType?: 'default' | 'decimal-pad';
   error?: boolean;
 }) {
-  const { colors } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
+  const { colors, locale } = useAppPreferences();
+  const styles = makeStyles(colors, locale);
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.filterInput}>
-      <Text style={styles.filterLabel}>{label}</Text>
+      <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
         value={value}
@@ -689,175 +775,173 @@ function FilterInput({
         placeholderTextColor={colors.textMuted}
         keyboardType={keyboardType}
         autoCapitalize="none"
-        style={[styles.input, { borderColor: error ? colors.errorText : colors.border }]}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={[
+          styles.input,
+          {
+            borderColor: error ? colors.errorText : focused ? colors.accentText : colors.optionBorder,
+          },
+          focused && styles.inputFocused,
+        ]}
       />
     </View>
   );
 }
 
-function ActionButton({
+function LimeButton({
   label,
   onPress,
   disabled = false,
-  secondary = false,
+  tall = false,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  secondary?: boolean;
+  tall?: boolean;
 }) {
-  const { colors } = useAppPreferences();
-  const styles = makeStyles(colors, 390);
+  const { colors, locale } = useAppPreferences();
+  const styles = makeStyles(colors, locale);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={[
-        styles.action,
-        secondary ? styles.secondaryAction : styles.primaryAction,
-        { opacity: disabled ? 0.55 : 1 },
+      style={({ pressed }) => [
+        styles.limeButton,
+        tall && styles.limeButtonTall,
+        { opacity: disabled ? 0.55 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
       ]}
     >
-      <Text style={[styles.actionText, secondary && { color: colors.textPrimary }]}>{label}</Text>
+      <Text style={[styles.limeButtonText, tall && { fontSize: 17 }]}>{label}</Text>
     </Pressable>
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors'], width: number) {
-  const compact = width < 420;
+const ballStyles = StyleSheet.create({
+  wrap: { height: 56, alignItems: 'center', justifyContent: 'flex-end', gap: 2 },
+  ball: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, overflow: 'hidden' },
+  ballShade: {
+    position: 'absolute',
+    right: -5,
+    bottom: -5,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  shadow: { width: 30, height: 6, borderRadius: 15, backgroundColor: '#000000' },
+});
+
+function makeStyles(colors: ThemeColors, locale: Locale) {
+  const body = bodyFont(locale);
+  const semibold = bodyFont(locale, 'semibold');
+  const medium = bodyFont(locale, 'medium');
   return StyleSheet.create({
-    controls: { gap: 14 },
-    formats: {
-      flexDirection: 'row',
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 18,
-      padding: 4,
-      backgroundColor: colors.surface,
-      gap: 3,
+    root: { flex: 1, backgroundColor: colors.background },
+    scroll: { flex: 1 },
+    page: { flexGrow: 1, alignItems: 'center' },
+    content: {
+      width: '100%',
+      maxWidth: 680,
+      paddingHorizontal: 18,
+      paddingTop: 20,
+      paddingBottom: 28,
+      gap: 16,
     },
-    formatOption: {
-      flex: 1,
-      minWidth: 0,
-      minHeight: compact ? 42 : 48,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 3,
-      borderWidth: 1,
-      borderColor: 'transparent',
-      borderRadius: 14,
+    heading: { gap: 8 },
+    title: {
+      color: colors.textPrimary,
+      fontFamily: displayFont(locale),
+      fontSize: locale === 'el' ? 36 : 42,
+      lineHeight: locale === 'el' ? 40 : 41,
+      fontWeight: '800',
     },
-    formatText: {
-      color: colors.textSecondary,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: compact ? 11 : 14,
-      fontWeight: '700',
-    },
+    description: { color: colors.textSecondary, fontFamily: body, fontSize: 15, lineHeight: 22 },
+    controls: { gap: 10 },
     selectorRow: { flexDirection: 'row', gap: 10 },
-    selector: {
+    picker: {
       flex: 1,
       minWidth: 0,
-      minHeight: 66,
+      height: 58,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 9,
-      paddingHorizontal: compact ? 10 : 14,
-      borderWidth: 1,
+      gap: 10,
+      paddingHorizontal: 12,
+      borderWidth: 1.5,
       borderColor: colors.border,
       borderRadius: 16,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.well,
     },
-    selectorIcon: {
-      color: colors.accentText,
-      fontSize: 24,
-      width: 24,
-      textAlign: 'center',
-      fontWeight: '700',
-    },
-    selectorCopy: { flex: 1, minWidth: 0, gap: 2 },
-    selectorLabel: { color: colors.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 11 },
-    selectorValue: {
-      color: colors.textPrimary,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: compact ? 12 : 14,
-      fontWeight: '700',
-    },
-    chevron: { color: colors.textSecondary, fontSize: 20 },
+    pickerCopy: { flex: 1, minWidth: 0, gap: 1 },
+    pickerLabel: { color: colors.textSecondary, fontFamily: medium, fontSize: 12, fontWeight: '500' },
+    pickerValue: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
     resultsHeader: {
+      minHeight: 44,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 12,
-      marginTop: 4,
     },
-    resultCount: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-    statusDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.accentText },
-    resultText: {
+    resultCount: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+    resultText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    inlineButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+    linkText: { color: colors.accentText, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    results: { width: '100%', gap: 12 },
+    stateBox: { minHeight: 150, justifyContent: 'center', alignItems: 'center', gap: 12 },
+    stateText: { color: colors.textSecondary, fontFamily: body, fontSize: 15 },
+    emptyBox: {
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.optionBorder,
+      paddingVertical: 28,
+      paddingHorizontal: 18,
+      alignItems: 'center',
+      gap: 12,
+    },
+    emptyTitle: {
       color: colors.textPrimary,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 14,
-      fontWeight: '700',
-    },
-    clearButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 4 },
-    clearText: {
-      color: colors.accentText,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    results: { width: '100%', gap: 14 },
-    stateBox: { minHeight: 136, justifyContent: 'center', alignItems: 'center', gap: 12 },
-    stateText: { color: colors.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 14 },
-    loadingBall: {
-      width: 19,
-      height: 19,
-      borderRadius: 10,
-      backgroundColor: colors.accentText,
-      borderWidth: 4,
-      borderColor: colors.surfaceRaised,
-    },
-    errorBox: { gap: 8, padding: 14, borderRadius: 12, backgroundColor: colors.error },
-    errorText: {
-      color: colors.errorText,
-      fontFamily: 'Inter_400Regular',
-      fontSize: 13,
-      lineHeight: 19,
-    },
-    retryText: {
-      color: colors.accentText,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 13,
+      fontFamily: displayFont(locale),
+      fontSize: locale === 'el' ? 22 : 26,
+      lineHeight: locale === 'el' ? 27 : 27,
       fontWeight: '800',
+      textAlign: 'center',
     },
-    modalRoot: { flex: 1, justifyContent: 'flex-end' },
+    emptyCopy: { color: colors.textSecondary, fontFamily: body, fontSize: 15, textAlign: 'center' },
+    errorBox: { gap: 4, padding: 14, borderRadius: 14, backgroundColor: colors.error },
+    errorText: { color: colors.errorText, fontFamily: body, fontSize: 14, lineHeight: 20 },
+    helperText: { color: colors.textSecondary, fontFamily: body, fontSize: 14 },
+    modalRoot: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
     scrim: {
       position: 'absolute',
       top: 0,
       right: 0,
       bottom: 0,
       left: 0,
-      backgroundColor: 'rgba(2, 8, 5, 0.72)',
+      backgroundColor: 'rgba(5, 8, 6, 0.7)',
     },
     sheet: {
       width: '100%',
-      maxHeight: '84%',
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderTopWidth: 1,
+      maxWidth: 680,
+      maxHeight: '88%',
+      backgroundColor: colors.surface === '#FFFFFF' ? colors.surface : '#131D17',
+      borderColor: colors.optionBorder,
+      borderTopWidth: 1.5,
       borderTopLeftRadius: 26,
       borderTopRightRadius: 26,
-      overflow: 'hidden',
+      paddingTop: 10,
+      paddingHorizontal: 18,
+      paddingBottom: 20,
+      gap: 16,
     },
-    sheetHeading: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
     sheetHandle: {
-      width: 48,
+      width: 44,
       height: 5,
-      borderRadius: 3,
+      borderRadius: 999,
       alignSelf: 'center',
-      marginBottom: 16,
-      backgroundColor: colors.border,
+      backgroundColor: colors.borderStrong,
     },
     sheetTitleRow: {
       flexDirection: 'row',
@@ -866,110 +950,82 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors'], widt
       gap: 12,
     },
     sheetTitle: {
+      flexShrink: 1,
       color: colors.textPrimary,
-      fontFamily: 'BarlowCondensed_700Bold',
-      fontSize: 28,
-      lineHeight: 34,
-      fontWeight: '700',
+      fontFamily: displayFont(locale),
+      fontSize: locale === 'el' ? 24 : 28,
+      lineHeight: 30,
+      fontWeight: '800',
     },
     closeButton: {
-      width: 42,
-      height: 42,
-      borderRadius: 13,
-      borderWidth: 1,
-      borderColor: colors.border,
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    closeText: { color: colors.textPrimary, fontSize: 28, lineHeight: 32 },
-    sheetScroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 22, gap: 20 },
-    sheetFooter: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 20,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    sheetFields: { gap: 20 },
-    filterRow: { gap: 9 },
-    filterLabel: {
-      color: colors.textSecondary,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: {
-      minHeight: 42,
-      paddingHorizontal: 14,
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderRadius: 13,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
-    },
-    chipText: {
-      color: colors.textPrimary,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    areaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-    choice: {
-      width: '48%',
-      minHeight: 52,
+    sheetScroll: { gap: 16 },
+    sheetFields: { gap: 16 },
+    fieldGroup: { gap: 8 },
+    fieldLabel: { color: colors.textSecondary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    optionGridThree: {},
+    optionThird: { flexBasis: '28%' },
+    option: {
       flexGrow: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 15,
-      paddingHorizontal: 8,
-      backgroundColor: colors.background,
-    },
-    choiceText: {
-      color: colors.textPrimary,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 13,
-      fontWeight: '700',
-      textAlign: 'center',
-    },
-    inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    filterInput: { flex: 1, minWidth: 145, gap: 8 },
-    input: {
+      flexBasis: '40%',
       minHeight: 48,
-      borderWidth: 1,
-      borderRadius: 13,
-      paddingHorizontal: 12,
-      color: colors.textPrimary,
-      backgroundColor: colors.background,
-      fontFamily: 'Inter_400Regular',
-      fontSize: 14,
-    },
-    helperText: { color: colors.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 13 },
-    sheetActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
-    action: {
-      flex: 1,
-      minHeight: 52,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
+      backgroundColor: colors.option,
+    },
+    optionText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    inputGrid: { flexDirection: 'row', gap: 8 },
+    filterInput: { flex: 1, minWidth: 0, gap: 8 },
+    input: {
+      height: 48,
+      borderWidth: 1.5,
+      borderRadius: 14,
       paddingHorizontal: 14,
-      borderRadius: 15,
-      borderWidth: 1,
+      color: colors.textPrimary,
+      backgroundColor: colors.option,
+      fontFamily: body,
+      fontSize: 16,
     },
-    primaryAction: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
-    secondaryAction: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      flexGrow: 0,
-      flexBasis: '28%',
+    inputFocused: { shadowColor: colors.primaryButton, shadowOpacity: 0.35, shadowRadius: 4 },
+    sheetActions: { flexDirection: 'row', gap: 8 },
+    flexOne: { flex: 1 },
+    ghostButton: {
+      height: 52,
+      paddingHorizontal: 16,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    actionText: {
+    ghostButtonText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 16, fontWeight: '600' },
+    limeButton: {
+      height: 46,
+      paddingHorizontal: 20,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'stretch',
+      backgroundColor: colors.primaryButton,
+    },
+    limeButtonTall: { height: 52, borderRadius: 16 },
+    limeButtonText: {
       color: colors.primaryButtonText,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 14,
-      fontWeight: '800',
-      textAlign: 'center',
+      fontFamily: semibold,
+      fontSize: 16,
+      fontWeight: '600',
     },
   });
 }

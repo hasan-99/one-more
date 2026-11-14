@@ -47,7 +47,7 @@ export function BrandMark({ subtitle, prominent = false, logoSize }: BrandMarkPr
 const styles = StyleSheet.create({
   wrap: { gap: 2 },
   logo: { width: 56, height: 56, borderRadius: 14 },
-  prominentLogo: { width: 44, height: 44 },
+  prominentLogo: { width: 42, height: 42, borderRadius: 11 },
   subtitle: {
     fontSize: 9,
     letterSpacing: 1.1,

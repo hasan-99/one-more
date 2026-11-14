@@ -10,12 +10,22 @@ export const availabilitySlots = [
   'weekend_afternoon',
   'weekend_evening',
 ] as const;
+/** Weekday availability used by the profile "When you can play" picker. */
+export const availabilityDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export type Position = (typeof positions)[number];
 export type SkillLevel = (typeof skillLevels)[number];
 export type StrongFoot = (typeof strongFeet)[number];
 export type Format = (typeof formats)[number];
 export type AvailabilitySlot = (typeof availabilitySlots)[number];
+export type AvailabilityDay = (typeof availabilityDays)[number];
+export type AvailabilityValue = AvailabilitySlot | AvailabilityDay;
+
+export function isAvailabilityValue(value: string): value is AvailabilityValue {
+  return (
+    availabilitySlots.some((item) => item === value) || availabilityDays.some((item) => item === value)
+  );
+}
 
 export type ProfileInput = {
   displayName: string;
@@ -26,7 +36,7 @@ export type ProfileInput = {
   strongFoot: StrongFoot;
   shirtNumber: number;
   preferredFormats: Format[];
-  availabilitySlots: AvailabilitySlot[];
+  availabilitySlots: AvailabilityValue[];
   maxRadiusKm: number | null;
   language: 'en' | 'el';
 };

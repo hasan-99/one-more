@@ -1,8 +1,10 @@
 import { Link, type Href } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { useLoop } from '@/components/motion';
 import { translations } from '@/i18n';
+import { bodyFont } from '@/theme/typography';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
 type NavVariant = 'side' | 'row' | 'bottom';
@@ -60,29 +62,27 @@ export function AppNavigation({ active, variant }: { active: string; variant: Na
                 bottom && styles.bottomLink,
                 createAction && styles.createBottomLink,
                 variant === 'side' && styles.sideLink,
-                bottom && selected && !createAction && { backgroundColor: colors.surfaceRaised },
+                bottom && selected && !createAction && { backgroundColor: colors.navSelected },
               ])}
             >
               {createAction ? (
-                <View
-                  style={[
-                    styles.createButton,
-                    { backgroundColor: colors.primaryButton, borderColor: colors.background, shadowColor: colors.primaryButton },
-                  ]}
-                >
-                  <NavigationGlyph kind="createAction" color={colors.primaryButtonText} size={30} />
-                </View>
+                <CreateActionButton
+                  background={colors.primaryButton}
+                  foreground={colors.primaryButtonText}
+                />
               ) : (
                 <NavigationGlyph
                   kind={key}
                   color={selected ? colors.accentText : colors.textMuted}
-                  size={bottom ? 24 : 19}
+                  size={bottom ? 22 : 19}
+                  strokeWidth={bottom && selected && key === 'explore' ? 2.2 : 2}
                 />
               )}
               <Text
                 numberOfLines={bottom ? 1 : undefined}
                 style={[
                   styles.linkText,
+                  { fontFamily: bodyFont(locale, 'semibold') },
                   bottom && styles.bottomText,
                   createAction && styles.createBottomText,
                   { color: selected ? colors.accentText : colors.textMuted },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   nav: { gap: 6 },
   side: { flexDirection: 'column' },
   row: { flexDirection: 'row', flexWrap: 'wrap' },
-  bottom: { flexDirection: 'row', alignItems: 'stretch', justifyContent: 'space-around' },
+  bottom: { flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
   link: {
     minHeight: 48,
     flexDirection: 'row',
@@ -116,45 +116,73 @@ const styles = StyleSheet.create({
   bottomLink: {
     flex: 1,
     minWidth: 0,
-    minHeight: 64,
+    minHeight: 48,
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 5,
+    gap: 3,
     paddingHorizontal: 2,
-    paddingVertical: 4,
-    borderRadius: 20,
+    paddingVertical: 3,
+    borderRadius: 14,
   },
-  createBottomLink: {
-    flex: 1.15,
-    minHeight: 78,
-    marginTop: -22,
-    justifyContent: 'flex-start',
-    paddingTop: 0,
-  },
+  createBottomLink: { justifyContent: 'flex-end' },
   createButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 6,
+    width: 48,
+    height: 48,
+    marginTop: -22,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -12 }],
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 8,
+  },
+  createRing: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   linkText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, fontWeight: '600' },
-  bottomText: { fontSize: 12, lineHeight: 16, textAlign: 'center' },
-  createBottomText: { marginTop: 0, fontSize: 11, lineHeight: 14, letterSpacing: -0.2 },
-  selectedText: { fontWeight: '700' },
+  bottomText: { fontSize: 12, lineHeight: 15, textAlign: 'center' },
+  createBottomText: { marginTop: 0 },
+  selectedText: { fontWeight: '600' },
 });
 
-function NavigationGlyph({ kind, color, size }: { kind: string; color: string; size: number }) {
+/** Lime create button with the reference's expanding ring pulse (`ap-ring`). */
+function CreateActionButton({ background, foreground }: { background: string; foreground: string }) {
+  const ring = useLoop(2400, { easing: (value) => 1 - (1 - value) * (1 - value) });
+  return (
+    <View style={styles.createButton}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.createRing,
+          {
+            backgroundColor: background,
+            opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
+            transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.58] }) }],
+          },
+        ]}
+      />
+      <View style={[styles.createButton, { marginTop: 0, backgroundColor: background }]}>
+        <NavigationGlyph kind="createAction" color={foreground} size={24} strokeWidth={2.6} />
+      </View>
+    </View>
+  );
+}
+
+function NavigationGlyph({
+  kind,
+  color,
+  size,
+  strokeWidth = 2,
+}: {
+  kind: string;
+  color: string;
+  size: number;
+  strokeWidth?: number;
+}) {
   const common = {
     stroke: color,
-    strokeWidth: 1.8,
+    strokeWidth,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
   };
@@ -167,14 +195,11 @@ function NavigationGlyph({ kind, color, size }: { kind: string; color: string; s
       {...(Platform.OS === 'web' ? {} : { accessible: false })}
     >
       {kind === 'home' ? (
-        <>
-          <Path d="m3.5 10.5 8.5-7 8.5 7" {...common} />
-          <Path d="M5.5 9.5v10h13v-10M9.5 19.5v-6h5v6" {...common} />
-        </>
+        <Path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" {...common} />
       ) : kind === 'explore' ? (
         <>
-          <Circle cx="10.5" cy="10.5" r="6.5" {...common} />
-          <Path d="m15.5 15.5 5 5" {...common} />
+          <Circle cx="11" cy="11" r="7" {...common} />
+          <Path d="M16.5 16.5L21 21" {...common} />
         </>
       ) : kind === 'create' ? (
         <>
@@ -182,15 +207,13 @@ function NavigationGlyph({ kind, color, size }: { kind: string; color: string; s
           <Path d="M12 7.5v9M7.5 12h9" {...common} />
         </>
       ) : kind === 'createAction' ? (
-        <Path d="M12 5v14M5 12h14" {...{ ...common, strokeWidth: 2.5 }} />
+        <Path d="M12 5v14M5 12h14" {...common} />
       ) : kind === 'teams' ? (
-        <>
-          <Path d="M12 3.2 20 6v6c0 4.2-2.8 7.3-8 9-5.2-1.7-8-4.8-8-9V6l8-2.8Z" {...common} />
-        </>
+        <Path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" {...common} />
       ) : (
         <>
-          <Circle cx="12" cy="8" r="3.3" {...common} />
-          <Path d="M5 20c.5-3.7 2.8-5.7 7-5.7s6.5 2 7 5.7" {...common} />
+          <Circle cx="12" cy="8" r="4" {...common} />
+          <Path d="M4 21c0-4 4-6 8-6s8 2 8 6" {...common} />
         </>
       )}
     </Svg>

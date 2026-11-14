@@ -1,42 +1,61 @@
-import { Link, type Href } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, router, type Href } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  AccessibilityInfo,
   Animated,
   Easing,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  type DimensionValue,
+  type LayoutChangeEvent,
 } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient, Path, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  G,
+  Line,
+  LinearGradient,
+  Path,
+  Polygon,
+  RadialGradient,
+  Rect,
+  Stop,
+  Text as SvgText,
+} from 'react-native-svg';
 
+import { useAuth } from '@/auth/AuthProvider';
+import { AuthButton, AuthFeedback, AuthField } from '@/components/auth/AuthPage';
 import { BrandMark } from '@/components/brand-mark';
-import { AuthButton, AuthField, AuthFeedback } from '@/components/auth/AuthPage';
+import { Rise, useEntrance, useLoop } from '@/components/motion';
+import { SegmentedControl } from '@/components/segmented-control';
+import { StageBackdrop } from '@/components/stage-backdrop';
 import { useToast } from '@/components/toast/ToastProvider';
-import { PlayerCardShareModal } from '@/features/profile/PlayerCardShareModal';
 import { signOut } from '@/features/auth/auth-service';
 import { authErrorMessageKey } from '@/features/auth/auth-validation';
+import { PlayerCardShareModal } from '@/features/profile/PlayerCardShareModal';
 import { listMyTeams, type MyTeam } from '@/features/teams/team-service';
-import { translations } from '@/i18n';
-import type { TranslationKey } from '@/i18n';
+import { translations, type Locale, type TranslationKey } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
-import { useAuth } from '@/auth/AuthProvider';
+import type { ThemeColors } from '@/theme/tokens';
+import { bodyFont, displayFont } from '@/theme/typography';
 
 import {
-  availabilitySlots,
+  availabilityDays,
   formats,
+  isAvailabilityValue,
   positions,
   skillLevels,
   strongFeet,
   validateProfileInput,
-  type AvailabilitySlot,
+  type AvailabilityDay,
   type Format,
   type Position,
   type ProfileInput,
-  type StrongFoot,
   type SkillLevel,
+  type StrongFoot,
 } from './profile-validation';
 import {
   getProfileBundle,
@@ -48,9 +67,27 @@ import {
 
 type Copy = { [Key in TranslationKey]: string };
 
+/** Pitch zones top to bottom: band top, band height and marker centre (in % of pitch height). */
+const zones: { position: Exclude<Position, 'any'>; short: string; top: number; height: number; centre: number }[] = [
+  { position: 'forward', short: 'ST', top: 4, height: 26, centre: 17 },
+  { position: 'midfielder', short: 'MF', top: 30, height: 24, centre: 42 },
+  { position: 'defender', short: 'DF', top: 54, height: 24, centre: 66 },
+  { position: 'goalkeeper', short: 'GK', top: 78, height: 18, centre: 87 },
+];
+const dayKeys: Record<AvailabilityDay, TranslationKey> = {
+  mon: 'profileDayMon',
+  tue: 'profileDayTue',
+  wed: 'profileDayWed',
+  thu: 'profileDayThu',
+  fri: 'profileDayFri',
+  sat: 'profileDaySat',
+  sun: 'profileDaySun',
+};
+const autosaveDelay = 600;
+
 export function PlayerProfile() {
   const { user } = useAuth();
-  const { colors, locale } = useAppPreferences();
+  const { colors, locale, setLocale } = useAppPreferences();
   const copy = translations[locale];
   const { showToast } = useToast();
   const [form, setForm] = useState<ProfileInput>(() => emptyForm(locale));
@@ -60,52 +97,60 @@ export function PlayerProfile() {
   const [reminders, setReminders] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [shareCardVisible, setShareCardVisible] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const styles = useMemo(() => makeStyles(colors, locale), [colors, locale]);
+  const areaCityById = useMemo(() => new Map(areas.map((area) => [area.id, area.city_id])), [areas]);
   const cityName = cities.find((city) => city.id === form.cityId);
   const areaName = areas.find((area) => area.id === form.areaId);
-  const visibleAreas = areas.filter((area) => area.city_id === form.cityId);
-  const areaCityById = useMemo(() => new Map(areas.map((area) => [area.id, area.city_id])), [areas]);
+  const place = [areaName, cityName]
+    .map((row) => (row ? (locale === 'en' ? row.name_en : row.name_el) : ''))
+    .filter(Boolean)
+    .join(', ');
+  const position = form.preferredPosition ?? 'any';
+  const level = form.skillLevel ? levelLabel(form.skillLevel, copy) : copy.profileNoPreference;
 
-  const load = useCallback(async (retry = false) => {
-    if (!user) return;
-    if (retry) {
-      setLoading(true);
-      setLoadError(false);
-    }
-    try {
-      const [bundle, myTeams] = await Promise.all([getProfileBundle(user.id), listMyTeams()]);
-      setCities(bundle.cities);
-      setAreas(bundle.areas);
-      setTeams(myTeams);
-      const defaultCity = bundle.cities.find((city) => city.slug === 'nicosia') ?? bundle.cities[0];
-      const cityId = bundle.profile.city_id ?? defaultCity?.id ?? '';
-      const cityAreas = bundle.areas.filter((area) => area.city_id === cityId);
-      const name = bundle.profile.display_name ?? '';
-      setForm({
-        displayName: name,
-        cityId,
-        areaId: bundle.profile.area_id ?? cityAreas[0]?.id ?? '',
-        preferredPosition: isPosition(bundle.profile.preferred_position)
-          ? bundle.profile.preferred_position
-          : null,
-        skillLevel: isSkillLevel(bundle.profile.skill_level) ? bundle.profile.skill_level : null,
-        strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
-        shirtNumber: bundle.profile.shirt_number ?? 8,
-        preferredFormats: bundle.preferences.preferred_formats.filter(isFormat),
-        availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilitySlot),
-        maxRadiusKm: bundle.preferences.max_radius_km,
-        language: locale,
-      });
-      setReminders(bundle.notificationPreferences.transactional_email_enabled);
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [locale, user]);
+  const load = useCallback(
+    async (retry = false) => {
+      if (!user) return;
+      if (retry) {
+        setLoading(true);
+        setLoadError(false);
+      }
+      try {
+        const [bundle, myTeams] = await Promise.all([getProfileBundle(user.id), listMyTeams()]);
+        setCities(bundle.cities);
+        setAreas(bundle.areas);
+        setTeams(myTeams);
+        const defaultCity = bundle.cities.find((city) => city.slug === 'nicosia') ?? bundle.cities[0];
+        const cityId = bundle.profile.city_id ?? defaultCity?.id ?? '';
+        const cityAreas = bundle.areas.filter((area) => area.city_id === cityId);
+        setForm({
+          displayName: bundle.profile.display_name ?? '',
+          cityId,
+          areaId: bundle.profile.area_id ?? cityAreas[0]?.id ?? '',
+          preferredPosition: isPosition(bundle.profile.preferred_position)
+            ? bundle.profile.preferred_position
+            : null,
+          skillLevel: isSkillLevel(bundle.profile.skill_level) ? bundle.profile.skill_level : null,
+          strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
+          shirtNumber: bundle.profile.shirt_number ?? 8,
+          preferredFormats: bundle.preferences.preferred_formats.filter(isFormat),
+          availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilityValue),
+          maxRadiusKm: bundle.preferences.max_radius_km,
+          language: locale,
+        });
+        setReminders(bundle.notificationPreferences.transactional_email_enabled);
+      } catch {
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [locale, user],
+  );
 
   useEffect(() => {
     let active = true;
@@ -117,25 +162,42 @@ export function PlayerProfile() {
     };
   }, [load]);
 
-  const update = <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) =>
-    setForm((current) => ({ ...current, [key]: value }));
+  useEffect(
+    () => () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    },
+    [],
+  );
 
-  const save = async () => {
-    const validation = validateProfileInput({ ...form, language: locale }, areaCityById);
+  /** Applies a change immediately and saves it shortly after (choices save on change). */
+  const change = (patch: Partial<ProfileInput>) => {
+    setForm((current) => {
+      const next = { ...current, ...patch, language: locale };
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        if (!user || validateProfileInput(next, areaCityById)) return;
+        saveProfile(user.id, next).catch(() => showToast(copy.profileAutoSaveError, 'error'));
+      }, autosaveDelay);
+      return next;
+    });
+  };
+
+  const saveDetails = async (details: ProfileInput) => {
+    const validation = validateProfileInput({ ...details, language: locale }, areaCityById);
     if (validation) {
       showToast(copy[validation], 'error');
-      return;
+      return false;
     }
-    if (!user) return;
-    setSaving(true);
+    if (!user) return false;
     try {
-      await saveProfile(user.id, { ...form, language: locale });
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      await saveProfile(user.id, { ...details, language: locale });
+      setForm({ ...details, language: locale });
       showToast(copy.profileSaveSuccess, 'success');
-      setEditing(false);
+      return true;
     } catch {
       showToast(copy.profileSaveError, 'error');
-    } finally {
-      setSaving(false);
+      return false;
     }
   };
 
@@ -167,550 +229,1721 @@ export function PlayerProfile() {
 
   if (loading || loadError) {
     return (
-      <View style={[styles.stateRoot, { backgroundColor: colors.background }]}>
+      <View style={styles.stateRoot}>
         {loading ? (
-          <Text accessibilityRole="progressbar" style={{ color: colors.textSecondary }}>
+          <Text accessibilityRole="progressbar" style={styles.muted}>
             {copy.profileLoading}
           </Text>
         ) : (
           <View style={styles.stateCard}>
             <AuthFeedback>{copy.profileLoadError}</AuthFeedback>
-          <AuthButton label={copy.profileRetry} onPress={() => void load(true)} />
+            <AuthButton label={copy.profileRetry} onPress={() => void load(true)} />
           </View>
         )}
       </View>
     );
   }
 
+  const days = availabilityDays.filter((day) => form.availabilitySlots.includes(day));
+  const legacySlots = form.availabilitySlots.filter((slot) => !availabilityDays.some((day) => day === slot));
+  const setDays = (next: readonly AvailabilityDay[]) =>
+    change({ availabilitySlots: [...legacySlots, ...availabilityDays.filter((day) => next.includes(day))] });
+  const footLabel = strongFootLabel(form.strongFoot, copy);
+  const positionName = positionLabel(position, copy);
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <ProfileStage
+    <View style={styles.root}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <PlayerHero
           colors={colors}
           copy={copy}
-          form={form}
-          position={form.preferredPosition ?? 'any'}
+          locale={locale}
           name={form.displayName}
-          location={[areaName?.[locale === 'en' ? 'name_en' : 'name_el'], cityName?.[locale === 'en' ? 'name_en' : 'name_el']]
-            .filter(Boolean)
-            .join(', ')}
-          level={form.skillLevel ? skillLabel(form.skillLevel, copy) : copy.profileNoPreference}
-          editing={editing}
-          saving={saving}
-          onNumberChange={(step) => update('shirtNumber', Math.max(1, Math.min(99, form.shirtNumber + step)))}
-          onEdit={() => {
-            if (editing) void save();
-            else {
-              setEditing(true);
-            }
-          }}
+          number={form.shirtNumber}
+          line={place ? copy.profileLocationLine.replace('{position}', positionName).replace('{place}', place) : positionName}
+          level={form.skillLevel ? copy.profileLevelPlayer.replace('{level}', level) : null}
+          foot={footLabel}
+          onNumber={(step) => change({ shirtNumber: Math.max(1, Math.min(99, form.shirtNumber + step)) })}
+          onEdit={() => setEditorOpen(true)}
           onShare={() => setShareCardVisible(true)}
         />
 
-        <PlayerCardShareModal
-          visible={shareCardVisible}
-          onClose={() => setShareCardVisible(false)}
-          name={form.displayName}
-          location={[areaName?.[locale === 'en' ? 'name_en' : 'name_el'], cityName?.[locale === 'en' ? 'name_en' : 'name_el']].filter(Boolean).join(', ')}
-          number={form.shirtNumber}
-          position={positionLabel(form.preferredPosition ?? 'any', copy)}
-          strongFoot={strongFootLabel(form.strongFoot, copy)}
-          level={form.skillLevel ? skillLabel(form.skillLevel, copy) : copy.profileNoPreference}
-          formats={form.preferredFormats.map((format) => `${format}v${format}`)}
-          availability={form.availabilitySlots.map((slot) => availabilityCardLabel(slot, locale))}
-          copy={copy}
-        />
-
-        <ProfilePanel title={copy.profilePlayerDetails} colors={colors}>
-          <AuthField
-            label={copy.profileDisplayName}
-            value={form.displayName}
-            onChangeText={(value) => update('displayName', value)}
-            maxLength={40}
-            autoComplete="off"
-            editable={editing}
+        <Rise delay={260} distance={16} style={styles.card}>
+          <CardGradient id="profile-card-where" colors={colors} />
+          <CardHeader
+            icon={<PinIcon color={colors.accentText} />}
+            title={copy.profileWhereYouPlay}
+            subtitle={copy.profileWhereYouPlayHint}
+            trailing={<Text style={styles.cardTrailing}>{positionName}</Text>}
+            styles={styles}
           />
-          <FieldRow label={copy.profileCity} colors={colors}>
-            <ChipGroup
-              colors={colors}
-              options={cities.map((city) => ({
-                id: city.id,
-                label: locale === 'en' ? city.name_en : city.name_el,
-              }))}
-              selected={form.cityId}
-              disabled={!editing}
-              onSelect={(cityId) => {
-                const areaId = areas.find((area) => area.city_id === cityId)?.id ?? '';
-                setForm((current) => ({ ...current, cityId, areaId }));
-              }}
-            />
-          </FieldRow>
-          <FieldRow label={copy.profileArea} colors={colors}>
-            <ChipGroup
-              colors={colors}
-              options={visibleAreas.map((area) => ({
-                id: area.id,
-                label: locale === 'en' ? area.name_en : area.name_el,
-              }))}
-              selected={form.areaId}
-              disabled={!editing}
-              onSelect={(areaId) => update('areaId', areaId)}
-            />
-          </FieldRow>
-        </ProfilePanel>
-
-        <ProfilePanel title={copy.profileWhereYouPlay} subtitle={copy.profileWhereYouPlayHint} colors={colors}>
           <PositionPitch
             colors={colors}
-            position={form.preferredPosition ?? 'any'}
-            disabled={!editing}
-            onSelect={(value) => update('preferredPosition', value)}
             copy={copy}
+            locale={locale}
+            position={position}
+            number={form.shirtNumber}
+            onSelect={(value) => change({ preferredPosition: value })}
           />
-        </ProfilePanel>
+        </Rise>
 
-        <ProfilePanel title={copy.profilePlayStyle} colors={colors}>
-          <ChoiceRow
-            label={copy.profileStrongFoot}
-            colors={colors}
-            options={strongFeet.map((value) => ({ id: value, label: strongFootLabel(value, copy) }))}
-            selected={form.strongFoot}
-            disabled={!editing}
-            onSelect={(value) => update('strongFoot', value as StrongFoot)}
+        <Rise delay={320} distance={16} style={styles.card}>
+          <CardGradient id="profile-card-style" colors={colors} />
+          <CardHeader
+            icon={<FootIcon color={colors.accentText} />}
+            title={copy.profilePlayStyle}
+            subtitle={copy.profileStyleSummary.replace('{foot}', footLabel).replace('{level}', level)}
+            styles={styles}
           />
-          <ChoiceRow
-            label={copy.profileSkill}
-            colors={colors}
-            options={[
-              { id: 'beginner', label: copy.profileBeginner },
-              { id: 'intermediate', label: copy.profileIntermediate },
-              { id: 'advanced', label: copy.profileAdvanced },
-            ]}
-            selected={form.skillLevel ?? ''}
-            disabled={!editing}
-            onSelect={(value) => update('skillLevel', value as SkillLevel)}
-          />
-        </ProfilePanel>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{copy.profileStrongFoot}</Text>
+            <SegmentedControl
+              tall
+              label={copy.profileStrongFoot}
+              index={strongFeet.indexOf(form.strongFoot)}
+              options={strongFeet.map((foot) => ({
+                key: foot,
+                label: footShort(foot, copy),
+                accessibilityLabel: strongFootLabel(foot, copy),
+                icon: (tint) => <FootGlyph foot={foot} color={tint} />,
+                onPress: () => change({ strongFoot: foot }),
+              }))}
+            />
+          </View>
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{copy.profileLevel}</Text>
+            <SegmentedControl
+              tall
+              label={copy.profileLevel}
+              index={form.skillLevel ? skillLevels.indexOf(form.skillLevel) : -1}
+              options={skillLevels.map((value, index) => ({
+                key: value,
+                label: levelLabel(value, copy),
+                icon: (tint) => <LevelGlyph bars={index + 1} color={tint} />,
+                onPress: () => change({ skillLevel: value }),
+              }))}
+            />
+          </View>
+        </Rise>
 
-        <ProfilePanel title={copy.profileAvailability} subtitle={copy.profileAvailabilityIntro} colors={colors}>
-          <ChoiceGrid
-            colors={colors}
-            options={availabilitySlots.map((slot) => ({ id: slot, label: availabilityLabel(slot, copy) }))}
-            selected={form.availabilitySlots}
-            disabled={!editing}
-            onSelect={(value) => {
-              const slot = value as AvailabilitySlot;
-              update(
-                'availabilitySlots',
-                form.availabilitySlots.includes(slot)
-                  ? form.availabilitySlots.filter((item) => item !== slot)
-                  : [...form.availabilitySlots, slot],
-              );
-            }}
+        <Rise delay={400} distance={16} style={styles.card}>
+          <CardGradient id="profile-card-days" colors={colors} />
+          <CardHeader
+            icon={<CalendarIcon color={colors.accentText} />}
+            title={copy.profileWhenYouPlay}
+            subtitle={
+              days.length === availabilityDays.length
+                ? copy.profileDaysAll
+                : days.length === 0
+                  ? copy.profileDaysNone
+                  : days.length === 1
+                    ? copy.profileDaysOne
+                    : copy.profileDaysCount.replace('{count}', String(days.length))
+            }
+            trailing={
+              <AnyPill
+                label={copy.profileAnyDay}
+                on={days.length === availabilityDays.length}
+                onPress={() => setDays(days.length === availabilityDays.length ? [] : availabilityDays)}
+                colors={colors}
+                styles={styles}
+              />
+            }
+            styles={styles}
           />
-          <Text style={{ color: colors.textMuted, fontSize: 13 }}>{copy.profileRadius}</Text>
-          <ChoiceRow
-            label={copy.profileRadius}
-            colors={colors}
-            options={[
-              { id: 'any', label: copy.profileRadiusAny },
-              { id: '10', label: copy.profileRadius10 },
-              { id: '20', label: copy.profileRadius20 },
-              { id: '50', label: copy.profileRadius50 },
-            ]}
-            selected={form.maxRadiusKm === null ? 'any' : String(form.maxRadiusKm)}
-            disabled={!editing}
-            onSelect={(value) => update('maxRadiusKm', value === 'any' ? null : Number(value))}
-          />
-        </ProfilePanel>
+          <View accessibilityRole="none" accessibilityLabel={copy.profileWhenYouPlay} style={styles.days}>
+            {availabilityDays.map((day, index) => (
+              <DayButton
+                key={day}
+                letter={copy.profileDayLettersMonToSun.split(',')[index] ?? ''}
+                label={copy[dayKeys[day]]}
+                on={days.includes(day)}
+                onPress={() => setDays(days.includes(day) ? days.filter((item) => item !== day) : [...days, day])}
+                colors={colors}
+                styles={styles}
+              />
+            ))}
+          </View>
+        </Rise>
 
-        <ProfilePanel title={copy.profileFormats} subtitle={copy.profileFormatsIntro} colors={colors}>
-          <ChoiceGrid
-            colors={colors}
-            options={formats.map((value) => ({ id: String(value), label: `${value}v${value}` }))}
-            selected={form.preferredFormats.map(String)}
-            disabled={!editing}
-            onSelect={(value) => {
-              const chosen = Number(value) as Format;
-              update(
-                'preferredFormats',
-                form.preferredFormats.includes(chosen)
-                  ? form.preferredFormats.filter((item) => item !== chosen)
-                  : [...form.preferredFormats, chosen],
-              );
-            }}
+        <Rise delay={480} distance={16} style={styles.card}>
+          <CardGradient id="profile-card-formats" colors={colors} />
+          <CardHeader
+            icon={<MiniPitch color={colors.accentText} width={20} height={20} />}
+            title={copy.profileFormatsTitle}
+            subtitle={
+              form.preferredFormats.length === formats.length
+                ? copy.profileFormatsAll
+                : form.preferredFormats.length === 0
+                  ? copy.profileFormatsNone
+                  : formats
+                      .filter((value) => form.preferredFormats.includes(value))
+                      .map((value) => `${value}v${value}`)
+                      .join(', ')
+            }
+            trailing={
+              <AnyPill
+                label={copy.profileAnyFormat}
+                on={form.preferredFormats.length === formats.length}
+                onPress={() =>
+                  change({ preferredFormats: form.preferredFormats.length === formats.length ? [] : [...formats] })
+                }
+                colors={colors}
+                styles={styles}
+              />
+            }
+            styles={styles}
           />
-        </ProfilePanel>
+          <View style={styles.formats}>
+            {formats.map((value) => (
+              <FormatCard
+                key={value}
+                format={value}
+                players={copy.profileFormatPlayers.replace('{count}', String(value * 2))}
+                on={form.preferredFormats.includes(value)}
+                onPress={() =>
+                  change({
+                    preferredFormats: form.preferredFormats.includes(value)
+                      ? form.preferredFormats.filter((item) => item !== value)
+                      : formats.filter((item) => item === value || form.preferredFormats.includes(item)),
+                  })
+                }
+                colors={colors}
+                styles={styles}
+              />
+            ))}
+          </View>
+        </Rise>
 
-        <ProfilePanel title={copy.profileTeams} colors={colors}>
+        <Rise delay={560} distance={16} style={styles.section}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>
+            {copy.profileTeams}
+          </Text>
           {teams.length ? (
-            teams.map((team) => (
-              <Link key={team.teamId} href={`/teams/${team.teamId}` as Href} asChild>
-                <Pressable style={[styles.teamRow, { borderColor: colors.border }]}>
-                  <Crest colors={colors} initials={team.name.slice(0, 2).toUpperCase()} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.teamName, { color: colors.textPrimary }]}>{team.name}</Text>
-                    <Text style={{ color: colors.textSecondary }}>
-                      {team.memberCount} · {locale === 'en' ? team.cityNameEn : team.cityNameEl}
-                    </Text>
-                  </View>
-                  <Text style={{ color: colors.accentText }}>›</Text>
-                </Pressable>
-              </Link>
-            ))
+            <View style={styles.listCard}>
+              {teams.map((team, index) => (
+                <Link key={team.teamId} href={`/teams/${team.teamId}` as Href} asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    style={({ pressed }) => [
+                      styles.row,
+                      index < teams.length - 1 && styles.rowDivider,
+                      pressed && { backgroundColor: colors.cardTop },
+                    ]}
+                  >
+                    <ShieldOutline color={colors.accentText} dashed={false} />
+                    <View style={styles.rowCopy}>
+                      <Text style={styles.rowTitle}>{team.name}</Text>
+                      <Text style={styles.muted}>
+                        {`${team.memberCount} · ${locale === 'en' ? team.cityNameEn : team.cityNameEl}`}
+                      </Text>
+                    </View>
+                    <Chevron color={colors.textSecondary} />
+                  </Pressable>
+                </Link>
+              ))}
+            </View>
           ) : (
-            <View style={[styles.emptyTeam, { borderColor: colors.border }]}>
-              <Crest colors={colors} initials="+" />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.teamName, { color: colors.textPrimary }]}>{copy.profileNoTeam}</Text>
-                <Text style={{ color: colors.textSecondary }}>{copy.profileNoTeamDescription}</Text>
+            <View style={styles.emptyTeam}>
+              <ShieldOutline color={colors.accentText} dashed />
+              <View style={styles.rowCopy}>
+                <Text style={styles.rowTitle}>{copy.profileNoTeam}</Text>
+                <Text style={styles.muted}>{copy.profileNoTeamDescription}</Text>
               </View>
-              <Link href={'/teams/create' as Href} style={{ color: colors.primaryButtonText, backgroundColor: colors.primaryButton, padding: 10, borderRadius: 12 }}>
-                {copy.profileCreateTeam}
-              </Link>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push('/teams/create' as Href)}
+                style={({ pressed }) => [styles.smallLime, { transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+              >
+                <Text style={styles.smallLimeText}>{copy.profileCreateTeam}</Text>
+              </Pressable>
             </View>
           )}
-        </ProfilePanel>
+        </Rise>
 
-        <ProfilePanel title={copy.profileAccount} colors={colors}>
-          <View style={[styles.accountRow, { borderBottomColor: colors.border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.teamName, { color: colors.textPrimary }]}>{copy.profileGameReminders}</Text>
-              <Text style={{ color: colors.textSecondary }}>{copy.profileGameRemindersDescription}</Text>
+        <Rise delay={620} distance={16} style={styles.section}>
+          <Text accessibilityRole="header" style={styles.sectionTitle}>
+            {copy.profileAccount}
+          </Text>
+          <View style={styles.listCard}>
+            <View style={[styles.row, styles.rowDivider]}>
+              <Text nativeID="profile-reminders" style={[styles.rowTitle, styles.rowCopy]}>
+                {copy.profileGameRemindersShort}
+              </Text>
+              <ToggleSwitch
+                value={reminders}
+                label={copy.profileGameReminders}
+                onPress={() => void toggleReminders()}
+                colors={colors}
+              />
             </View>
-            <SwitchToggle colors={colors} value={reminders} onPress={() => void toggleReminders()} disabled={false} label={copy.profileGameReminders} />
+            <AccountRow
+              label={copy.profileLanguage}
+              value={locale === 'en' ? copy.languageEnglish : copy.languageGreek}
+              onPress={() => setLocale(locale === 'en' ? 'el' : 'en')}
+              colors={colors}
+              styles={styles}
+            />
+            <AccountRow
+              label={copy.appSettingsTitle}
+              onPress={() => router.push('/settings' as Href)}
+              colors={colors}
+              styles={styles}
+            />
+            <AccountRow
+              label={copy.appNotificationsTitle}
+              onPress={() => router.push('/notifications' as Href)}
+              colors={colors}
+              styles={styles}
+            />
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void handleSignOut()}
+              disabled={signingOut}
+              style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.cardTop }]}
+            >
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"
+                  stroke={colors.errorText}
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+              <Text style={[styles.rowTitle, { color: colors.errorText }]}>
+                {signingOut ? copy.authSessionLoading : copy.authSignOut}
+              </Text>
+            </Pressable>
           </View>
-          <Text style={{ color: colors.textSecondary, paddingVertical: 10 }}>{user?.email ?? ''}</Text>
-          <Link href={'/settings' as Href} style={[styles.linkRow, { borderColor: colors.border, color: colors.textPrimary }]}>
-            {copy.appSettingsTitle}<Text style={{ color: colors.accentText }}> ›</Text>
-          </Link>
-          <Link href={'/notifications' as Href} style={[styles.linkRow, { borderColor: colors.border, color: colors.textPrimary }]}>
-            {copy.appNotificationsTitle}<Text style={{ color: colors.accentText }}> ›</Text>
-          </Link>
-          <Pressable accessibilityRole="button" onPress={() => void handleSignOut()} disabled={signingOut} style={styles.signOut}>
-            <Text style={{ color: colors.errorText, fontWeight: '700' }}>{signingOut ? copy.authSessionLoading : copy.authSignOut}</Text>
-          </Pressable>
-        </ProfilePanel>
+          <Text style={styles.email}>{user?.email ?? ''}</Text>
+        </Rise>
       </ScrollView>
+
+      <ProfileEditorSheet
+        visible={editorOpen}
+        form={form}
+        cities={cities}
+        areas={areas}
+        copy={copy}
+        colors={colors}
+        locale={locale}
+        styles={styles}
+        onClose={() => setEditorOpen(false)}
+        onSave={async (details) => {
+          if (await saveDetails(details)) setEditorOpen(false);
+        }}
+      />
+
+      <PlayerCardShareModal
+        visible={shareCardVisible}
+        onClose={() => setShareCardVisible(false)}
+        name={form.displayName}
+        location={place}
+        number={form.shirtNumber}
+        position={positionName}
+        strongFoot={footLabel}
+        level={level}
+        formats={form.preferredFormats.map((value) => `${value}v${value}`)}
+        availability={days.map((day) => copy[dayKeys[day]].slice(0, 3))}
+        copy={copy}
+      />
     </View>
   );
 }
 
-function ProfileStage({
+function PlayerHero({
   colors,
   copy,
-  form,
-  position,
+  locale,
   name,
-  location,
+  number,
+  line,
   level,
-  editing,
-  saving,
+  foot,
+  onNumber,
   onEdit,
-  onNumberChange,
   onShare,
 }: {
-  colors: ReturnType<typeof useAppPreferences>['colors'];
+  colors: ThemeColors;
   copy: Copy;
-  form: ProfileInput;
-  position: Position;
+  locale: Locale;
   name: string;
-  location: string;
-  level: string;
-  editing: boolean;
-  saving: boolean;
+  number: number;
+  line: string;
+  level: string | null;
+  foot: string;
+  onNumber: (step: number) => void;
   onEdit: () => void;
-  onNumberChange: (step: number) => void;
   onShare: () => void;
 }) {
+  const styles = makeStyles(colors, locale);
+  const ghost = useLoop(8000, { alternate: true });
   return (
-    <View style={[styles.stage, { backgroundColor: colors.background === '#F7F9F2' ? colors.background : '#0c1210' }]}>
-      <AnimatedBackdrop colors={colors} />
-      <View style={styles.stageHeader}>
+    <View accessibilityLabel={name} style={styles.hero}>
+      <StageBackdrop
+        id="profile-stage"
+        colors={colors}
+        height="100%"
+        glowY="62%"
+        glowStop={0.66}
+        glowColor="#21402b"
+        rise={320}
+        variant={1}
+        beamWidth={230}
+      />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.ghost,
+          { transform: [{ translateX: ghost.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] }) }] },
+        ]}
+      >
+        <Svg width="100%" height={280} viewBox="0 0 400 280">
+          <SvgText
+            x="200"
+            y="232"
+            textAnchor="middle"
+            fontSize="270"
+            fontWeight="800"
+            fontFamily="BarlowCondensed_800ExtraBold"
+            fill="none"
+            stroke={colors.primaryButton}
+            strokeOpacity={0.13}
+            strokeWidth={1.5}
+          >
+            {String(number)}
+          </SvgText>
+        </Svg>
+      </Animated.View>
+
+      <View style={styles.heroHeader}>
         <BrandMark prominent />
-        <Text accessibilityRole="header" style={[styles.stageTitle, { color: colors.textPrimary }]}>{copy.appProfileTitle}</Text>
-        <Pressable accessibilityRole="button" onPress={onEdit} disabled={saving} style={[styles.editButton, { borderColor: colors.border, backgroundColor: colors.surfaceRaised }]}>
-          <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
-            {saving ? copy.profileSaving : editing ? copy.profileSaveShort : copy.profileEdit}
-          </Text>
+        <Text accessibilityRole="header" style={styles.heroTitle}>
+          {copy.appProfileTitle}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.profileShareCard}
+          onPress={onShare}
+          style={({ pressed }) => [styles.iconGhost, { transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+        >
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"
+              stroke={colors.accentText}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onEdit}
+          style={({ pressed }) => [styles.editButton, { transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M4 20h4L19 9l-4-4L4 16z"
+              stroke={colors.accentText}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+          <Text style={styles.editText}>{copy.profileEdit}</Text>
         </Pressable>
       </View>
+
       <View style={styles.jerseyRow}>
-        <Pressable accessibilityRole="button" accessibilityLabel={copy.profileShirtNumberDown} accessibilityState={{ disabled: !editing || form.shirtNumber <= 1 }} disabled={!editing || form.shirtNumber <= 1} onPress={() => onNumberChange(-1)} style={[styles.numberButton, { borderColor: colors.border, opacity: editing ? 1 : 0.45 }]}><Text style={{ color: colors.textPrimary, fontSize: 23 }}>−</Text></Pressable>
-        <AnimatedJersey colors={colors} number={form.shirtNumber} />
-        <Pressable accessibilityRole="button" accessibilityLabel={copy.profileShirtNumberUp} accessibilityState={{ disabled: !editing || form.shirtNumber >= 99 }} disabled={!editing || form.shirtNumber >= 99} onPress={() => onNumberChange(1)} style={[styles.numberButton, { borderColor: colors.border, opacity: editing ? 1 : 0.45 }]}><Text style={{ color: colors.textPrimary, fontSize: 23 }}>+</Text></Pressable>
+        <RoundButton
+          label={copy.profileShirtNumberDown}
+          disabled={number <= 1}
+          onPress={() => onNumber(-1)}
+          colors={colors}
+          styles={styles}
+          path="M5 12h14"
+        />
+        <Jersey colors={colors} number={number} name={name} label={`${copy.profileShirtNumber} ${number}`} />
+        <RoundButton
+          label={copy.profileShirtNumberUp}
+          disabled={number >= 99}
+          onPress={() => onNumber(1)}
+          colors={colors}
+          styles={styles}
+          path="M12 5v14M5 12h14"
+        />
       </View>
-      <Text style={[styles.playerName, { color: colors.textPrimary }]} numberOfLines={2}>{name}</Text>
-      <Text style={[styles.playerMeta, { color: colors.textSecondary }]}>{positionLabel(position, copy)}{location ? ` · ${location}` : ''}</Text>
-      <View style={styles.badges}>
-        {form.skillLevel ? <Badge colors={colors} label={level} accent /> : null}
-        <Badge colors={colors} label={strongFootLabel(form.strongFoot, copy)} />
-      </View>
-      <Pressable accessibilityRole="button" onPress={onShare} style={[styles.sharePlayerCard, { backgroundColor: colors.primaryButton }]}>
-        <Text style={[styles.sharePlayerCardText, { color: colors.primaryButtonText }]}>{copy.profileShareCard}</Text>
-        <Text style={[styles.sharePlayerCardGlyph, { color: colors.primaryButtonText }]}>↥</Text>
-      </Pressable>
+
+      <Rise delay={500} distance={16}>
+        <Text numberOfLines={2} style={styles.playerName}>
+          {name}
+        </Text>
+      </Rise>
+      <Rise delay={580} distance={16}>
+        <Text style={styles.playerLine}>{line}</Text>
+      </Rise>
+      <Rise delay={660} distance={16} style={styles.heroChips}>
+        {level ? (
+          <View style={[styles.heroChip, { backgroundColor: 'rgba(207,255,74,0.14)' }]}>
+            <Text style={[styles.heroChipText, { color: colors.accentText }]}>{level}</Text>
+          </View>
+        ) : null}
+        <View style={[styles.heroChip, { backgroundColor: colors.background === '#0C1210' ? 'rgba(242,245,236,0.1)' : colors.surfaceRaised }]}>
+          <Text style={styles.heroChipText}>{foot}</Text>
+        </View>
+      </Rise>
     </View>
   );
 }
 
-function AnimatedBackdrop({ colors }: { colors: ReturnType<typeof useAppPreferences>['colors'] }) {
-  const [beams] = useState(() => [new Animated.Value(0), new Animated.Value(0)]);
-  const [dots] = useState(() => Array.from({ length: 6 }, () => new Animated.Value(0)));
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    let active = true;
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (active) setReduceMotion(enabled);
-    }).catch(() => setReduceMotion(true));
-    return () => { active = false; subscription.remove(); };
-  }, []);
-  useEffect(() => {
-    if (reduceMotion) return;
-    const animations: Animated.CompositeAnimation[] = [];
-    beams.forEach((value, index) => {
-      animations.push(Animated.loop(Animated.sequence([
-        Animated.timing(value, { toValue: 1, duration: index ? 9200 : 7600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(value, { toValue: 0, duration: index ? 9200 : 7600, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ])));
-    });
-    dots.forEach((value, index) => {
-      animations.push(Animated.loop(Animated.sequence([
-        Animated.delay(index * 420),
-        Animated.timing(value, { toValue: 1, duration: 7200 + index * 260, easing: Easing.linear, useNativeDriver: true }),
-        Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ])));
-    });
-    animations.forEach((animation) => animation.start());
-    return () => animations.forEach((animation) => animation.stop());
-  }, [beams, dots, reduceMotion]);
+function RoundButton({
+  label,
+  disabled,
+  onPress,
+  colors,
+  styles,
+  path,
+}: {
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: Styles;
+  path: string;
+}) {
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Svg pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <Defs>
-          <RadialGradient id="profile-stage-glow" cx="50%" cy="62%" rx="72%" ry="70%">
-            <Stop offset="0" stopColor={colors.background === '#F7F9F2' ? colors.pitch : '#21402b'} stopOpacity={colors.background === '#F7F9F2' ? 0.14 : 0.78} />
-            <Stop offset="1" stopColor={colors.background === '#F7F9F2' ? colors.background : '#0c1210'} stopOpacity="1" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="url(#profile-stage-glow)" />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.roundButton,
+        { opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] },
+      ]}
+    >
+      <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+        <Path d={path} stroke={colors.textPrimary} strokeWidth={2.6} strokeLinecap="round" />
       </Svg>
-      {beams.map((value, index) => (
-        <Animated.View key={index} style={[styles.beam, index ? { right: -100 } : { left: -105 }, { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.52, 0.9] }), transform: [{ rotate: value.interpolate({ inputRange: [0, 1], outputRange: [index ? '15deg' : '-18deg', index ? '28deg' : '-31deg'] }) }] }]}>
-          <Svg width="235" height="420" viewBox="0 0 235 420">
-            <Defs>
-              <LinearGradient id={`profile-beam-${index}`} x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.background === '#F7F9F2' ? colors.primaryButton : '#deff96'} stopOpacity={index ? 0.2 : 0.24} />
-                <Stop offset="1" stopColor="#deff96" stopOpacity="0" />
-              </LinearGradient>
-            </Defs>
-            <Path d="M101 0h18l116 420H0z" fill={`url(#profile-beam-${index})`} />
-          </Svg>
-        </Animated.View>
-      ))}
-      {dots.map((value, index) => (
-        <Animated.View key={index} style={[styles.floatDot, { left: `${12 + index * 15}%`, backgroundColor: index % 2 ? '#f2f5ec' : colors.primaryButton, opacity: value.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.8, 0] }), transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [12, -320] }) }] }]} />
-      ))}
-    </View>
+    </Pressable>
   );
 }
 
-function AnimatedJersey({ colors, number }: { colors: ReturnType<typeof useAppPreferences>['colors']; number: number }) {
-  const { locale } = useAppPreferences();
-  const [drop] = useState(() => new Animated.Value(0));
-  const [sway] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    const entrance = Animated.spring(drop, { toValue: 1, speed: 1.7, bounciness: 8, useNativeDriver: true });
-    const swing = Animated.loop(Animated.sequence([
-      Animated.timing(sway, { toValue: 1, duration: 4200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      Animated.timing(sway, { toValue: 0, duration: 4200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ]));
-    entrance.start();
-    swing.start();
-    return () => { entrance.stop(); swing.stop(); };
-  }, [drop, sway]);
-  const tint = colors.primaryButton;
+/** Shirt that drops in, sways (jr-sway) and pops its number on change (jr-numa). */
+function Jersey({ colors, number, name, label }: { colors: ThemeColors; number: number; name: string; label: string }) {
+  const drop = useEntrance(1000, 150, Easing.bezier(0.2, 1.2, 0.3, 1));
+  const sway = useLoop(4200, { alternate: true });
+  const pop = useEntrance(450, 0, Easing.bezier(0.2, 1.5, 0.3, 1), number);
+  const surname = (name.trim().split(/\s+/u).pop() ?? '').toUpperCase().slice(0, 10);
   return (
-    <Animated.View style={{ width: 190, height: 180, alignItems: 'center', justifyContent: 'center', transform: [{ translateY: drop.interpolate({ inputRange: [0, 1], outputRange: [-70, 0] }) }, { rotate: sway.interpolate({ inputRange: [0, 1], outputRange: ['-3.5deg', '3.5deg'] }) }, { scale: drop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }}>
-      <Svg width="190" height="180" viewBox="0 0 200 190" accessibilityLabel={`${translations[locale].profileShirtNumber} ${number}`}>
-        <Path d="M70 14C82 26 118 26 130 14l40 16 24 40-28 16-12-20v110c0 5-4 8-8 8H54c-4 0-8-3-8-8V66L34 86 6 70l24-40z" fill={tint} stroke="#0c1210" strokeWidth="3" strokeLinejoin="round" />
-        <Path d="M100 24l54 42v110c0 5-4 8-8 8h-46z" fill="#0c1210" opacity=".07" />
-        <Path d="M70 14c12 18 48 18 60 0l-8-3c-10 13-34 13-44 0z" fill="#0c1210" />
-        <SvgText x="100" y="73" textAnchor="middle" fontSize="15" fontWeight="700" letterSpacing="2" fill="#0c1210">DEMO</SvgText>
-        <SvgText x="100" y="151" textAnchor="middle" fontSize={number > 9 ? 64 : 78} fontWeight="800" fill="#0c1210">{number}</SvgText>
-      </Svg>
-      <View style={styles.jerseyShadow} />
+    <Animated.View
+      style={{
+        width: 190,
+        height: 190,
+        alignItems: 'center',
+        opacity: drop,
+        transform: [
+          { translateY: drop.interpolate({ inputRange: [0, 1], outputRange: [-70, 0] }) },
+          { scale: drop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
+          { rotate: drop.interpolate({ inputRange: [0, 1], outputRange: ['-14deg', '0deg'] }) },
+        ],
+      }}
+    >
+      <Animated.View
+        style={{
+          transform: [
+            { translateY: -90 },
+            { rotate: sway.interpolate({ inputRange: [0, 1], outputRange: ['-3.5deg', '3.5deg'] }) },
+            { translateY: 90 },
+          ],
+        }}
+      >
+        <Svg width={190} height={180} viewBox="0 0 200 190" accessibilityRole="image" accessibilityLabel={label}>
+          <Path
+            d="M70 14 C82 26 118 26 130 14 L170 30 L194 70 L166 86 L154 66 L154 176 C154 181 150 184 146 184 L54 184 C50 184 46 181 46 176 L46 66 L34 86 L6 70 L30 30 Z"
+            fill={colors.primaryButton}
+            stroke="#0c1210"
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+          />
+          <Path d="M100 24 L154 66 L154 176 C154 181 150 184 146 184 L100 184 Z" fill="#0c1210" opacity={0.07} />
+          <Path d="M70 14 C82 32 118 32 130 14 L123 11 C113 24 87 24 77 11 Z" fill="#0c1210" />
+          <Polygon points="6,70 34,86 38,79 10,63" fill="#0c1210" />
+          <Polygon points="194,70 166,86 162,79 190,63" fill="#0c1210" />
+          <Path d="M46 172 L154 172" stroke="#0c1210" strokeWidth={2.5} opacity={0.5} />
+          {surname ? (
+            <SvgText
+              x="100"
+              y="72"
+              textAnchor="middle"
+              fontSize="17"
+              fontWeight="600"
+              letterSpacing="3"
+              fill="#0c1210"
+              fontFamily="Barlow_600SemiBold"
+            >
+              {surname}
+            </SvgText>
+          ) : null}
+        </Svg>
+        <Animated.Text
+          style={[
+            jerseyStyles.number,
+            { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] },
+          ]}
+        >
+          {number}
+        </Animated.Text>
+      </Animated.View>
+      <JerseyFloor />
     </Animated.View>
   );
 }
 
-function PositionPitch({ colors, position, disabled, onSelect, copy }: { colors: ReturnType<typeof useAppPreferences>['colors']; position: Position; disabled: boolean; onSelect: (position: Position) => void; copy: Copy }) {
-  const [pulse] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    const animation = Animated.loop(Animated.sequence([
-      Animated.timing(pulse, { toValue: 1, duration: 1050, easing: Easing.out(Easing.ease), useNativeDriver: true }),
-      Animated.timing(pulse, { toValue: 0, duration: 0, useNativeDriver: true }),
-    ]));
-    animation.start();
-    return () => animation.stop();
-  }, [pulse]);
-  const points: Record<Position, { top: number; left: number; label: string; short: string }> = {
-    goalkeeper: { top: 87, left: 50, label: copy.profileGoalkeeper, short: 'GK' },
-    defender: { top: 67, left: 26, label: copy.profileDefender, short: 'DF' },
-    midfielder: { top: 52, left: 50, label: copy.profileMidfielder, short: 'MF' },
-    forward: { top: 33, left: 74, label: copy.profileForward, short: 'FW' },
-    any: { top: 50, left: 50, label: copy.profileAnyPosition, short: 'ANY' },
-  };
+function JerseyFloor() {
+  const sway = useLoop(4200, { alternate: true });
   return (
-    <View style={[styles.pitch, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }]}>
-      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 300 240" preserveAspectRatio="none">
-        <Rect x="8" y="8" width="284" height="224" rx="6" stroke={colors.pitchLine} strokeWidth="2" fill="none" opacity=".65" />
-        <Line x1="8" y1="120" x2="292" y2="120" stroke={colors.pitchLine} strokeWidth="2" opacity=".55" />
-        <Circle cx="150" cy="120" r="29" stroke={colors.pitchLine} strokeWidth="2" fill="none" opacity=".55" />
-        <Rect x="91" y="8" width="118" height="40" stroke={colors.pitchLine} strokeWidth="2" fill="none" opacity=".5" />
-        <Rect x="115" y="8" width="70" height="17" stroke={colors.pitchLine} strokeWidth="2" fill="none" opacity=".5" />
-        <Rect x="91" y="192" width="118" height="40" stroke={colors.pitchLine} strokeWidth="2" fill="none" opacity=".5" />
-        <Rect x="115" y="215" width="70" height="17" stroke={colors.pitchLine} strokeWidth="2" fill="none" opacity=".5" />
-        <Line x1="0" y1="0" x2="300" y2="0" stroke={colors.primaryButton} strokeWidth="22" opacity=".04" />
-        <Line x1="0" y1="120" x2="300" y2="120" stroke={colors.primaryButton} strokeWidth="20" opacity=".045" />
-        <Line x1="0" y1="240" x2="300" y2="240" stroke={colors.primaryButton} strokeWidth="22" opacity=".04" />
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        jerseyStyles.floor,
+        {
+          transform: [
+            { translateX: sway.interpolate({ inputRange: [0, 1], outputRange: [-8, 8] }) },
+            { scaleX: sway.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
+          ],
+        },
+      ]}
+    >
+      <Svg width="100%" height="100%" viewBox="0 0 100 20" preserveAspectRatio="none">
+        <Defs>
+          <RadialGradient id="jersey-floor" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor="#000000" stopOpacity="0.5" />
+            <Stop offset="1" stopColor="#000000" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100" height="20" fill="url(#jersey-floor)" />
       </Svg>
-      {(positions).map((value) => {
-        const point = points[value];
-        const selected = position === value;
+    </Animated.View>
+  );
+}
+
+/** Tappable pitch: zone bands plus the shirt-number marker gliding to the chosen zone. */
+function PositionPitch({
+  colors,
+  copy,
+  locale,
+  position,
+  number,
+  onSelect,
+}: {
+  colors: ThemeColors;
+  copy: Copy;
+  locale: Locale;
+  position: Position;
+  number: number;
+  onSelect: (value: Position) => void;
+}) {
+  const [height, setHeight] = useState(0);
+  const zone = zones.find((item) => item.position === position);
+  const centre = zone?.centre ?? 50;
+  const [marker] = useState(() => new Animated.Value(centre));
+  const [trail] = useState(() => new Animated.Value(centre));
+  const ring = useLoop(1800, { easing: Easing.out(Easing.ease) });
+  useEffect(() => {
+    const motion = Animated.parallel([
+      Animated.timing(marker, {
+        toValue: centre,
+        duration: 700,
+        easing: Easing.bezier(0.3, 1.35, 0.4, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(trail, {
+        toValue: centre,
+        duration: 700,
+        delay: 60,
+        easing: Easing.bezier(0.3, 1.35, 0.4, 1),
+        useNativeDriver: true,
+      }),
+    ]);
+    motion.start();
+    return () => motion.stop();
+  }, [centre, marker, trail]);
+  const toY = (value: Animated.Value) => Animated.multiply(value, height / 100);
+  const font = bodyFont(locale, 'semibold');
+  return (
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={copy.profilePosition}
+      onLayout={(event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height)}
+      style={pitchStyles.pitch}
+    >
+      <Svg width="100%" height="100%" viewBox="0 0 200 180" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
+        {Array.from({ length: 12 }, (_, index) => (
+          <Rect key={index} x="0" y={index * 16.2} width="200" height="16.2" fill={index % 2 ? '#27432f' : '#2c4a35'} />
+        ))}
+      </Svg>
+      {height > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[pitchStyles.heat, { transform: [{ translateY: toY(marker) }] }]}
+        >
+          <Svg width={220} height={150} viewBox="0 0 220 150">
+            <Defs>
+              <RadialGradient id="pitch-heat" cx="50%" cy="50%" r="50%">
+                <Stop offset="0" stopColor={colors.primaryButton} stopOpacity="0.38" />
+                <Stop offset="1" stopColor={colors.primaryButton} stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Rect width="220" height="150" fill="url(#pitch-heat)" />
+          </Svg>
+        </Animated.View>
+      ) : null}
+      <Svg width="100%" height="100%" viewBox="0 0 200 180" pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <G fill="none" stroke="#9cc4a6" strokeWidth={1.3} opacity={0.55}>
+          <Rect x="6" y="6" width="188" height="168" rx="3" />
+          <Line x1="6" y1="90" x2="194" y2="90" />
+          <Circle cx="100" cy="90" r="18" />
+          <Rect x="50" y="6" width="100" height="30" />
+          <Rect x="78" y="6" width="44" height="12" />
+          <Path d="M84 36 A18 18 0 0 0 116 36" />
+          <Rect x="50" y="144" width="100" height="30" />
+          <Rect x="78" y="162" width="44" height="12" />
+          <Path d="M84 144 A18 18 0 0 1 116 144" />
+          <Path d="M6 11 A5 5 0 0 0 11 6 M189 6 A5 5 0 0 0 194 11 M194 169 A5 5 0 0 0 189 174 M11 174 A5 5 0 0 0 6 169" />
+        </G>
+        <G fill="#9cc4a6" opacity={0.55}>
+          <Circle cx="100" cy="90" r="1.6" />
+          <Circle cx="100" cy="27" r="1.6" />
+          <Circle cx="100" cy="153" r="1.6" />
+        </G>
+        <Rect x="86" y="1.5" width="28" height="4.5" rx="1" fill="none" stroke="#f2f5ec" strokeWidth={1.2} opacity={0.7} />
+        <Rect x="86" y="174" width="28" height="4.5" rx="1" fill="none" stroke="#f2f5ec" strokeWidth={1.2} opacity={0.7} />
+        <G fill="#f2f5ec" opacity={0.28}>
+          {[
+            [60, 30], [140, 30], [52, 78], [148, 78], [40, 122], [80, 128], [120, 128], [160, 122],
+          ].map(([cx, cy]) => (
+            <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="4.5" />
+          ))}
+        </G>
+      </Svg>
+      {zones.map((item) => {
+        const selected = item.position === position;
         return (
-          <Pressable key={value} accessibilityRole="radio" accessibilityLabel={point.label} accessibilityState={{ selected }} disabled={disabled} onPress={() => onSelect(value)} style={[styles.pitchZone, { top: `${point.top}%`, left: `${point.left}%` }]}>
-            {selected ? <Animated.View style={[styles.positionHalo, { borderColor: colors.primaryButton, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.62, 0] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.3] }) }] }]} /> : null}
-            <View style={[styles.positionDot, { backgroundColor: selected ? colors.primaryButton : colors.surface, borderColor: colors.border }]}>
-              <Text style={{ color: selected ? colors.primaryButtonText : colors.textPrimary, fontWeight: '800', fontSize: point.short.length > 2 ? 10 : 12 }}>{point.short}</Text>
+          <Pressable
+            key={item.position}
+            accessibilityRole="radio"
+            accessibilityLabel={positionLabel(item.position, copy)}
+            accessibilityState={{ checked: selected }}
+            aria-checked={selected}
+            onPress={() => onSelect(item.position)}
+            style={({ pressed }) => [
+              pitchStyles.band,
+              { top: `${item.top}%` as DimensionValue, height: `${item.height}%` as DimensionValue },
+              pressed && !selected && pitchStyles.bandHover,
+              selected && pitchStyles.bandOn,
+            ]}
+          >
+            {selected ? (
+              <Svg width="100%" height="100%" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
+                <Defs>
+                  <LinearGradient id="pitch-band-on" x1="0" y1="0" x2="1" y2="0">
+                    <Stop offset="0" stopColor={colors.primaryButton} stopOpacity="0.24" />
+                    <Stop offset="0.7" stopColor={colors.primaryButton} stopOpacity="0.03" />
+                  </LinearGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="url(#pitch-band-on)" />
+              </Svg>
+            ) : null}
+            <View style={[pitchStyles.tag, selected && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton }]}>
+              <Text style={[pitchStyles.tagText, { fontFamily: font, color: selected ? '#0c1210' : '#e6eedd' }]}>
+                {item.short}
+              </Text>
             </View>
+            <Text style={[pitchStyles.bandText, { fontFamily: font, color: selected ? colors.primaryButton : '#e6eedd' }]}>
+              {positionLabel(item.position, copy)}
+            </Text>
           </Pressable>
         );
       })}
+      {height > 0 ? (
+        <>
+          <Animated.View
+            pointerEvents="none"
+            style={[pitchStyles.trail, { transform: [{ translateY: toY(trail) }] }]}
+          />
+          <Animated.View pointerEvents="none" style={[pitchStyles.markerWrap, { transform: [{ translateY: toY(marker) }] }]}>
+            <Animated.View
+              style={[
+                pitchStyles.markerPulse,
+                {
+                  backgroundColor: colors.primaryButton,
+                  opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
+                  transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.72] }) }],
+                },
+              ]}
+            />
+            <View style={[pitchStyles.marker, { backgroundColor: colors.primaryButton }]}>
+              <Text style={pitchStyles.markerText}>{number}</Text>
+            </View>
+          </Animated.View>
+        </>
+      ) : null}
     </View>
   );
 }
 
-function ProfilePanel({ title, subtitle, colors, children }: { title: string; subtitle?: string; colors: ReturnType<typeof useAppPreferences>['colors']; children: React.ReactNode }) {
+function DayButton({
+  letter,
+  label,
+  on,
+  onPress,
+  colors,
+  styles,
+}: {
+  letter: string;
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
+  const scale = useSpring(on ? 1.06 : 1);
   return (
-    <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={styles.panelHeading}>
-        <Text accessibilityRole="header" style={[styles.panelTitle, { color: colors.textPrimary }]}>{title}</Text>
-        {subtitle ? <Text style={{ color: colors.textSecondary }}>{subtitle}</Text> : null}
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: on }}
+      aria-checked={on}
+      onPress={onPress}
+      style={styles.dayCell}
+    >
+      <Animated.View
+        style={[
+          styles.day,
+          on && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+          { transform: [{ scale }] },
+        ]}
+      >
+        <Text style={[styles.dayText, on && { color: colors.primaryButtonText }]}>{letter}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function FormatCard({
+  format,
+  players,
+  on,
+  onPress,
+  colors,
+  styles,
+}: {
+  format: Format;
+  players: string;
+  on: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
+  const tick = useSpring(on ? 1 : 0);
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityLabel={`${format}v${format}, ${players}`}
+      accessibilityState={{ checked: on }}
+      aria-checked={on}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.formatCard,
+        on && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+        { transform: [{ scale: pressed ? 0.96 : 1 }] },
+      ]}
+    >
+      <MiniPitch color={on ? colors.primaryButtonText : colors.pitchLine} width={30} height={22} />
+      <View>
+        <Text style={[styles.formatValue, on && { color: colors.primaryButtonText }]}>{`${format}v${format}`}</Text>
+        <Text style={[styles.formatPlayers, on && { color: '#2c3a16' }]}>{players}</Text>
       </View>
-      {children}
+      <Animated.View style={[styles.tick, { opacity: tick, transform: [{ scale: tick.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]}>
+        <CheckGlyph color={colors.primaryButton} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+function AnyPill({
+  label,
+  on,
+  onPress,
+  colors,
+  styles,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: on }}
+      aria-checked={on}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.anyPill,
+        on && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+        { transform: [{ scale: pressed ? 0.95 : 1 }] },
+      ]}
+    >
+      <View
+        style={[
+          styles.anyCheck,
+          on && { backgroundColor: colors.primaryButtonText, borderColor: colors.primaryButtonText },
+        ]}
+      >
+        {on ? <CheckGlyph color={colors.primaryButton} /> : null}
+      </View>
+      <Text style={[styles.anyText, on && { color: colors.primaryButtonText }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function AccountRow({
+  label,
+  value,
+  onPress,
+  colors,
+  styles,
+}: {
+  label: string;
+  value?: string;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={value ? `${label}: ${value}` : label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, styles.rowDivider, pressed && { backgroundColor: colors.cardTop }]}
+    >
+      <Text style={[styles.rowTitle, styles.rowCopy]}>{label}</Text>
+      {value ? <Text style={styles.rowValue}>{value}</Text> : null}
+      <Chevron color={colors.textSecondary} />
+    </Pressable>
+  );
+}
+
+function ToggleSwitch({
+  value,
+  label,
+  onPress,
+  colors,
+}: {
+  value: boolean;
+  label: string;
+  onPress: () => void;
+  colors: ThemeColors;
+}) {
+  const knob = useSpring(value ? 22 : 0);
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: value }}
+      aria-checked={value}
+      onPress={onPress}
+      style={[
+        switchStyles.track,
+        {
+          backgroundColor: value ? colors.primaryButton : colors.option,
+          borderColor: value ? colors.primaryButton : colors.borderStrong,
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          switchStyles.knob,
+          { backgroundColor: value ? colors.primaryButtonText : colors.textSecondary, transform: [{ translateX: knob }] },
+        ]}
+      />
+    </Pressable>
+  );
+}
+
+function ProfileEditorSheet({
+  visible,
+  form,
+  cities,
+  areas,
+  copy,
+  colors,
+  locale,
+  styles,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  form: ProfileInput;
+  cities: CityRow[];
+  areas: AreaRow[];
+  copy: Copy;
+  colors: ThemeColors;
+  locale: Locale;
+  styles: Styles;
+  onClose: () => void;
+  onSave: (details: ProfileInput) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState(form);
+  const [saving, setSaving] = useState(false);
+  const [openedWith, setOpenedWith] = useState<ProfileInput | null>(null);
+  if (visible && openedWith !== form) {
+    setOpenedWith(form);
+    setDraft(form);
+  }
+  const slide = useEntrance(400, 0, Easing.bezier(0.2, 0.9, 0.2, 1), visible);
+  const name = (row: CityRow | AreaRow) => (locale === 'en' ? row.name_en : row.name_el);
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+      <View style={styles.modalRoot}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.profileEditClose}
+          onPress={onClose}
+          style={styles.scrim}
+        />
+        <Animated.View
+          accessibilityViewIsModal
+          accessibilityRole="dialog"
+          accessibilityLabel={copy.profileEditTitle}
+          style={[
+            styles.sheet,
+            { transform: [{ translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }] },
+          ]}
+        >
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetTitleRow}>
+            <Text accessibilityRole="header" style={styles.sheetTitle}>
+              {copy.profileEditTitle}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={copy.profileEditClose}
+              onPress={onClose}
+              style={styles.sheetClose}
+            >
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path d="M6 6l12 12M18 6L6 18" stroke={colors.textPrimary} strokeWidth={2.4} strokeLinecap="round" />
+              </Svg>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+            <AuthField
+              label={copy.profileDisplayName}
+              value={draft.displayName}
+              onChangeText={(displayName) => setDraft((current) => ({ ...current, displayName }))}
+              maxLength={40}
+              autoComplete="off"
+            />
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{copy.profileCity}</Text>
+              <View style={styles.sheetGrid}>
+                {cities.map((city) => (
+                  <SheetOption
+                    key={city.id}
+                    label={name(city)}
+                    on={draft.cityId === city.id}
+                    onPress={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        cityId: city.id,
+                        areaId: areas.find((area) => area.city_id === city.id)?.id ?? '',
+                      }))
+                    }
+                    colors={colors}
+                    styles={styles}
+                  />
+                ))}
+              </View>
+            </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{copy.profileArea}</Text>
+              <View style={styles.sheetGrid}>
+                {areas
+                  .filter((area) => area.city_id === draft.cityId)
+                  .map((area) => (
+                    <SheetOption
+                      key={area.id}
+                      label={name(area)}
+                      on={draft.areaId === area.id}
+                      onPress={() => setDraft((current) => ({ ...current, areaId: area.id }))}
+                      colors={colors}
+                      styles={styles}
+                    />
+                  ))}
+              </View>
+            </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>{copy.profileRadius}</Text>
+              <View style={styles.sheetGrid}>
+                {[
+                  { id: null, label: copy.profileRadiusAny },
+                  { id: 10, label: copy.profileRadius10 },
+                  { id: 20, label: copy.profileRadius20 },
+                  { id: 50, label: copy.profileRadius50 },
+                ].map((option) => (
+                  <SheetOption
+                    key={option.label}
+                    label={option.label}
+                    on={draft.maxRadiusKm === option.id}
+                    onPress={() => setDraft((current) => ({ ...current, maxRadiusKm: option.id }))}
+                    colors={colors}
+                    styles={styles}
+                  />
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ busy: saving, disabled: saving }}
+            disabled={saving}
+            onPress={() => {
+              setSaving(true);
+              void onSave(draft).finally(() => setSaving(false));
+            }}
+            style={({ pressed }) => [styles.sheetSave, { opacity: saving ? 0.7 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+          >
+            <Text style={styles.sheetSaveText}>{saving ? copy.profileSaving : copy.profileSaveShort}</Text>
+          </Pressable>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+function SheetOption({
+  label,
+  on,
+  onPress,
+  colors,
+  styles,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+  colors: ThemeColors;
+  styles: Styles;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: on }}
+      aria-checked={on}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.sheetOption,
+        on && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+        { transform: [{ scale: pressed ? 0.95 : 1 }] },
+      ]}
+    >
+      <Text numberOfLines={1} style={[styles.sheetOptionText, on && { color: colors.primaryButtonText }]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function CardHeader({
+  icon,
+  title,
+  subtitle,
+  trailing,
+  styles,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  trailing?: ReactNode;
+  styles: Styles;
+}) {
+  return (
+    <View style={styles.cardHeader}>
+      <View style={styles.cardIcon}>{icon}</View>
+      <View style={styles.rowCopy}>
+        <Text accessibilityRole="header" style={styles.cardTitle}>
+          {title}
+        </Text>
+        <Text style={styles.muted}>{subtitle}</Text>
+      </View>
+      {trailing}
     </View>
   );
 }
 
-function ChipGroup({ colors, options, selected, disabled, onSelect }: { colors: ReturnType<typeof useAppPreferences>['colors']; options: { id: string; label: string }[]; selected: string; disabled: boolean; onSelect: (value: string) => void }) {
-  return <View style={styles.chips}>{options.map((option) => <Chip key={option.id} colors={colors} label={option.label} selected={option.id === selected} disabled={disabled} onPress={() => onSelect(option.id)} />)}</View>;
+function CardGradient({ id, colors }: { id: string; colors: ThemeColors }) {
+  return (
+    <Svg width="100%" height="100%" preserveAspectRatio="none" pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Defs>
+        <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={colors.cardTop} />
+          <Stop offset="1" stopColor={colors.cardBottom} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  );
 }
 
-function ChoiceRow({ label, colors, options, selected, disabled, onSelect }: { label: string; colors: ReturnType<typeof useAppPreferences>['colors']; options: { id: string; label: string }[]; selected: string; disabled: boolean; onSelect: (value: string) => void }) {
-  return <View style={styles.group}><Text style={[styles.fieldTitle, { color: colors.textSecondary }]}>{label}</Text><View style={styles.chips}>{options.map((option) => <Chip key={option.id} colors={colors} label={option.label} selected={option.id === selected} disabled={disabled} onPress={() => onSelect(option.id)} />)}</View></View>;
+function useSpring(target: number): Animated.Value {
+  const [value] = useState(() => new Animated.Value(target));
+  useEffect(() => {
+    const animation = Animated.spring(value, { toValue: target, speed: 18, bounciness: 10, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [target, value]);
+  return value;
 }
 
-function ChoiceGrid({ colors, options, selected, disabled, onSelect }: { colors: ReturnType<typeof useAppPreferences>['colors']; options: { id: string; label: string }[]; selected: string[]; disabled: boolean; onSelect: (value: string) => void }) {
-  return <View style={styles.choiceGrid}>{options.map((option) => <Chip key={option.id} colors={colors} label={option.label} selected={selected.includes(option.id)} disabled={disabled} onPress={() => onSelect(option.id)} wide />)}</View>;
+const footPath =
+  'M9.5 22c-2.6 0-3.7-2.4-3.4-5.3.3-2.9 1.3-4.9 1.3-7.7C7.4 6.7 8.7 5.2 10.7 5.2s3.3 1.5 3.1 4.2c-.2 2.8-1.4 4.3-1.4 7.2 0 2.9-.9 5.4-2.9 5.4z';
+
+function FootShape({ color }: { color: string }) {
+  return (
+    <>
+      <Path d={footPath} fill={color} />
+      <Circle cx="9.2" cy="2.9" r="1.3" fill={color} />
+      <Circle cx="12" cy="2.6" r="1.1" fill={color} />
+      <Circle cx="14.3" cy="3.4" r="1" fill={color} />
+    </>
+  );
 }
 
-function Chip({ colors, label, selected, disabled, onPress, wide = false }: { colors: ReturnType<typeof useAppPreferences>['colors']; label: string; selected: boolean; disabled: boolean; onPress: () => void; wide?: boolean }) {
-  return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityState={{ checked: selected, disabled }} disabled={disabled} onPress={onPress} style={[styles.chip, wide && styles.wideChip, { backgroundColor: selected ? colors.primaryButton : colors.surfaceRaised, borderColor: selected ? colors.primaryButton : colors.border, opacity: disabled ? 0.74 : 1 }]}><Text style={{ color: selected ? colors.primaryButtonText : colors.textPrimary, fontWeight: '700', textAlign: 'center' }}>{label}</Text></Pressable>;
+function FootIcon({ color }: { color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <FootShape color={color} />
+    </Svg>
+  );
 }
 
-function FieldRow({ label, colors, children }: { label: string; colors: ReturnType<typeof useAppPreferences>['colors']; children: React.ReactNode }) {
-  return <View style={styles.fieldRow}><Text style={[styles.fieldTitle, { color: colors.textSecondary }]}>{label}</Text>{children}</View>;
+function FootGlyph({ foot, color }: { foot: StrongFoot; color: string }) {
+  if (foot === 'both') {
+    return (
+      <Svg width={28} height={22} viewBox="0 0 30 24">
+        <G transform="translate(17 1) scale(-0.85 0.85)">
+          <FootShape color={color} />
+        </G>
+        <G transform="translate(12 1) scale(0.85)">
+          <FootShape color={color} />
+        </G>
+      </Svg>
+    );
+  }
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <G transform={foot === 'left' ? 'translate(24 0) scale(-1 1)' : undefined}>
+        <FootShape color={color} />
+      </G>
+    </Svg>
+  );
 }
 
-function Badge({ colors, label, accent = false }: { colors: ReturnType<typeof useAppPreferences>['colors']; label: string; accent?: boolean }) {
-  return <View style={[styles.badge, { backgroundColor: accent ? colors.primaryButton : colors.surfaceRaised }]}><Text style={{ color: accent ? colors.primaryButtonText : colors.textPrimary, fontWeight: '700' }}>{label}</Text></View>;
+function LevelGlyph({ bars, color }: { bars: number; color: string }) {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24">
+      <Rect x="4" y="14" width="4" height="7" rx="1.5" fill={color} />
+      <Rect x="10.5" y="9" width="4" height="12" rx="1.5" fill={color} opacity={bars >= 2 ? 1 : 0.3} />
+      <Rect x="17" y="4" width="4" height="17" rx="1.5" fill={color} opacity={bars >= 3 ? 1 : 0.3} />
+    </Svg>
+  );
 }
 
-function Crest({ colors, initials }: { colors: ReturnType<typeof useAppPreferences>['colors']; initials: string }) {
-  return <View style={[styles.crest, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }]}><Text style={{ color: colors.accentText, fontFamily: 'BarlowCondensed_700Bold', fontSize: 22 }}>{initials}</Text></View>;
+function PinIcon({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z" stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
+      <Circle cx="12" cy="9.5" r="2.5" stroke={color} strokeWidth={2.2} />
+    </Svg>
+  );
 }
 
-function SwitchToggle({ colors, value, onPress, disabled, label }: { colors: ReturnType<typeof useAppPreferences>['colors']; value: boolean; onPress: () => void; disabled: boolean; label: string }) {
-  return <Pressable accessibilityRole="switch" accessibilityState={{ checked: value, disabled }} aria-checked={value} accessibilityLabel={label} disabled={disabled} onPress={onPress} style={[styles.switch, { borderColor: value ? colors.primaryButton : colors.border, backgroundColor: value ? colors.primaryButton : colors.surfaceRaised }]}><View style={[styles.switchThumb, { backgroundColor: value ? colors.primaryButtonText : colors.textMuted, transform: [{ translateX: value ? 21 : 0 }] }]} /></Pressable>;
+function CalendarIcon({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Rect x="3.5" y="5" width="17" height="15.5" rx="3" stroke={color} strokeWidth={2.2} />
+      <Path d="M3.5 10h17M8 3v4M16 3v4" stroke={color} strokeWidth={2.2} strokeLinecap="round" />
+    </Svg>
+  );
 }
 
-function emptyForm(language: 'en' | 'el'): ProfileInput {
-  return { displayName: '', cityId: '', areaId: '', preferredPosition: null, skillLevel: null, strongFoot: 'right', shirtNumber: 8, preferredFormats: [5, 7], availabilitySlots: [], maxRadiusKm: null, language };
+function MiniPitch({ color, width, height }: { color: string; width: number; height: number }) {
+  return (
+    <Svg width={width} height={height} viewBox="0 0 30 22" fill="none">
+      <Rect x="1" y="1" width="28" height="20" rx="3" stroke={color} strokeWidth={1.6} />
+      <Path d="M15 1v20" stroke={color} strokeWidth={1.6} />
+      <Circle cx="15" cy="11" r="3.5" stroke={color} strokeWidth={1.6} />
+    </Svg>
+  );
 }
-function isPosition(value: string | null): value is Position { return positions.some((item) => item === value); }
-function isSkillLevel(value: string | null): value is SkillLevel { return skillLevels.some((item) => item === value); }
-function isStrongFoot(value: string | null | undefined): value is StrongFoot { return strongFeet.some((item) => item === value); }
-function isFormat(value: number): value is Format { return formats.some((item) => item === value); }
-function isAvailabilitySlot(value: string): value is AvailabilitySlot { return availabilitySlots.some((item) => item === value); }
+
+function CheckGlyph({ color }: { color: string }) {
+  return (
+    <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+      <Path d="M5 12.5l4.5 4.5L19 7.5" stroke={color} strokeWidth={3.6} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function Chevron({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 6l6 6-6 6" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function ShieldOutline({ color, dashed }: { color: string; dashed: boolean }) {
+  return (
+    <Svg width={40} height={44} viewBox="0 0 100 110">
+      <Path
+        d="M50 4 L92 18 V54 C92 82 72 98 50 106 C28 98 8 82 8 54 V18 Z"
+        fill="rgba(207,255,74,0.1)"
+        stroke={color}
+        strokeWidth={5}
+        strokeDasharray={dashed ? [10, 8] : undefined}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function emptyForm(language: Locale): ProfileInput {
+  return {
+    displayName: '',
+    cityId: '',
+    areaId: '',
+    preferredPosition: null,
+    skillLevel: null,
+    strongFoot: 'right',
+    shirtNumber: 8,
+    preferredFormats: [5, 7],
+    availabilitySlots: [],
+    maxRadiusKm: null,
+    language,
+  };
+}
+function isPosition(value: string | null): value is Position {
+  return positions.some((item) => item === value);
+}
+function isSkillLevel(value: string | null): value is SkillLevel {
+  return skillLevels.some((item) => item === value);
+}
+function isStrongFoot(value: string | null | undefined): value is StrongFoot {
+  return strongFeet.some((item) => item === value);
+}
+function isFormat(value: number): value is Format {
+  return formats.some((item) => item === value);
+}
 function positionLabel(value: Position, copy: Copy) {
-  switch (value) { case 'goalkeeper': return copy.profileGoalkeeper; case 'defender': return copy.profileDefender; case 'midfielder': return copy.profileMidfielder; case 'forward': return copy.profileForward; case 'any': return copy.profileAnyPosition; }
+  switch (value) {
+    case 'goalkeeper':
+      return copy.profileGoalkeeper;
+    case 'defender':
+      return copy.profileDefender;
+    case 'midfielder':
+      return copy.profileMidfielder;
+    case 'forward':
+      return copy.profileStriker;
+    case 'any':
+      return copy.profileAnyPosition;
+  }
 }
-function skillLabel(value: SkillLevel, copy: Copy) {
-  switch (value) { case 'beginner': return copy.profileBeginner; case 'intermediate': return copy.profileIntermediate; case 'advanced': return copy.profileAdvanced; }
+function levelLabel(value: SkillLevel, copy: Copy) {
+  switch (value) {
+    case 'beginner':
+      return copy.profileLevelCasual;
+    case 'intermediate':
+      return copy.profileLevelRegular;
+    case 'advanced':
+      return copy.profileLevelCompetitive;
+  }
 }
 function strongFootLabel(value: StrongFoot, copy: Copy) {
-  switch (value) { case 'left': return copy.profileLeftFoot; case 'right': return copy.profileRightFoot; case 'both': return copy.profileBothFeet; }
+  switch (value) {
+    case 'left':
+      return copy.profileLeftFoot;
+    case 'right':
+      return copy.profileRightFoot;
+    case 'both':
+      return copy.profileBothFeet;
+  }
 }
-function availabilityLabel(value: AvailabilitySlot, copy: Copy) {
-  switch (value) { case 'weekday_morning': return copy.profileWeekdayMorning; case 'weekday_afternoon': return copy.profileWeekdayAfternoon; case 'weekday_evening': return copy.profileWeekdayEvening; case 'weekend_morning': return copy.profileWeekendMorning; case 'weekend_afternoon': return copy.profileWeekendAfternoon; case 'weekend_evening': return copy.profileWeekendEvening; }
-}
-function availabilityCardLabel(value: AvailabilitySlot, locale: 'en' | 'el') {
-  const labels = locale === 'en'
-    ? { weekday_morning: 'Weekday AM', weekday_afternoon: 'Weekday PM', weekday_evening: 'Weekday eve', weekend_morning: 'Weekend AM', weekend_afternoon: 'Weekend PM', weekend_evening: 'Weekend eve' }
-    : { weekday_morning: 'Καθημ. πρωί', weekday_afternoon: 'Καθημ. απόγ.', weekday_evening: 'Καθημ. βράδυ', weekend_morning: 'ΣΚ πρωί', weekend_afternoon: 'ΣΚ απόγ.', weekend_evening: 'ΣΚ βράδυ' };
-  return labels[value];
+function footShort(value: StrongFoot, copy: Copy) {
+  switch (value) {
+    case 'left':
+      return copy.profileFootLeft;
+    case 'right':
+      return copy.profileFootRight;
+    case 'both':
+      return copy.profileFootBoth;
+  }
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, minHeight: 0 },
-  stateRoot: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  stateCard: { width: '100%', maxWidth: 480, gap: 18 },
-  scroll: { flex: 1 },
-  content: { width: '100%', maxWidth: 480, alignSelf: 'center', paddingBottom: 30, gap: 16 },
-  stage: { minHeight: 0, overflow: 'hidden', alignItems: 'center', paddingHorizontal: 18, paddingTop: 12, paddingBottom: 20 },
-  beam: { position: 'absolute', top: -18, width: 235, height: 420 },
-  floatDot: { position: 'absolute', bottom: 0, width: 4, height: 4, borderRadius: 4 },
-  stageHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 2 },
-  stageTitle: { flex: 1, fontFamily: 'BarlowCondensed_700Bold', fontSize: 26 },
-  editButton: { height: 42, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 12 },
-  jerseyRow: { height: 190, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 6 },
-  jerseyShadow: { position: 'absolute', bottom: -5, width: 100, height: 12, borderRadius: 50, backgroundColor: '#000', opacity: 0.5 },
-  playerName: { fontFamily: 'BarlowCondensed_700Bold', fontSize: 38, lineHeight: 44, textAlign: 'center', marginTop: 2 },
-  playerMeta: { fontSize: 15, textAlign: 'center', marginTop: 1 },
-  badges: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  sharePlayerCard: { minHeight: 50, maxWidth: 340, width: '100%', borderRadius: 16, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 16 },
-  sharePlayerCardText: { fontSize: 16, fontWeight: '800' },
-  sharePlayerCardGlyph: { fontSize: 24, fontWeight: '800' },
-  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
-  panel: { marginHorizontal: 16, padding: 16, gap: 16, borderWidth: 1, borderRadius: 22 },
-  panelHeading: { gap: 4 },
-  panelTitle: { fontFamily: 'BarlowCondensed_700Bold', fontSize: 25, lineHeight: 30 },
-  group: { gap: 9 },
-  fieldRow: { gap: 8 },
-  fieldTitle: { fontSize: 14, fontWeight: '700' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 44, paddingHorizontal: 14, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  wideChip: { width: '48%', flexGrow: 1 },
-  numberButton: { width: 42, height: 42, borderWidth: 1, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  numberValue: { width: 36, fontFamily: 'BarlowCondensed_700Bold', fontSize: 28, textAlign: 'center' },
-  pitch: { width: '100%', aspectRatio: 1.04, borderRadius: 18, borderWidth: 1, overflow: 'hidden', position: 'relative' },
-  pitchZone: { position: 'absolute', width: 50, height: 50, marginLeft: -25, marginTop: -25, alignItems: 'center', justifyContent: 'center' },
-  positionDot: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
-  positionHalo: { position: 'absolute', width: 54, height: 54, borderRadius: 27, borderWidth: 2, opacity: 0.62 },
-  teamRow: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderWidth: 1, borderRadius: 16 },
-  emptyTeam: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderStyle: 'dashed', borderRadius: 16 },
-  teamName: { fontWeight: '700', fontSize: 16 },
-  crest: { width: 44, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1 },
-  accountRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  switch: { width: 54, height: 32, borderRadius: 16, borderWidth: 1, justifyContent: 'center', paddingHorizontal: 3 },
-  switchThumb: { width: 24, height: 24, borderRadius: 12 },
-  linkRow: { minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', fontWeight: '600' },
-  signOut: { minHeight: 46, justifyContent: 'center', alignItems: 'flex-start' },
+type Styles = ReturnType<typeof makeStyles>;
+
+function makeStyles(colors: ThemeColors, locale: Locale) {
+  const body = bodyFont(locale);
+  const medium = bodyFont(locale, 'medium');
+  const semibold = bodyFont(locale, 'semibold');
+  const display = displayFont(locale);
+  const dark = colors.background === '#0C1210';
+  return StyleSheet.create({
+    root: { flex: 1, minHeight: 0, backgroundColor: colors.background },
+    stateRoot: {
+      flex: 1,
+      minHeight: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      backgroundColor: colors.background,
+    },
+    stateCard: { width: '100%', maxWidth: 480, gap: 18 },
+    scroll: { flex: 1 },
+    content: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 22, paddingBottom: 28 },
+    hero: {
+      overflow: 'hidden',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 18,
+      paddingTop: 12,
+      paddingBottom: 20,
+    },
+    ghost: { position: 'absolute', top: 34, left: 0, right: 0, alignItems: 'center' },
+    heroHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12 },
+    heroTitle: { flex: 1, color: colors.textPrimary, fontFamily: display, fontSize: 24, lineHeight: 26, fontWeight: '800' },
+    editButton: {
+      height: 44,
+      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.borderStrong,
+      backgroundColor: dark ? 'rgba(12,18,16,0.5)' : colors.surface,
+    },
+    editText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    iconGhost: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.borderStrong,
+      backgroundColor: dark ? 'rgba(12,18,16,0.5)' : colors.surface,
+    },
+    jerseyRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 6 },
+    roundButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: colors.borderStrong,
+      backgroundColor: dark ? 'rgba(12,18,16,0.55)' : colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    playerName: {
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 42,
+      lineHeight: 44,
+      fontWeight: '800',
+      textAlign: 'center',
+      marginTop: 6,
+    },
+    playerLine: { color: colors.textSecondary, fontFamily: body, fontSize: 16, textAlign: 'center' },
+    heroChips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 4 },
+    heroChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999 },
+    heroChipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    card: {
+      marginHorizontal: 18,
+      padding: 14,
+      gap: 14,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    cardIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: 'rgba(207,255,74,0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cardTitle: { color: colors.textPrimary, fontFamily: display, fontSize: 24, lineHeight: 25, fontWeight: '800' },
+    cardTrailing: { color: colors.accentText, fontFamily: display, fontSize: 22, lineHeight: 23, fontWeight: '800' },
+    muted: { color: colors.textSecondary, fontFamily: body, fontSize: 14, lineHeight: 19 },
+    fieldGroup: { gap: 8 },
+    fieldLabel: { color: colors.textSecondary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    days: { flexDirection: 'row', gap: 6 },
+    dayCell: { flex: 1, minWidth: 0 },
+    day: {
+      width: '100%',
+      aspectRatio: 1,
+      minHeight: 40,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
+      backgroundColor: colors.option,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    anyPill: {
+      height: 44,
+      paddingLeft: 8,
+      paddingRight: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: colors.borderStrong,
+    },
+    anyCheck: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 1.5,
+      borderColor: '#6f8a76',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    anyText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    formats: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    formatCard: {
+      flexGrow: 1,
+      flexBasis: '45%',
+      minHeight: 78,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
+      backgroundColor: colors.option,
+    },
+    formatValue: { color: colors.textPrimary, fontFamily: display, fontSize: 26, lineHeight: 27, fontWeight: '800' },
+    formatPlayers: { color: colors.textSecondary, fontFamily: body, fontSize: 13 },
+    tick: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: '#0c1210',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    section: { marginHorizontal: 18, gap: 10 },
+    sectionTitle: { color: colors.textPrimary, fontFamily: display, fontSize: 26, lineHeight: 27, fontWeight: '800' },
+    emptyTeam: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 14,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.optionBorder,
+    },
+    rowCopy: { flex: 1, minWidth: 0, gap: 2 },
+    rowTitle: { color: colors.textPrimary, fontFamily: medium, fontSize: 16, fontWeight: '500' },
+    rowValue: { color: colors.textSecondary, fontFamily: body, fontSize: 15 },
+    smallLime: {
+      height: 44,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primaryButton,
+    },
+    smallLimeText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    listCard: {
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.well,
+      overflow: 'hidden',
+    },
+    row: { minHeight: 56, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.navBorder },
+    email: { color: colors.textMuted, fontFamily: body, fontSize: 13 },
+    modalRoot: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
+    scrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(5,8,6,0.7)' },
+    sheet: {
+      width: '100%',
+      maxWidth: 480,
+      maxHeight: '88%',
+      paddingTop: 10,
+      paddingHorizontal: 18,
+      paddingBottom: 20,
+      gap: 16,
+      borderTopLeftRadius: 26,
+      borderTopRightRadius: 26,
+      borderTopWidth: 1.5,
+      borderColor: colors.optionBorder,
+      backgroundColor: dark ? '#131D17' : colors.surface,
+    },
+    sheetHandle: { alignSelf: 'center', width: 44, height: 5, borderRadius: 999, backgroundColor: colors.borderStrong },
+    sheetTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    sheetTitle: { flexShrink: 1, color: colors.textPrimary, fontFamily: display, fontSize: 28, lineHeight: 30, fontWeight: '800' },
+    sheetClose: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sheetBody: { gap: 16 },
+    sheetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    sheetOption: {
+      flexGrow: 1,
+      flexBasis: '45%',
+      minHeight: 48,
+      paddingHorizontal: 12,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: colors.optionBorder,
+      backgroundColor: colors.option,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sheetOptionText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    sheetSave: {
+      height: 52,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primaryButton,
+    },
+    sheetSaveText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 17, fontWeight: '600' },
+  });
+}
+
+const jerseyStyles = StyleSheet.create({
+  number: {
+    position: 'absolute',
+    top: 78,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: '#0c1210',
+    fontFamily: 'BarlowCondensed_800ExtraBold',
+    fontSize: 80,
+    lineHeight: 84,
+    fontWeight: '800',
+  },
+  floor: { position: 'absolute', left: 30, right: 30, bottom: -8, height: 18 },
+});
+const pitchStyles = StyleSheet.create({
+  pitch: { width: '100%', aspectRatio: 10 / 9, borderRadius: 18, overflow: 'hidden' },
+  heat: { position: 'absolute', top: -75, left: '50%', marginLeft: -110, width: 220, height: 150 },
+  band: {
+    position: 'absolute',
+    left: '3%',
+    right: '3%',
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  bandHover: { backgroundColor: 'rgba(242,245,236,0.06)', borderColor: 'rgba(242,245,236,0.18)' },
+  bandOn: { borderColor: 'rgba(207,255,74,0.55)' },
+  tag: {
+    minWidth: 34,
+    height: 26,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(242,245,236,0.25)',
+    backgroundColor: 'rgba(12,18,16,0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tagText: { fontSize: 13, fontWeight: '600' },
+  bandText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  trail: {
+    position: 'absolute',
+    top: -29,
+    left: '50%',
+    marginLeft: -29,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 2,
+    borderColor: 'rgba(207,255,74,0.45)',
+  },
+  markerWrap: {
+    position: 'absolute',
+    top: -25,
+    left: '50%',
+    marginLeft: -25,
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerPulse: { position: 'absolute', width: 50, height: 50, borderRadius: 25 },
+  marker: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2.5,
+    borderColor: '#0c1210',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  markerText: {
+    color: '#0c1210',
+    fontFamily: 'BarlowCondensed_800ExtraBold',
+    fontSize: 25,
+    lineHeight: 27,
+    fontWeight: '800',
+  },
+});
+const switchStyles = StyleSheet.create({
+  track: { width: 54, height: 32, paddingHorizontal: 3, justifyContent: 'center', borderWidth: 1.5, borderRadius: 999 },
+  knob: { width: 24, height: 24, borderRadius: 12 },
 });

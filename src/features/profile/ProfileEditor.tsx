@@ -17,6 +17,7 @@ import {
   positions,
   skillLevels,
   strongFeet,
+  isAvailabilityValue,
   validateProfileInput,
   type AvailabilitySlot,
   type Format,
@@ -59,7 +60,7 @@ export function ProfileEditor({ onboarding }: Props) {
       strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
       shirtNumber: bundle.profile.shirt_number ?? 8,
       preferredFormats: bundle.preferences.preferred_formats.filter(isFormat),
-      availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilitySlot),
+      availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilityValue),
       maxRadiusKm: bundle.preferences.max_radius_km,
       language: 'en',
     });
@@ -400,10 +401,6 @@ function isStrongFoot(value: string | null | undefined): value is StrongFoot {
 
 function isFormat(value: number): value is Format {
   return formats.some((format) => format === value);
-}
-
-function isAvailabilitySlot(value: string): value is AvailabilitySlot {
-  return availabilitySlots.some((slot) => slot === value);
 }
 
 type ProfileCopy = {

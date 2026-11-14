@@ -24,6 +24,18 @@ export type ThemeColors = {
   pitchLine: string;
   pitchText: string;
   pitchMarkerBorder: string;
+  /** Bottom tab bar background, its top border and the selected tab fill. */
+  navBar: string;
+  navBorder: string;
+  navSelected: string;
+  /** Sunken control wells (segmented controls, pickers) and option buttons. */
+  well: string;
+  option: string;
+  optionBorder: string;
+  borderStrong: string;
+  /** Vertical gradient used by game cards and profile cards. */
+  cardTop: string;
+  cardBottom: string;
 };
 
 export const themeTokens: Record<ThemeMode, ThemeColors> = {
@@ -51,6 +63,15 @@ export const themeTokens: Record<ThemeMode, ThemeColors> = {
     pitchLine: '#6F9A7C',
     pitchText: '#F2F5EC',
     pitchMarkerBorder: '#0C1210',
+    navBar: '#0F1713',
+    navBorder: '#1F2E25',
+    navSelected: '#1A2920',
+    well: '#101A15',
+    option: '#141F19',
+    optionBorder: '#2F4538',
+    borderStrong: '#3A5544',
+    cardTop: '#16241C',
+    cardBottom: '#101A15',
   },
   light: {
     background: '#F7F9F2',
@@ -76,5 +97,14 @@ export const themeTokens: Record<ThemeMode, ThemeColors> = {
     pitchLine: '#718A70',
     pitchText: '#263D28',
     pitchMarkerBorder: '#263D28',
+    navBar: '#FFFFFF',
+    navBorder: '#DCE3D6',
+    navSelected: '#EDF2E6',
+    well: '#EEF3E8',
+    option: '#FFFFFF',
+    optionBorder: '#CBD5C6',
+    borderStrong: '#AEBBA8',
+    cardTop: '#FFFFFF',
+    cardBottom: '#F3F7EE',
   },
 };

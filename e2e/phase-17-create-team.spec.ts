@@ -77,7 +77,7 @@ async function finishWizard(page: Page) {
   await page.getByRole('radio', { name: 'Aglantzia' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByRole('heading', { name: 'Design your crest' })).toBeVisible();
-  await page.getByRole('radio', { name: 'Hexagon' }).click();
+  await page.getByRole('radio', { name: 'Hex', exact: true }).click();
   await page.getByRole('radio', { name: 'Sky blue' }).click();
   await page.getByRole('radio', { name: 'Stripes' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
@@ -108,8 +108,8 @@ test('Create navigation opens the team wizard, and the 3 steps save their design
     await finishWizard(page);
     await page.screenshot({ path: join(screenshots, `create-team-${viewport.name}.png`), fullPage: true });
     await page.getByRole('button', { name: 'Create team' }).click();
-    await expect(page.getByRole('heading', { name: 'Your team is ready' })).toBeVisible();
-    await expect(page.getByText('Nicosia Rovers')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Nicosia Rovers' })).toBeVisible();
+    await expect(page.getByText('Your team is ready. Invite your players and post your first challenge.')).toBeVisible();
     expect(savedDesign).toMatchObject({
       p_name: 'Nicosia Rovers',
       p_city_id: cityId,

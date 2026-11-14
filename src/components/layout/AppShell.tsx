@@ -52,6 +52,10 @@ export function AppShell({ children }: PropsWithChildren) {
   const { colors, locale } = useAppPreferences();
   const [fontsLoaded, fontError] = useFonts({
     BarlowCondensed_700Bold: require('@/assets/fonts/BarlowCondensed-Bold.ttf'),
+    BarlowCondensed_800ExtraBold: require('@/assets/fonts/BarlowCondensed-ExtraBold.ttf'),
+    Barlow_400Regular: require('@/assets/fonts/Barlow-Regular.ttf'),
+    Barlow_500Medium: require('@/assets/fonts/Barlow-Medium.ttf'),
+    Barlow_600SemiBold: require('@/assets/fonts/Barlow-SemiBold.ttf'),
     Inter_400Regular: require('@/assets/fonts/Inter-Regular.ttf'),
     Inter_600SemiBold: require('@/assets/fonts/Inter-SemiBold.ttf'),
   });
@@ -138,11 +142,9 @@ export function AppShell({ children }: PropsWithChildren) {
         {showBottom ? (
           <View
             nativeID="app-mobile-nav"
-            style={[styles.mobileNav, { paddingBottom: Math.max(insets.bottom, 8) }]}
+            style={[styles.mobileNav, { paddingBottom: Math.max(insets.bottom, 12) }]}
           >
-            <View style={styles.mobileNavPill}>
-              <AppNavigation active={active} variant="bottom" />
-            </View>
+            <AppNavigation active={active} variant="bottom" />
           </View>
         ) : null}
       </View>
@@ -192,7 +194,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       borderBottomColor: colors.border,
       backgroundColor: colors.background,
     },
-    exploreTopBar: { minHeight: 62, paddingVertical: 8 },
+    exploreTopBar: { minHeight: 68, paddingVertical: 12, paddingHorizontal: 18, borderBottomColor: colors.navBorder },
     titleBlock: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     sectionTitle: {
       color: colors.textSecondary,
@@ -202,10 +204,10 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     },
     exploreSectionTitle: {
       color: colors.textPrimary,
-      fontFamily: 'BarlowCondensed_700Bold',
-      fontSize: 21,
-      lineHeight: 25,
-      fontWeight: '700',
+      fontFamily: 'BarlowCondensed_800ExtraBold',
+      fontSize: 24,
+      lineHeight: 26,
+      fontWeight: '800',
     },
     tabletNav: {
       borderBottomWidth: 1,
@@ -217,20 +219,10 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     mobileNav: {
       zIndex: 20,
       paddingTop: 8,
-      paddingHorizontal: 12,
-      backgroundColor: 'transparent',
-    },
-    mobileNavPill: {
-      padding: 5,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 22,
-      backgroundColor: colors.surface,
-      shadowColor: '#000000',
-      shadowOpacity: 0.14,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 5 },
-      elevation: 8,
+      paddingHorizontal: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.navBorder,
+      backgroundColor: colors.navBar,
     },
   });
 }

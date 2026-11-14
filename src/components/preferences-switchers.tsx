@@ -19,7 +19,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
           onPress={() => setLocale(locale === 'en' ? 'el' : 'en')}
           style={[styles.compactOption, { backgroundColor: colors.primaryButton }]}
         >
-          <Text style={[styles.optionText, { color: colors.primaryButtonText }]}>
+          <Text style={[styles.compactText, { color: colors.primaryButtonText }]}>
             {locale === 'en' ? copy.languageEnglishShort : copy.languageGreekShort}
           </Text>
         </Pressable>
@@ -114,8 +114,9 @@ const styles = StyleSheet.create({
   compactGroup: { flexShrink: 0 },
   compactOption: {
     minHeight: 44,
-    minWidth: 44,
-    borderRadius: 10,
+    minWidth: 48,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -137,4 +138,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionText: { fontSize: 12, fontWeight: '600' },
+  compactText: { fontFamily: 'Barlow_600SemiBold', fontSize: 15, fontWeight: '600' },
 });

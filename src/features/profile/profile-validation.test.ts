@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateProfileInput, type ProfileInput } from './profile-validation';
+import { isAvailabilityValue, validateProfileInput, type ProfileInput } from './profile-validation';
 
 const areaCityById = new Map([
   ['strovolos-id', 'nicosia-id'],
@@ -66,5 +66,13 @@ describe('validateProfileInput', () => {
     expect(validateProfileInput({ ...validProfile, shirtNumber: 100 }, areaCityById)).toBe(
       'profileValidationLocation',
     );
+  });
+});
+
+describe('isAvailabilityValue', () => {
+  it('accepts weekdays and legacy day parts but rejects unknown values', () => {
+    expect(isAvailabilityValue('tue')).toBe(true);
+    expect(isAvailabilityValue('weekday_evening')).toBe(true);
+    expect(isAvailabilityValue('someday')).toBe(false);
   });
 });

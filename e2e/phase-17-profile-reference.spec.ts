@@ -61,7 +61,7 @@ test('profile matches the animated player reference and saves editable details',
   await expect(page.getByText('Profile Player')).toBeVisible();
   await expect(page.getByText('Strovolos, Nicosia')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Where you play' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Playing style' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Play style' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Midfielder' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
 
@@ -69,15 +69,20 @@ test('profile matches the animated player reference and saves editable details',
   mkdirSync(screenshotDirectory, { recursive: true });
   await page.screenshot({ path: join(screenshotDirectory, width < 600 ? 'profile-mobile.png' : 'profile-desktop.png'), fullPage: true });
 
-  await page.getByRole('button', { name: 'Edit' }).click();
+  const autosave = page.waitForRequest((request) => request.method() === 'PATCH' && request.url().includes('/rest/v1/profiles'));
   await page.getByRole('button', { name: 'Raise shirt number' }).click();
   await page.getByRole('radio', { name: 'Defender' }).click();
-  await page.getByRole('checkbox', { name: 'Left foot' }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Your profile was saved.' }).last()).toBeVisible();
+  await page.getByRole('radio', { name: 'Left foot' }).click();
+  await page.getByRole('checkbox', { name: 'Wednesday' }).click();
+  await autosave;
+  await expect.poll(() => savedProfile.strong_foot).toBe('left');
   expect(savedProfile.shirt_number).toBe(9);
   expect(savedProfile.preferred_position).toBe('defender');
-  expect(savedProfile.strong_foot).toBe('left');
+
+  await page.getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('heading', { name: 'Edit profile' })).toBeVisible();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Your profile was saved.' }).last()).toBeVisible();
 
   const reminders = page.getByRole('switch', { name: 'Game reminders by email' });
   await reminders.click();
