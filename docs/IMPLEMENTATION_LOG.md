@@ -1249,6 +1249,18 @@
 - **Remaining issues:** Confirm the name field remains visible while typing and tapping outside dismisses the keyboard on iPhone.
 - **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
 
+### 2026-11-14 — Phase 17 Keep onboarding name visible while typing
+
+- **Phase:** 17 — onboarding keyboard behavior; Phase 18 not started.
+- **Status:** PARTIAL — automatic keyboard layout and preview restoration are implemented and published; iPhone interaction still needs the user's device review.
+- **Summary:** When the keyboard opens, the player-card preview compacts so the name field moves into the available viewport; iOS keyboard insets are adjusted, and the form scroll resets to its top when the keyboard closes. The preview returns to its original flexible size after dismissal. The outside-tap keyboard dismissal remains enabled.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx` and this log.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run build:web` — PASS; `git diff --check` — PASS; automated tests not run; native keyboard behavior not testable on this Windows host.
+- **Expo Preview:** Published to `preview` for iOS and Android at runtime `exposdk:58.0.0`, update group `5cb17dff-346d-45f3-b798-4bd297707361` (iOS `01a1db55-7823-7713-84b7-40d102cc062a`, Android `01a1db55-7823-7b21-b45d-dd2b032c2085`); [EAS update](https://expo.dev/accounts/hasan-jahouse/projects/one-more/updates/5cb17dff-346d-45f3-b798-4bd297707361).
+- **Security verification:** No auth, database, permissions, or secrets changed; no migration required.
+- **Remaining issues:** Confirm on iPhone that the name stays visible during typing, then the original layout returns after closing the keyboard.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
 ### 2026-11-14 — Phase 17 Persist Supabase sessions across app reloads
 
 - **Phase:** 17 — Authentication session persistence; Phase 18 not started.
