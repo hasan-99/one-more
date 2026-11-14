@@ -250,6 +250,28 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
 }
 
 
+/** Level colourways: recoloured copies of the card template plus matching accents. */
+const cardThemes: Record<SkillLevel, { accent: string; light: string; deep: string; template: number }> = {
+  beginner: {
+    accent: '#3ff0c0',
+    light: '#a6ffe6',
+    deep: '#16c99a',
+    template: require('@/assets/images/player-card-casual.jpg'),
+  },
+  intermediate: {
+    accent: lime,
+    light: '#e6ff7a',
+    deep: '#b6f21f',
+    template: require('@/assets/images/player-card-regular.jpg'),
+  },
+  advanced: {
+    accent: '#ffd23a',
+    light: '#ffe68a',
+    deep: '#f2b51f',
+    template: require('@/assets/images/player-card-competitive.jpg'),
+  },
+};
+
 /** Rough width of a string in em for sizing text to fit a box. */
 function fitSize(text: string, maxWidth: number, maxSize: number, emPerChar: number) {
   return Math.min(maxSize, Math.floor(maxWidth / (Math.max(text.length, 1) * emPerChar)));
@@ -275,6 +297,7 @@ function PlayerCardArt({
   dayLetters,
   copy,
 }: PlayerCardData & { copy: Copy }) {
+  const { accent, light, deep, template } = cardThemes[skillLevel ?? 'intermediate'];
   const words = name.trim().split(/\s+/u).filter(Boolean);
   const surname = (words[words.length - 1] ?? '').toUpperCase().slice(0, 12);
   const fullName = truncate(name.toUpperCase(), 22);
@@ -296,15 +319,15 @@ function PlayerCardArt({
     <>
       <Defs>
         <LinearGradient id="pc-pill" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#e6ff7a" />
-          <Stop offset="1" stopColor="#b6f21f" />
+          <Stop offset="0" stopColor={light} />
+          <Stop offset="1" stopColor={deep} />
         </LinearGradient>
         <LinearGradient id="pc-name" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#ffffff" />
           <Stop offset="1" stopColor="#dfe4dc" />
         </LinearGradient>
       </Defs>
-      <SvgImage href={require('@/assets/images/player-card-template.jpg')} x="0" y="0" width={W} height={H} />
+      <SvgImage href={template} x="0" y="0" width={W} height={H} />
 
       {/* jersey print */}
       {surname ? (
@@ -315,6 +338,8 @@ function PlayerCardArt({
       <SvgText x="517" y="532" textAnchor="middle" fill="#121612" fontSize={numberSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
         {numberText}
       </SvgText>
+      {/* fabric creases laid over the print so it reads as printed on the shirt */}
+      <SvgImage href={require('@/assets/images/player-card-folds.png')} x="440" y="276" width="160" height="276" />
 
       {/* name */}
       <SvgText x="516" y="709" textAnchor="middle" fill="#000000" opacity="0.45" fontSize={nameSize} fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
@@ -326,7 +351,7 @@ function PlayerCardArt({
 
       {/* position pill */}
       <G transform={`translate(${pillX} 736)`}>
-        <Rect x="0" y="0" width={pillWidth} height="52" rx="26" fill="#0b1310" stroke={lime} strokeOpacity="0.45" strokeWidth="2" />
+        <Rect x="0" y="0" width={pillWidth} height="52" rx="26" fill="#0b1310" stroke={accent} strokeOpacity="0.45" strokeWidth="2" />
         <Path d="M26 0 H140 L126 52 H26 A26 26 0 0 1 26 0 Z" fill="url(#pc-pill)" />
         <SvgText x="74" y="38" textAnchor="middle" fill={ink} fontSize="38" fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
           {shortPos}
@@ -342,7 +367,7 @@ function PlayerCardArt({
           <Path
             d="M0 -15 C-9 -15 -15 -8 -15 -1 C-15 9 0 21 0 21 C0 21 15 9 15 -1 C15 -8 9 -15 0 -15 Z M0 -6 a5.5 5.5 0 1 0 0.01 0"
             transform={`translate(${512 - placeWidth / 2 - 24} 818)`}
-            fill={lime}
+            fill={accent}
             fillRule="evenodd"
           />
           <SvgText x={512 + 8} y="832" textAnchor="middle" fill="#e1e6dd" fontSize="30" fontWeight="500" fontFamily="Barlow_500Medium">
@@ -353,11 +378,11 @@ function PlayerCardArt({
 
       {/* stats */}
       <G transform="translate(230 884)">
-        <FootMark foot={strongFoot} color={lime} scale={2.75} />
+        <FootMark foot={strongFoot} color={accent} scale={2.75} />
       </G>
       <G transform="translate(484 893)">
         {[0, 1, 2].map((index) => (
-          <Rect key={index} x={index * 24} y={36 - index * 18} width="16" height={20 + index * 18} rx="4" fill={lime} opacity={index < bars ? 1 : 0.28} />
+          <Rect key={index} x={index * 24} y={36 - index * 18} width="16" height={20 + index * 18} rx="4" fill={accent} opacity={index < bars ? 1 : 0.28} />
         ))}
       </G>
       {[
@@ -375,7 +400,7 @@ function PlayerCardArt({
         const cx = 137 + index * 62.7;
         return (
           <G key={index}>
-            <Circle cx={cx} cy="1135" r="26" fill={on ? lime : '#0f1714'} stroke={on ? lime : '#3d4c42'} strokeWidth="2.5" />
+            <Circle cx={cx} cy="1135" r="26" fill={on ? accent : '#0f1714'} stroke={on ? accent : '#3d4c42'} strokeWidth="2.5" />
             <SvgText x={cx} y="1145" textAnchor="middle" fill={on ? ink : '#c3cabf'} fontSize="27" fontWeight="600" fontFamily="Barlow_600SemiBold">
               {dayLetters[index] ?? ''}
             </SvgText>
