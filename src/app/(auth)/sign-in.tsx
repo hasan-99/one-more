@@ -104,7 +104,9 @@ export default function SignInScreen() {
           }}
         >
           <AuthTextLink href="/forgot-password">{copy.authForgotPassword}</AuthTextLink>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6 }}>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6 }}
+          >
             <Text style={{ color: '#b9c4b4' }}>{copy.authNoAccount}</Text>
             <AuthTextLink href="/sign-up">{copy.authSignUpLink}</AuthTextLink>
           </View>

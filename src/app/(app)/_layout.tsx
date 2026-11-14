@@ -29,7 +29,8 @@ export default function AppLayout() {
     pathname.startsWith('/chat/') ||
     pathname.startsWith('/teams/') ||
     pathname.startsWith('/challenges/') ||
-    pathname === '/onboarding';
+    pathname === '/onboarding' ||
+    pathname === '/profile-edit';
 
   // One completion check per user (and again after leaving onboarding), not one per
   // protected route: re-checking on every tap showed a loading gate each time.

@@ -794,6 +794,7 @@ export const el = {
   wizAny: "Όλες",
   wizCreate: "Δημιουργία κάρτας",
   wizSaving: "Αποθήκευση…",
+  wizSave: "Αποθήκευση",
   wizDoneKicker: "Η ΚΑΡΤΑ ΕΙΝΑΙ ΕΤΟΙΜΗ",
   wizDoneTitle: "Η κάρτα σου είναι |έτοιμη|",
   wizCreateTeam: "Δημιούργησε την ομάδα μου →",

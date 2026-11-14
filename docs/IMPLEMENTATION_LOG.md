@@ -1631,3 +1631,11 @@
 - **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
 - **Remaining issues:** Have user verify the published preview on iPhone.
 - **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+## Phase 17 — Profile shows the player card; editing moves to the card steps
+
+- Profile now shows the player card itself under the header with a "Share my player card" button that exports/shares the PNG directly (no separate card page). The in-place controls (shirt number, pitch position, play style, days, formats) and the old edit sheet were removed.
+- "Edit" opens `/profile-edit`: the same step-by-step card flow as first-run, filled with the saved profile; skipping only moves on, the last step is "Save changes" and returns to the profile. Route is protected and immersive like `/onboarding`.
+- Card export logic extracted to `usePlayerCardActions` (shared by the profile and the share modal).
+- The first-run Nicosia preselect was tried and reverted at the user's request (city and area are chosen by the player).
+- Checks: tsc, eslint (0 warnings), vitest 39 passed, Playwright profile/onboarding/auth/create-team 38 passed.

@@ -789,6 +789,7 @@ export const en = {
   wizAny: "Any",
   wizCreate: "Create my card",
   wizSaving: "Saving…",
+  wizSave: "Save changes",
   wizDoneKicker: "CARD READY",
   wizDoneTitle: "Your card is |ready|",
   wizCreateTeam: "Create my team →",

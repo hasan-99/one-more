@@ -1,14 +1,14 @@
 import { Link, router, type Href } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Animated,
   Easing,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
   type DimensionValue,
   type LayoutChangeEvent,
 } from 'react-native';
@@ -27,21 +27,25 @@ import Svg, {
 } from 'react-native-svg';
 
 import { useAuth } from '@/auth/AuthProvider';
-import { AuthButton, AuthFeedback, AuthField } from '@/components/auth/AuthPage';
+import { AuthButton, AuthFeedback } from '@/components/auth/AuthPage';
 import { BrandMark } from '@/components/brand-mark';
 import { Rise, useEntrance, useLoop } from '@/components/motion';
-import { SegmentedControl } from '@/components/segmented-control';
 import { StageBackdrop } from '@/components/stage-backdrop';
 import { useToast } from '@/components/toast/ToastProvider';
 import { signOut } from '@/features/auth/auth-service';
 import { authErrorMessageKey } from '@/features/auth/auth-validation';
-import { PlayerCardShareModal } from '@/features/profile/PlayerCardShareModal';
+import {
+  H,
+  PlayerCardArt,
+  W,
+  usePlayerCardActions,
+  type PlayerCardData,
+} from '@/features/profile/PlayerCardShareModal';
 import { listMyTeams, type MyTeam } from '@/features/teams/team-service';
 import { translations, type Locale, type TranslationKey } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
 import { bodyFont, displayFont } from '@/theme/typography';
-import { filterCityAreaOptions } from '@/features/location/city-options';
 
 import {
   availabilityDays,
@@ -50,7 +54,6 @@ import {
   positions,
   skillLevels,
   strongFeet,
-  validateProfileInput,
   type AvailabilityDay,
   type Format,
   type Position,
@@ -61,7 +64,6 @@ import {
 import {
   getProfileBundle,
   saveNotificationPreferences,
-  saveProfile,
   type AreaRow,
   type CityRow,
 } from './profile-service';
@@ -69,7 +71,13 @@ import {
 export type Copy = { [Key in TranslationKey]: string };
 
 /** Pitch zones top to bottom: band top, band height and marker centre (in % of pitch height). */
-const zones: { position: Exclude<Position, 'any'>; short: string; top: number; height: number; centre: number }[] = [
+const zones: {
+  position: Exclude<Position, 'any'>;
+  short: string;
+  top: number;
+  height: number;
+  centre: number;
+}[] = [
   { position: 'forward', short: 'ST', top: 4, height: 26, centre: 17 },
   { position: 'midfielder', short: 'MF', top: 30, height: 24, centre: 42 },
   { position: 'defender', short: 'DF', top: 54, height: 24, centre: 66 },
@@ -84,7 +92,6 @@ export const dayKeys: Record<AvailabilityDay, TranslationKey> = {
   sat: 'profileDaySat',
   sun: 'profileDaySun',
 };
-const autosaveDelay = 600;
 
 export function PlayerProfile() {
   const { user } = useAuth();
@@ -98,12 +105,8 @@ export function PlayerProfile() {
   const [reminders, setReminders] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [shareCardVisible, setShareCardVisible] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const styles = useMemo(() => makeStyles(colors, locale), [colors, locale]);
-  const areaCityById = useMemo(() => new Map(areas.map((area) => [area.id, area.city_id])), [areas]);
   const cityName = cities.find((city) => city.id === form.cityId);
   const areaName = areas.find((area) => area.id === form.areaId);
   const place = [areaName, cityName]
@@ -125,7 +128,8 @@ export function PlayerProfile() {
         setCities(bundle.cities);
         setAreas(bundle.areas);
         setTeams(myTeams);
-        const defaultCity = bundle.cities.find((city) => city.slug === 'nicosia') ?? bundle.cities[0];
+        const defaultCity =
+          bundle.cities.find((city) => city.slug === 'nicosia') ?? bundle.cities[0];
         const cityId = bundle.profile.city_id ?? defaultCity?.id ?? '';
         const cityAreas = bundle.areas.filter((area) => area.city_id === cityId);
         setForm({
@@ -136,7 +140,9 @@ export function PlayerProfile() {
             ? bundle.profile.preferred_position
             : null,
           skillLevel: isSkillLevel(bundle.profile.skill_level) ? bundle.profile.skill_level : null,
-          strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
+          strongFoot: isStrongFoot(bundle.profile.strong_foot)
+            ? bundle.profile.strong_foot
+            : 'right',
           shirtNumber: bundle.profile.shirt_number ?? 8,
           preferredFormats: bundle.preferences.preferred_formats.filter(isFormat),
           availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilityValue),
@@ -162,45 +168,6 @@ export function PlayerProfile() {
       active = false;
     };
   }, [load]);
-
-  useEffect(
-    () => () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    },
-    [],
-  );
-
-  /** Applies a change immediately and saves it shortly after (choices save on change). */
-  const change = (patch: Partial<ProfileInput>) => {
-    setForm((current) => {
-      const next = { ...current, ...patch, language: locale };
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        if (!user || validateProfileInput(next, areaCityById)) return;
-        saveProfile(user.id, next).catch(() => showToast(copy.profileAutoSaveError, 'error'));
-      }, autosaveDelay);
-      return next;
-    });
-  };
-
-  const saveDetails = async (details: ProfileInput) => {
-    const validation = validateProfileInput({ ...details, language: locale }, areaCityById);
-    if (validation) {
-      showToast(copy[validation], 'error');
-      return false;
-    }
-    if (!user) return false;
-    try {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      await saveProfile(user.id, { ...details, language: locale });
-      setForm({ ...details, language: locale });
-      showToast(copy.profileSaveSuccess, 'success');
-      return true;
-    } catch {
-      showToast(copy.profileSaveError, 'error');
-      return false;
-    }
-  };
 
   const toggleReminders = async () => {
     if (!user) return;
@@ -246,175 +213,36 @@ export function PlayerProfile() {
   }
 
   const days = availabilityDays.filter((day) => form.availabilitySlots.includes(day));
-  const legacySlots = form.availabilitySlots.filter((slot) => !availabilityDays.some((day) => day === slot));
-  const setDays = (next: readonly AvailabilityDay[]) =>
-    change({ availabilitySlots: [...legacySlots, ...availabilityDays.filter((day) => next.includes(day))] });
   const footLabel = strongFootLabel(form.strongFoot, copy);
   const positionName = positionLabel(position, copy);
 
   return (
     <View style={styles.root}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <PlayerHero
           colors={colors}
           copy={copy}
           locale={locale}
-          name={form.displayName}
-          number={form.shirtNumber}
-          line={place ? copy.profileLocationLine.replace('{position}', positionName).replace('{place}', place) : positionName}
-          level={form.skillLevel ? copy.profileLevelPlayer.replace('{level}', level) : null}
-          foot={footLabel}
-          onNumber={(step) => change({ shirtNumber: Math.max(1, Math.min(99, form.shirtNumber + step)) })}
-          onEdit={() => setEditorOpen(true)}
-          onShare={() => setShareCardVisible(true)}
+          card={{
+            name: form.displayName,
+            location: place,
+            number: form.shirtNumber,
+            position,
+            positionLabel: positionName,
+            strongFoot: form.strongFoot,
+            strongFootLabel: footLabel,
+            skillLevel: form.skillLevel,
+            levelLabel: level,
+            formats: form.preferredFormats,
+            days: availabilityDays.map((day) => days.includes(day)),
+            dayLetters: copy.profileDayLettersMonToSun.split(','),
+          }}
+          onEdit={() => router.push('/profile-edit' as Href)}
         />
-
-        <Rise delay={260} distance={16} style={styles.card}>
-          <CardGradient id="profile-card-where" colors={colors} />
-          <CardHeader
-            icon={<PinIcon color={colors.accentText} />}
-            title={copy.profileWhereYouPlay}
-            subtitle={copy.profileWhereYouPlayHint}
-            trailing={<Text style={styles.cardTrailing}>{positionName}</Text>}
-            styles={styles}
-          />
-          <PositionPitch
-            colors={colors}
-            copy={copy}
-            locale={locale}
-            position={position}
-            number={form.shirtNumber}
-            onSelect={(value) => change({ preferredPosition: value })}
-          />
-        </Rise>
-
-        <Rise delay={320} distance={16} style={styles.card}>
-          <CardGradient id="profile-card-style" colors={colors} />
-          <CardHeader
-            icon={<FootIcon color={colors.accentText} />}
-            title={copy.profilePlayStyle}
-            subtitle={copy.profileStyleSummary.replace('{foot}', footLabel).replace('{level}', level)}
-            styles={styles}
-          />
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>{copy.profileStrongFoot}</Text>
-            <SegmentedControl
-              tall
-              label={copy.profileStrongFoot}
-              index={strongFeet.indexOf(form.strongFoot)}
-              options={strongFeet.map((foot) => ({
-                key: foot,
-                label: footShort(foot, copy),
-                accessibilityLabel: strongFootLabel(foot, copy),
-                icon: (tint) => <FootGlyph foot={foot} color={tint} />,
-                onPress: () => change({ strongFoot: foot }),
-              }))}
-            />
-          </View>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>{copy.profileLevel}</Text>
-            <SegmentedControl
-              tall
-              label={copy.profileLevel}
-              index={form.skillLevel ? skillLevels.indexOf(form.skillLevel) : -1}
-              options={skillLevels.map((value, index) => ({
-                key: value,
-                label: levelLabel(value, copy),
-                icon: (tint) => <LevelGlyph bars={index + 1} color={tint} />,
-                onPress: () => change({ skillLevel: value }),
-              }))}
-            />
-          </View>
-        </Rise>
-
-        <Rise delay={400} distance={16} style={styles.card}>
-          <CardGradient id="profile-card-days" colors={colors} />
-          <CardHeader
-            icon={<CalendarIcon color={colors.accentText} />}
-            title={copy.profileWhenYouPlay}
-            subtitle={
-              days.length === availabilityDays.length
-                ? copy.profileDaysAll
-                : days.length === 0
-                  ? copy.profileDaysNone
-                  : days.length === 1
-                    ? copy.profileDaysOne
-                    : copy.profileDaysCount.replace('{count}', String(days.length))
-            }
-            trailing={
-              <AnyPill
-                label={copy.profileAnyDay}
-                on={days.length === availabilityDays.length}
-                onPress={() => setDays(days.length === availabilityDays.length ? [] : availabilityDays)}
-                colors={colors}
-                styles={styles}
-              />
-            }
-            styles={styles}
-          />
-          <View accessibilityRole="none" accessibilityLabel={copy.profileWhenYouPlay} style={styles.days}>
-            {availabilityDays.map((day, index) => (
-              <DayButton
-                key={day}
-                letter={copy.profileDayLettersMonToSun.split(',')[index] ?? ''}
-                label={copy[dayKeys[day]]}
-                on={days.includes(day)}
-                onPress={() => setDays(days.includes(day) ? days.filter((item) => item !== day) : [...days, day])}
-                colors={colors}
-                styles={styles}
-              />
-            ))}
-          </View>
-        </Rise>
-
-        <Rise delay={480} distance={16} style={styles.card}>
-          <CardGradient id="profile-card-formats" colors={colors} />
-          <CardHeader
-            icon={<MiniPitch color={colors.accentText} width={20} height={20} />}
-            title={copy.profileFormatsTitle}
-            subtitle={
-              form.preferredFormats.length === formats.length
-                ? copy.profileFormatsAll
-                : form.preferredFormats.length === 0
-                  ? copy.profileFormatsNone
-                  : formats
-                      .filter((value) => form.preferredFormats.includes(value))
-                      .map((value) => `${value}v${value}`)
-                      .join(', ')
-            }
-            trailing={
-              <AnyPill
-                label={copy.profileAnyFormat}
-                on={form.preferredFormats.length === formats.length}
-                onPress={() =>
-                  change({ preferredFormats: form.preferredFormats.length === formats.length ? [] : [...formats] })
-                }
-                colors={colors}
-                styles={styles}
-              />
-            }
-            styles={styles}
-          />
-          <View style={styles.formats}>
-            {formats.map((value) => (
-              <FormatCard
-                key={value}
-                format={value}
-                players={copy.profileFormatPlayers.replace('{count}', String(value * 2))}
-                on={form.preferredFormats.includes(value)}
-                onPress={() =>
-                  change({
-                    preferredFormats: form.preferredFormats.includes(value)
-                      ? form.preferredFormats.filter((item) => item !== value)
-                      : formats.filter((item) => item === value || form.preferredFormats.includes(item)),
-                  })
-                }
-                colors={colors}
-                styles={styles}
-              />
-            ))}
-          </View>
-        </Rise>
 
         <Rise delay={560} distance={16} style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
@@ -454,7 +282,10 @@ export function PlayerProfile() {
               <Pressable
                 accessibilityRole="link"
                 onPress={() => router.push('/teams/create' as Href)}
-                style={({ pressed }) => [styles.smallLime, { transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+                style={({ pressed }) => [
+                  styles.smallLime,
+                  { transform: [{ scale: pressed ? 0.94 : 1 }] },
+                ]}
               >
                 <Text style={styles.smallLimeText}>{copy.profileCreateTeam}</Text>
               </Pressable>
@@ -527,39 +358,6 @@ export function PlayerProfile() {
           <Text style={styles.email}>{user?.email ?? ''}</Text>
         </Rise>
       </ScrollView>
-
-      <ProfileEditorSheet
-        visible={editorOpen}
-        form={form}
-        cities={cities}
-        areas={areas}
-        copy={copy}
-        colors={colors}
-        locale={locale}
-        styles={styles}
-        onClose={() => setEditorOpen(false)}
-        onSave={async (details) => {
-          if (await saveDetails(details)) setEditorOpen(false);
-        }}
-      />
-
-      <PlayerCardShareModal
-        visible={shareCardVisible}
-        onClose={() => setShareCardVisible(false)}
-        name={form.displayName}
-        location={place}
-        number={form.shirtNumber}
-        position={position}
-        positionLabel={positionName}
-        strongFoot={form.strongFoot}
-        strongFootLabel={footLabel}
-        skillLevel={form.skillLevel}
-        levelLabel={level}
-        formats={form.preferredFormats}
-        days={availabilityDays.map((day) => days.includes(day))}
-        dayLetters={copy.profileDayLettersMonToSun.split(',')}
-        copy={copy}
-      />
     </View>
   );
 }
@@ -568,74 +366,43 @@ function PlayerHero({
   colors,
   copy,
   locale,
-  name,
-  number,
-  line,
-  level,
-  foot,
-  onNumber,
+  card,
   onEdit,
-  onShare,
 }: {
   colors: ThemeColors;
   copy: Copy;
   locale: Locale;
-  name: string;
-  number: number;
-  line: string;
-  level: string | null;
-  foot: string;
-  onNumber: (step: number) => void;
+  card: PlayerCardData;
   onEdit: () => void;
-  onShare: () => void;
 }) {
   const styles = makeStyles(colors, locale);
-  const ghost = useLoop(8000, { alternate: true });
+  const { width } = useWindowDimensions();
+  const { cardRef, busyAction, handleAction } = usePlayerCardActions(copy);
+  const cardWidth = Math.min(width - 32, 420);
+  const cardName = card.name.trim() || (locale === 'en' ? 'ONE MORE Player' : 'Παίκτης ONE MORE');
   return (
-    <View accessibilityLabel={name} style={styles.hero}>
+    <View accessibilityLabel={cardName} style={styles.hero}>
       <StageBackdrop
         id="profile-stage"
         colors={colors}
         height="100%"
-        glowY="62%"
+        glowY="40%"
         glowStop={0.66}
         glowColor="#21402b"
         rise={320}
         variant={1}
         beamWidth={230}
       />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.ghost,
-          { transform: [{ translateX: ghost.interpolate({ inputRange: [0, 1], outputRange: [-10, 10] }) }] },
-        ]}
-      >
-        <Svg width="100%" height={280} viewBox="0 0 400 280">
-          <SvgText
-            x="200"
-            y="232"
-            textAnchor="middle"
-            fontSize="270"
-            fontWeight="800"
-            fontFamily="BarlowCondensed_800ExtraBold"
-            fill="none"
-            stroke={colors.primaryButton}
-            strokeOpacity={0.13}
-            strokeWidth={1.5}
-          >
-            {String(number)}
-          </SvgText>
-        </Svg>
-      </Animated.View>
-
       <View style={styles.heroHeader}>
         <BrandMark prominent />
         <View style={styles.heroSpacer} />
         <Pressable
           accessibilityRole="button"
           onPress={onEdit}
-          style={({ pressed }) => [styles.editButton, { transform: [{ scale: pressed ? 0.94 : 1 }] }]}
+          style={({ pressed }) => [
+            styles.editButton,
+            { transform: [{ scale: pressed ? 0.94 : 1 }] },
+          ]}
         >
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
             <Path
@@ -650,49 +417,33 @@ function PlayerHero({
         </Pressable>
       </View>
 
-      <View style={styles.jerseyRow}>
-        <RoundButton
-          label={copy.profileShirtNumberDown}
-          disabled={number <= 1}
-          onPress={() => onNumber(-1)}
-          colors={colors}
-          styles={styles}
-          path="M5 12h14"
-        />
-        <Jersey colors={colors} number={number} name={name} label={`${copy.profileShirtNumber} ${number}`} />
-        <RoundButton
-          label={copy.profileShirtNumberUp}
-          disabled={number >= 99}
-          onPress={() => onNumber(1)}
-          colors={colors}
-          styles={styles}
-          path="M12 5v14M5 12h14"
-        />
-      </View>
-
-      <Rise delay={500} distance={16}>
-        <Text numberOfLines={2} style={styles.playerName}>
-          {name}
-        </Text>
-      </Rise>
-      <Rise delay={580} distance={16}>
-        <Text style={styles.playerLine}>{line}</Text>
-      </Rise>
-      <Rise delay={660} distance={16} style={styles.heroChips}>
-        {level ? (
-          <View style={[styles.heroChip, { backgroundColor: 'rgba(207,255,74,0.14)' }]}>
-            <Text style={[styles.heroChipText, { color: colors.accentText }]}>{level}</Text>
-          </View>
-        ) : null}
-        <View style={[styles.heroChip, { backgroundColor: colors.background === '#0C1210' ? 'rgba(242,245,236,0.1)' : colors.surfaceRaised }]}>
-          <Text style={styles.heroChipText}>{foot}</Text>
+      <Rise
+        delay={200}
+        distance={16}
+        style={{ width: cardWidth, aspectRatio: W / H, marginTop: 8 }}
+      >
+        <View nativeID="player-card-art" style={StyleSheet.absoluteFill}>
+          <Svg
+            ref={cardRef}
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${W} ${H}`}
+            accessibilityRole="image"
+            accessibilityLabel={`${copy.profileShareCardTitle}: ${cardName}`}
+          >
+            <PlayerCardArt {...card} name={cardName} copy={copy} />
+          </Svg>
         </View>
       </Rise>
-      <Rise delay={740} distance={16} style={styles.shareWrap}>
+      <Rise delay={320} distance={16} style={styles.shareWrap}>
         <Pressable
           accessibilityRole="button"
-          onPress={onShare}
-          style={({ pressed }) => [styles.shareButton, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+          onPress={() => void handleAction('share')}
+          disabled={busyAction !== null}
+          style={({ pressed }) => [
+            styles.shareButton,
+            { transform: [{ scale: pressed ? 0.96 : 1 }] },
+          ]}
         >
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
             <Path
@@ -745,7 +496,17 @@ export function RoundButton({
 }
 
 /** Shirt that drops in, sways (jr-sway) and pops its number on change (jr-numa). */
-export function Jersey({ colors, number, name, label }: { colors: ThemeColors; number: number; name: string; label: string }) {
+export function Jersey({
+  colors,
+  number,
+  name,
+  label,
+}: {
+  colors: ThemeColors;
+  number: number;
+  name: string;
+  label: string;
+}) {
   const drop = useEntrance(1000, 150, Easing.bezier(0.2, 1.2, 0.3, 1));
   const sway = useLoop(4200, { alternate: true });
   const pop = useEntrance(450, 0, Easing.bezier(0.2, 1.5, 0.3, 1), number);
@@ -768,12 +529,20 @@ export function Jersey({ colors, number, name, label }: { colors: ThemeColors; n
         style={{
           transform: [
             { translateY: -90 },
-            { rotate: sway.interpolate({ inputRange: [0, 1], outputRange: ['-3.5deg', '3.5deg'] }) },
+            {
+              rotate: sway.interpolate({ inputRange: [0, 1], outputRange: ['-3.5deg', '3.5deg'] }),
+            },
             { translateY: 90 },
           ],
         }}
       >
-        <Svg width={190} height={180} viewBox="0 0 200 190" accessibilityRole="image" accessibilityLabel={label}>
+        <Svg
+          width={190}
+          height={180}
+          viewBox="0 0 200 190"
+          accessibilityRole="image"
+          accessibilityLabel={label}
+        >
           <Path
             d="M70 14 C82 26 118 26 130 14 L170 30 L194 70 L166 86 L154 66 L154 176 C154 181 150 184 146 184 L54 184 C50 184 46 181 46 176 L46 66 L34 86 L6 70 L30 30 Z"
             fill={colors.primaryButton}
@@ -781,7 +550,11 @@ export function Jersey({ colors, number, name, label }: { colors: ThemeColors; n
             strokeWidth={2.5}
             strokeLinejoin="round"
           />
-          <Path d="M100 24 L154 66 L154 176 C154 181 150 184 146 184 L100 184 Z" fill="#0c1210" opacity={0.07} />
+          <Path
+            d="M100 24 L154 66 L154 176 C154 181 150 184 146 184 L100 184 Z"
+            fill="#0c1210"
+            opacity={0.07}
+          />
           <Path d="M70 14 C82 32 118 32 130 14 L123 11 C113 24 87 24 77 11 Z" fill="#0c1210" />
           <Polygon points="6,70 34,86 38,79 10,63" fill="#0c1210" />
           <Polygon points="194,70 166,86 162,79 190,63" fill="#0c1210" />
@@ -804,7 +577,11 @@ export function Jersey({ colors, number, name, label }: { colors: ThemeColors; n
         <Animated.Text
           style={[
             jerseyStyles.number,
-            { transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }] },
+            {
+              transform: [
+                { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) },
+              ],
+            },
           ]}
         >
           {number}
@@ -893,9 +670,22 @@ export function PositionPitch({
       onLayout={(event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height)}
       style={pitchStyles.pitch}
     >
-      <Svg width="100%" height="100%" viewBox="0 0 200 180" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 200 180"
+        preserveAspectRatio="none"
+        style={StyleSheet.absoluteFill}
+      >
         {Array.from({ length: 12 }, (_, index) => (
-          <Rect key={index} x="0" y={index * 16.2} width="200" height="16.2" fill={index % 2 ? '#27432f' : '#2c4a35'} />
+          <Rect
+            key={index}
+            x="0"
+            y={index * 16.2}
+            width="200"
+            height="16.2"
+            fill={index % 2 ? '#27432f' : '#2c4a35'}
+          />
         ))}
       </Svg>
       {height > 0 ? (
@@ -914,7 +704,13 @@ export function PositionPitch({
           </Svg>
         </Animated.View>
       ) : null}
-      <Svg width="100%" height="100%" viewBox="0 0 200 180" pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 200 180"
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      >
         <G fill="none" stroke="#9cc4a6" strokeWidth={1.3} opacity={0.55}>
           <Rect x="6" y="6" width="188" height="168" rx="3" />
           <Line x1="6" y1="90" x2="194" y2="90" />
@@ -932,11 +728,38 @@ export function PositionPitch({
           <Circle cx="100" cy="27" r="1.6" />
           <Circle cx="100" cy="153" r="1.6" />
         </G>
-        <Rect x="86" y="1.5" width="28" height="4.5" rx="1" fill="none" stroke="#f2f5ec" strokeWidth={1.2} opacity={0.7} />
-        <Rect x="86" y="174" width="28" height="4.5" rx="1" fill="none" stroke="#f2f5ec" strokeWidth={1.2} opacity={0.7} />
+        <Rect
+          x="86"
+          y="1.5"
+          width="28"
+          height="4.5"
+          rx="1"
+          fill="none"
+          stroke="#f2f5ec"
+          strokeWidth={1.2}
+          opacity={0.7}
+        />
+        <Rect
+          x="86"
+          y="174"
+          width="28"
+          height="4.5"
+          rx="1"
+          fill="none"
+          stroke="#f2f5ec"
+          strokeWidth={1.2}
+          opacity={0.7}
+        />
         <G fill="#f2f5ec" opacity={0.28}>
           {[
-            [60, 30], [140, 30], [52, 78], [148, 78], [40, 122], [80, 128], [120, 128], [160, 122],
+            [60, 30],
+            [140, 30],
+            [52, 78],
+            [148, 78],
+            [40, 122],
+            [80, 128],
+            [120, 128],
+            [160, 122],
           ].map(([cx, cy]) => (
             <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="4.5" />
           ))}
@@ -954,13 +777,21 @@ export function PositionPitch({
             onPress={() => onSelect(item.position)}
             style={({ pressed }) => [
               pitchStyles.band,
-              { top: `${item.top}%` as DimensionValue, height: `${item.height}%` as DimensionValue },
+              {
+                top: `${item.top}%` as DimensionValue,
+                height: `${item.height}%` as DimensionValue,
+              },
               pressed && !selected && pitchStyles.bandHover,
               selected && pitchStyles.bandOn,
             ]}
           >
             {selected ? (
-              <Svg width="100%" height="100%" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
+              <Svg
+                width="100%"
+                height="100%"
+                preserveAspectRatio="none"
+                style={StyleSheet.absoluteFill}
+              >
                 <Defs>
                   <LinearGradient id="pitch-band-on" x1="0" y1="0" x2="1" y2="0">
                     <Stop offset="0" stopColor={colors.primaryButton} stopOpacity="0.24" />
@@ -970,12 +801,30 @@ export function PositionPitch({
                 <Rect width="100%" height="100%" fill="url(#pitch-band-on)" />
               </Svg>
             ) : null}
-            <View style={[pitchStyles.tag, selected && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton }]}>
-              <Text style={[pitchStyles.tagText, { fontFamily: font, color: selected ? '#0c1210' : '#e6eedd' }]}>
+            <View
+              style={[
+                pitchStyles.tag,
+                selected && {
+                  backgroundColor: colors.primaryButton,
+                  borderColor: colors.primaryButton,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  pitchStyles.tagText,
+                  { fontFamily: font, color: selected ? '#0c1210' : '#e6eedd' },
+                ]}
+              >
                 {item.short}
               </Text>
             </View>
-            <Text style={[pitchStyles.bandText, { fontFamily: font, color: selected ? colors.primaryButton : '#e6eedd' }]}>
+            <Text
+              style={[
+                pitchStyles.bandText,
+                { fontFamily: font, color: selected ? colors.primaryButton : '#e6eedd' },
+              ]}
+            >
               {positionLabel(item.position, copy)}
             </Text>
           </Pressable>
@@ -987,14 +836,19 @@ export function PositionPitch({
             pointerEvents="none"
             style={[pitchStyles.trail, { transform: [{ translateY: toY(trail) }] }]}
           />
-          <Animated.View pointerEvents="none" style={[pitchStyles.markerWrap, { transform: [{ translateY: toY(marker) }] }]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[pitchStyles.markerWrap, { transform: [{ translateY: toY(marker) }] }]}
+          >
             <Animated.View
               style={[
                 pitchStyles.markerPulse,
                 {
                   backgroundColor: colors.primaryButton,
                   opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-                  transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.72] }) }],
+                  transform: [
+                    { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.72] }) },
+                  ],
                 },
               ]}
             />
@@ -1077,10 +931,20 @@ export function FormatCard({
     >
       <MiniPitch color={on ? colors.primaryButtonText : colors.pitchLine} width={30} height={22} />
       <View>
-        <Text style={[styles.formatValue, on && { color: colors.primaryButtonText }]}>{`${format}v${format}`}</Text>
+        <Text
+          style={[styles.formatValue, on && { color: colors.primaryButtonText }]}
+        >{`${format}v${format}`}</Text>
         <Text style={[styles.formatPlayers, on && { color: '#2c3a16' }]}>{players}</Text>
       </View>
-      <Animated.View style={[styles.tick, { opacity: tick, transform: [{ scale: tick.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]}>
+      <Animated.View
+        style={[
+          styles.tick,
+          {
+            opacity: tick,
+            transform: [{ scale: tick.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }],
+          },
+        ]}
+      >
         <CheckGlyph color={colors.primaryButton} />
       </Animated.View>
     </Pressable>
@@ -1115,7 +979,10 @@ export function AnyPill({
       <View
         style={[
           styles.anyCheck,
-          on && { backgroundColor: colors.primaryButtonText, borderColor: colors.primaryButtonText },
+          on && {
+            backgroundColor: colors.primaryButtonText,
+            borderColor: colors.primaryButtonText,
+          },
         ]}
       >
         {on ? <CheckGlyph color={colors.primaryButton} /> : null}
@@ -1143,7 +1010,11 @@ function AccountRow({
       accessibilityRole="button"
       accessibilityLabel={value ? `${label}: ${value}` : label}
       onPress={onPress}
-      style={({ pressed }) => [styles.row, styles.rowDivider, pressed && { backgroundColor: colors.cardTop }]}
+      style={({ pressed }) => [
+        styles.row,
+        styles.rowDivider,
+        pressed && { backgroundColor: colors.cardTop },
+      ]}
     >
       <Text style={[styles.rowTitle, styles.rowCopy]}>{label}</Text>
       {value ? <Text style={styles.rowValue}>{value}</Text> : null}
@@ -1182,193 +1053,12 @@ function ToggleSwitch({
       <Animated.View
         style={[
           switchStyles.knob,
-          { backgroundColor: value ? colors.primaryButtonText : colors.textSecondary, transform: [{ translateX: knob }] },
+          {
+            backgroundColor: value ? colors.primaryButtonText : colors.textSecondary,
+            transform: [{ translateX: knob }],
+          },
         ]}
       />
-    </Pressable>
-  );
-}
-
-function ProfileEditorSheet({
-  visible,
-  form,
-  cities,
-  areas,
-  copy,
-  colors,
-  locale,
-  styles,
-  onClose,
-  onSave,
-}: {
-  visible: boolean;
-  form: ProfileInput;
-  cities: CityRow[];
-  areas: AreaRow[];
-  copy: Copy;
-  colors: ThemeColors;
-  locale: Locale;
-  styles: Styles;
-  onClose: () => void;
-  onSave: (details: ProfileInput) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(form);
-  const [saving, setSaving] = useState(false);
-  const [openedWith, setOpenedWith] = useState<ProfileInput | null>(null);
-  if (visible && openedWith !== form) {
-    setOpenedWith(form);
-    setDraft(form);
-  }
-  const slide = useEntrance(400, 0, Easing.bezier(0.2, 0.9, 0.2, 1), visible);
-  const name = (row: CityRow | AreaRow) => (locale === 'en' ? row.name_en : row.name_el);
-  const locationOptions = filterCityAreaOptions(cities, areas);
-  return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.modalRoot}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.profileEditClose}
-          onPress={onClose}
-          style={styles.scrim}
-        />
-        <Animated.View
-          accessibilityViewIsModal
-          accessibilityRole="dialog"
-          accessibilityLabel={copy.profileEditTitle}
-          style={[
-            styles.sheet,
-            { transform: [{ translateY: slide.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }] },
-          ]}
-        >
-          <View style={styles.sheetHandle} />
-          <View style={styles.sheetTitleRow}>
-            <Text accessibilityRole="header" style={styles.sheetTitle}>
-              {copy.profileEditTitle}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={copy.profileEditClose}
-              onPress={onClose}
-              style={styles.sheetClose}
-            >
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path d="M6 6l12 12M18 6L6 18" stroke={colors.textPrimary} strokeWidth={2.4} strokeLinecap="round" />
-              </Svg>
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
-            <AuthField
-              label={copy.profileDisplayName}
-              value={draft.displayName}
-              onChangeText={(displayName) => setDraft((current) => ({ ...current, displayName }))}
-              maxLength={40}
-              autoComplete="off"
-            />
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>{copy.profileCity}</Text>
-              <View style={styles.sheetGrid}>
-                {locationOptions.cities.map((city) => (
-                  <SheetOption
-                    key={city.id}
-                    label={name(city)}
-                    on={draft.cityId === city.id}
-                    onPress={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        cityId: city.id,
-                        areaId: locationOptions.areas.find((area) => area.city_id === city.id)?.id ?? '',
-                      }))
-                    }
-                    colors={colors}
-                    styles={styles}
-                  />
-                ))}
-              </View>
-            </View>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>{copy.profileArea}</Text>
-              <View style={styles.sheetGrid}>
-                {locationOptions.areas
-                  .filter((area) => area.city_id === draft.cityId)
-                  .map((area) => (
-                    <SheetOption
-                      key={area.id}
-                      label={name(area)}
-                      on={draft.areaId === area.id}
-                      onPress={() => setDraft((current) => ({ ...current, areaId: area.id }))}
-                      colors={colors}
-                      styles={styles}
-                    />
-                  ))}
-              </View>
-            </View>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>{copy.profileRadius}</Text>
-              <View style={styles.sheetGrid}>
-                {[
-                  { id: null, label: copy.profileRadiusAny },
-                  { id: 10, label: copy.profileRadius10 },
-                  { id: 20, label: copy.profileRadius20 },
-                  { id: 50, label: copy.profileRadius50 },
-                ].map((option) => (
-                  <SheetOption
-                    key={option.label}
-                    label={option.label}
-                    on={draft.maxRadiusKm === option.id}
-                    onPress={() => setDraft((current) => ({ ...current, maxRadiusKm: option.id }))}
-                    colors={colors}
-                    styles={styles}
-                  />
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ busy: saving, disabled: saving }}
-            disabled={saving}
-            onPress={() => {
-              setSaving(true);
-              void onSave(draft).finally(() => setSaving(false));
-            }}
-            style={({ pressed }) => [styles.sheetSave, { opacity: saving ? 0.7 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
-          >
-            <Text style={styles.sheetSaveText}>{saving ? copy.profileSaving : copy.profileSaveShort}</Text>
-          </Pressable>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-}
-
-function SheetOption({
-  label,
-  on,
-  onPress,
-  colors,
-  styles,
-}: {
-  label: string;
-  on: boolean;
-  onPress: () => void;
-  colors: ThemeColors;
-  styles: Styles;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: on }}
-      aria-checked={on}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.sheetOption,
-        on && { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
-        { transform: [{ scale: pressed ? 0.95 : 1 }] },
-      ]}
-    >
-      <Text numberOfLines={1} style={[styles.sheetOptionText, on && { color: colors.primaryButtonText }]}>
-        {label}
-      </Text>
     </Pressable>
   );
 }
@@ -1402,7 +1092,13 @@ export function CardHeader({
 
 export function CardGradient({ id, colors }: { id: string; colors: ThemeColors }) {
   return (
-    <Svg width="100%" height="100%" preserveAspectRatio="none" pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <Svg
+      width="100%"
+      height="100%"
+      preserveAspectRatio="none"
+      pointerEvents="none"
+      style={StyleSheet.absoluteFill}
+    >
       <Defs>
         <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={colors.cardTop} />
@@ -1417,7 +1113,12 @@ export function CardGradient({ id, colors }: { id: string; colors: ThemeColors }
 function useSpring(target: number): Animated.Value {
   const [value] = useState(() => new Animated.Value(target));
   useEffect(() => {
-    const animation = Animated.spring(value, { toValue: target, speed: 18, bounciness: 10, useNativeDriver: true });
+    const animation = Animated.spring(value, {
+      toValue: target,
+      speed: 18,
+      bounciness: 10,
+      useNativeDriver: true,
+    });
     animation.start();
     return () => animation.stop();
   }, [target, value]);
@@ -1472,8 +1173,24 @@ export function LevelGlyph({ bars, color }: { bars: number; color: string }) {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24">
       <Rect x="4" y="14" width="4" height="7" rx="1.5" fill={color} />
-      <Rect x="10.5" y="9" width="4" height="12" rx="1.5" fill={color} opacity={bars >= 2 ? 1 : 0.3} />
-      <Rect x="17" y="4" width="4" height="17" rx="1.5" fill={color} opacity={bars >= 3 ? 1 : 0.3} />
+      <Rect
+        x="10.5"
+        y="9"
+        width="4"
+        height="12"
+        rx="1.5"
+        fill={color}
+        opacity={bars >= 2 ? 1 : 0.3}
+      />
+      <Rect
+        x="17"
+        y="4"
+        width="4"
+        height="17"
+        rx="1.5"
+        fill={color}
+        opacity={bars >= 3 ? 1 : 0.3}
+      />
     </Svg>
   );
 }
@@ -1481,7 +1198,12 @@ export function LevelGlyph({ bars, color }: { bars: number; color: string }) {
 export function PinIcon({ color }: { color: string }) {
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z" stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
+      <Path
+        d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinejoin="round"
+      />
       <Circle cx="12" cy="9.5" r="2.5" stroke={color} strokeWidth={2.2} />
     </Svg>
   );
@@ -1496,7 +1218,15 @@ export function CalendarIcon({ color }: { color: string }) {
   );
 }
 
-export function MiniPitch({ color, width, height }: { color: string; width: number; height: number }) {
+export function MiniPitch({
+  color,
+  width,
+  height,
+}: {
+  color: string;
+  width: number;
+  height: number;
+}) {
   return (
     <Svg width={width} height={height} viewBox="0 0 30 22" fill="none">
       <Rect x="1" y="1" width="28" height="20" rx="3" stroke={color} strokeWidth={1.6} />
@@ -1509,7 +1239,13 @@ export function MiniPitch({ color, width, height }: { color: string; width: numb
 function CheckGlyph({ color }: { color: string }) {
   return (
     <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-      <Path d="M5 12.5l4.5 4.5L19 7.5" stroke={color} strokeWidth={3.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M5 12.5l4.5 4.5L19 7.5"
+        stroke={color}
+        strokeWidth={3.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -1517,7 +1253,13 @@ function CheckGlyph({ color }: { color: string }) {
 function Chevron({ color }: { color: string }) {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M9 6l6 6-6 6" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M9 6l6 6-6 6"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -1638,7 +1380,6 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       paddingTop: 12,
       paddingBottom: 20,
     },
-    ghost: { position: 'absolute', top: 34, left: 0, right: 0, alignItems: 'center' },
     heroHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12 },
     heroSpacer: { flex: 1 },
     shareWrap: { width: '100%', alignItems: 'center', marginTop: 10 },
@@ -1653,8 +1394,20 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       borderRadius: 16,
       backgroundColor: colors.primaryButton,
     },
-    shareText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 16, fontWeight: '600' },
-    heroTitle: { flex: 1, color: colors.textPrimary, fontFamily: display, fontSize: 24, lineHeight: 26, fontWeight: '800' },
+    shareText: {
+      color: colors.primaryButtonText,
+      fontFamily: semibold,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    heroTitle: {
+      flex: 1,
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 24,
+      lineHeight: 26,
+      fontWeight: '800',
+    },
     editButton: {
       height: 44,
       paddingHorizontal: 14,
@@ -1677,7 +1430,14 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       borderColor: colors.borderStrong,
       backgroundColor: dark ? 'rgba(12,18,16,0.5)' : colors.surface,
     },
-    jerseyRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 6 },
+    jerseyRow: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      marginTop: 6,
+    },
     roundButton: {
       width: 44,
       height: 44,
@@ -1697,10 +1457,26 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       textAlign: 'center',
       marginTop: 6,
     },
-    playerLine: { color: colors.textSecondary, fontFamily: body, fontSize: 16, textAlign: 'center' },
-    heroChips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 4 },
+    playerLine: {
+      color: colors.textSecondary,
+      fontFamily: body,
+      fontSize: 16,
+      textAlign: 'center',
+    },
+    heroChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 4,
+    },
     heroChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999 },
-    heroChipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    heroChipText: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     card: {
       marginHorizontal: 18,
       padding: 14,
@@ -1719,11 +1495,28 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    cardTitle: { color: colors.textPrimary, fontFamily: display, fontSize: 24, lineHeight: 25, fontWeight: '800' },
-    cardTrailing: { color: colors.accentText, fontFamily: display, fontSize: 22, lineHeight: 23, fontWeight: '800' },
+    cardTitle: {
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 24,
+      lineHeight: 25,
+      fontWeight: '800',
+    },
+    cardTrailing: {
+      color: colors.accentText,
+      fontFamily: display,
+      fontSize: 22,
+      lineHeight: 23,
+      fontWeight: '800',
+    },
     muted: { color: colors.textSecondary, fontFamily: body, fontSize: 14, lineHeight: 19 },
     fieldGroup: { gap: 8 },
-    fieldLabel: { color: colors.textSecondary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    fieldLabel: {
+      color: colors.textSecondary,
+      fontFamily: semibold,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     days: { flexDirection: 'row', gap: 6 },
     dayCell: { flex: 1, minWidth: 0 },
     day: {
@@ -1774,7 +1567,13 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       borderColor: colors.optionBorder,
       backgroundColor: colors.option,
     },
-    formatValue: { color: colors.textPrimary, fontFamily: display, fontSize: 26, lineHeight: 27, fontWeight: '800' },
+    formatValue: {
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 26,
+      lineHeight: 27,
+      fontWeight: '800',
+    },
     formatPlayers: { color: colors.textSecondary, fontFamily: body, fontSize: 13 },
     tick: {
       position: 'absolute',
@@ -1788,7 +1587,13 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       justifyContent: 'center',
     },
     section: { marginHorizontal: 18, gap: 10 },
-    sectionTitle: { color: colors.textPrimary, fontFamily: display, fontSize: 26, lineHeight: 27, fontWeight: '800' },
+    sectionTitle: {
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 26,
+      lineHeight: 27,
+      fontWeight: '800',
+    },
     emptyTeam: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1810,7 +1615,12 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       justifyContent: 'center',
       backgroundColor: colors.primaryButton,
     },
-    smallLimeText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    smallLimeText: {
+      color: colors.primaryButtonText,
+      fontFamily: semibold,
+      fontSize: 15,
+      fontWeight: '600',
+    },
     listCard: {
       borderRadius: 18,
       borderWidth: 1.5,
@@ -1818,11 +1628,24 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       backgroundColor: colors.well,
       overflow: 'hidden',
     },
-    row: { minHeight: 56, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    row: {
+      minHeight: 56,
+      paddingHorizontal: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
     rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.navBorder },
     email: { color: colors.textMuted, fontFamily: body, fontSize: 13 },
     modalRoot: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
-    scrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(5,8,6,0.7)' },
+    scrim: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: 'rgba(5,8,6,0.7)',
+    },
     sheet: {
       width: '100%',
       maxWidth: 480,
@@ -1837,9 +1660,27 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       borderColor: colors.optionBorder,
       backgroundColor: dark ? '#131D17' : colors.surface,
     },
-    sheetHandle: { alignSelf: 'center', width: 44, height: 5, borderRadius: 999, backgroundColor: colors.borderStrong },
-    sheetTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-    sheetTitle: { flexShrink: 1, color: colors.textPrimary, fontFamily: display, fontSize: 28, lineHeight: 30, fontWeight: '800' },
+    sheetHandle: {
+      alignSelf: 'center',
+      width: 44,
+      height: 5,
+      borderRadius: 999,
+      backgroundColor: colors.borderStrong,
+    },
+    sheetTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    sheetTitle: {
+      flexShrink: 1,
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 28,
+      lineHeight: 30,
+      fontWeight: '800',
+    },
     sheetClose: {
       width: 44,
       height: 44,
@@ -1863,7 +1704,12 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    sheetOptionText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    sheetOptionText: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 15,
+      fontWeight: '600',
+    },
     sheetSave: {
       height: 52,
       borderRadius: 16,
@@ -1871,7 +1717,12 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       justifyContent: 'center',
       backgroundColor: colors.primaryButton,
     },
-    sheetSaveText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 17, fontWeight: '600' },
+    sheetSaveText: {
+      color: colors.primaryButtonText,
+      fontFamily: semibold,
+      fontSize: 17,
+      fontWeight: '600',
+    },
   });
 }
 
@@ -1971,6 +1822,13 @@ const pitchStyles = StyleSheet.create({
   },
 });
 const switchStyles = StyleSheet.create({
-  track: { width: 54, height: 32, paddingHorizontal: 3, justifyContent: 'center', borderWidth: 1.5, borderRadius: 999 },
+  track: {
+    width: 54,
+    height: 32,
+    paddingHorizontal: 3,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderRadius: 999,
+  },
   knob: { width: 24, height: 24, borderRadius: 12 },
 });

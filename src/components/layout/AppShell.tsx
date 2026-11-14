@@ -58,7 +58,8 @@ export function AppShell({ children }: PropsWithChildren) {
   const showSide = responsiveWidth >= 1024;
   const showRow = responsiveWidth >= 600 && responsiveWidth < 1024;
   const showBottom = responsiveWidth < 600;
-  const immersive = pathname === '/teams/create' || pathname === '/onboarding';
+  const immersive =
+    pathname === '/teams/create' || pathname === '/onboarding' || pathname === '/profile-edit';
   const profileFullBleed = pathname === '/profile';
 
   if (!fontsLoaded && !fontError) {
@@ -101,9 +102,7 @@ export function AppShell({ children }: PropsWithChildren) {
               { paddingTop: Math.max(insets.top, 10) },
             ]}
           >
-            <View style={styles.titleBlock}>
-              {!showSide ? <BrandMark prominent /> : null}
-            </View>
+            <View style={styles.titleBlock}>{!showSide ? <BrandMark prominent /> : null}</View>
             <LanguageSwitcher compact />
           </View>
         ) : null}
@@ -168,7 +167,12 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       borderBottomColor: colors.border,
       backgroundColor: colors.background,
     },
-    exploreTopBar: { minHeight: 68, paddingVertical: 12, paddingHorizontal: 18, borderBottomColor: colors.navBorder },
+    exploreTopBar: {
+      minHeight: 68,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      borderBottomColor: colors.navBorder,
+    },
     titleBlock: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     sectionTitle: {
       color: colors.textSecondary,

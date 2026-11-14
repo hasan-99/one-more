@@ -73,17 +73,13 @@ const shortPositions: Record<Position, string> = {
   any: 'ANY',
 };
 
-export function PlayerCardShareModal({ visible, onClose, copy, ...card }: PlayerCardShareModalProps) {
-  const { locale } = useAppPreferences();
-  const insets = useSafeAreaInsets();
+/** Exports the card SVG to a PNG and shares or saves it. */
+export function usePlayerCardActions(copy: Copy) {
   const { showToast } = useToast();
   const cardRef = useRef<Svg>(null);
   const [busyAction, setBusyAction] = useState<'share' | 'save' | null>(null);
-  const reveal = useEntrance(800, 120, Easing.bezier(0.2, 1.2, 0.3, 1), visible);
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-  const exportCard = () =>
-    Platform.OS === 'web' ? exportCardOnWeb() : exportCardNative();
+  const exportCard = () => (Platform.OS === 'web' ? exportCardOnWeb() : exportCardNative());
   const exportCardNative = () =>
     new Promise<string>((resolve, reject) => {
       if (!cardRef.current) {
@@ -131,7 +127,9 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
       }
 
       const fileUri = `${FileSystem.cacheDirectory}one-more-player-card-${new Date().getTime()}.png`;
-      await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
       if (action === 'share') {
         if (!(await Sharing.isAvailableAsync())) throw new Error('System sharing is unavailable.');
         await Sharing.shareAsync(fileUri, {
@@ -150,6 +148,21 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
     }
   };
 
+  return { cardRef, busyAction, handleAction };
+}
+
+export function PlayerCardShareModal({
+  visible,
+  onClose,
+  copy,
+  ...card
+}: PlayerCardShareModalProps) {
+  const { locale } = useAppPreferences();
+  const insets = useSafeAreaInsets();
+  const { cardRef, busyAction, handleAction } = usePlayerCardActions(copy);
+  const reveal = useEntrance(800, 120, Easing.bezier(0.2, 1.2, 0.3, 1), visible);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
   const cardName = card.name.trim() || (locale === 'en' ? 'ONE MORE Player' : 'Παίκτης ONE MORE');
   const semibold = bodyFont(locale, 'semibold');
 
@@ -158,7 +171,11 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
     height: windowHeight - Math.max(insets.top, 12) - Math.max(insets.bottom, 12),
   };
   const actionsHeight = 76;
-  const cardWidth = Math.min(available.width - 16, ((available.height - actionsHeight) * W) / H, 520);
+  const cardWidth = Math.min(
+    available.width - 16,
+    ((available.height - actionsHeight) * W) / H,
+    520,
+  );
   const actionButton = (action: 'share' | 'save') => (
     <Pressable
       accessibilityRole="button"
@@ -187,7 +204,13 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
           />
         </Svg>
       )}
-      <Text style={[styles.cardButtonText, action === 'share' && { color: ink }, { fontFamily: semibold }]}>
+      <Text
+        style={[
+          styles.cardButtonText,
+          action === 'share' && { color: ink },
+          { fontFamily: semibold },
+        ]}
+      >
         {action === 'share'
           ? copy.profileCardShare
           : busyAction === 'save'
@@ -210,7 +233,9 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
             width: cardWidth,
             aspectRatio: W / H,
             opacity: reveal,
-            transform: [{ scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+            transform: [
+              { scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+            ],
           }}
         >
           <View nativeID="player-card-art" style={StyleSheet.absoluteFill}>
@@ -238,7 +263,12 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
           style={[styles.closeButton, { top: Math.max(insets.top, 12) + 6 }]}
         >
           <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-            <Path d="M6 6l12 12M18 6L6 18" stroke={paperWhite} strokeWidth={2.4} strokeLinecap="round" />
+            <Path
+              d="M6 6l12 12M18 6L6 18"
+              stroke={paperWhite}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+            />
           </Svg>
         </Pressable>
       </View>
@@ -246,9 +276,11 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
   );
 }
 
-
 /** Level colourways: recoloured copies of the card template plus matching accents. */
-export const cardThemes: Record<SkillLevel, { accent: string; light: string; deep: string; template: number }> = {
+export const cardThemes: Record<
+  SkillLevel,
+  { accent: string; light: string; deep: string; template: number }
+> = {
   beginner: {
     accent: '#3ff0c0',
     light: '#a6ffe6',
@@ -305,7 +337,14 @@ export function PlayerCardArt({
   const numberSize = numberText.length > 1 ? 200 : 236;
   // While the position pill is hidden (first steps of the profile flow) no position is chosen yet.
   const shortPos = hidePill ? '—' : shortPositions[position];
-  const bars = skillLevel === 'advanced' ? 3 : skillLevel === 'intermediate' ? 2 : skillLevel === 'beginner' ? 1 : 0;
+  const bars =
+    skillLevel === 'advanced'
+      ? 3
+      : skillLevel === 'intermediate'
+        ? 2
+        : skillLevel === 'beginner'
+          ? 1
+          : 0;
   const labelWidth = Math.max(130, positionLabel.length * 19);
   const pillWidth = 140 + labelWidth;
   const pillX = 512 - pillWidth / 2;
@@ -330,36 +369,102 @@ export function PlayerCardArt({
 
       {/* jersey print */}
       {surname ? (
-        <SvgText x="517" y="336" textAnchor="middle" fill="#121612" fontSize={surnameSize} fontWeight="800" letterSpacing="1" fontFamily="BarlowCondensed_800ExtraBold">
+        <SvgText
+          x="517"
+          y="336"
+          textAnchor="middle"
+          fill="#121612"
+          fontSize={surnameSize}
+          fontWeight="800"
+          letterSpacing="1"
+          fontFamily="BarlowCondensed_800ExtraBold"
+        >
           {surname}
         </SvgText>
       ) : null}
-      <SvgText x="517" y="532" textAnchor="middle" fill="#121612" fontSize={numberSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
+      <SvgText
+        x="517"
+        y="532"
+        textAnchor="middle"
+        fill="#121612"
+        fontSize={numberSize}
+        fontWeight="800"
+        fontFamily="BarlowCondensed_800ExtraBold"
+      >
         {numberText}
       </SvgText>
       {/* fabric creases laid over the print so it reads as printed on the shirt */}
-      <SvgImage href={require('@/assets/images/player-card-folds.png')} x="440" y="276" width="160" height="276" />
+      <SvgImage
+        href={require('@/assets/images/player-card-folds.png')}
+        x="440"
+        y="276"
+        width="160"
+        height="276"
+      />
 
       {/* name */}
-      <SvgText x="516" y="709" textAnchor="middle" fill="#000000" opacity="0.45" fontSize={nameSize} fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
+      <SvgText
+        x="516"
+        y="709"
+        textAnchor="middle"
+        fill="#000000"
+        opacity="0.45"
+        fontSize={nameSize}
+        fontWeight="800"
+        fontFamily="Barlow_800ExtraBoldItalic"
+      >
         {fullName}
       </SvgText>
-      <SvgText x="512" y="704" textAnchor="middle" fill="url(#pc-name)" fontSize={nameSize} fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
+      <SvgText
+        x="512"
+        y="704"
+        textAnchor="middle"
+        fill="url(#pc-name)"
+        fontSize={nameSize}
+        fontWeight="800"
+        fontFamily="Barlow_800ExtraBoldItalic"
+      >
         {fullName}
       </SvgText>
 
       {/* position pill */}
       {hidePill ? null : (
-      <G transform={`translate(${pillX} 736)`}>
-        <Rect x="0" y="0" width={pillWidth} height="52" rx="26" fill="#0b1310" stroke={accent} strokeOpacity="0.45" strokeWidth="2" />
-        <Path d="M26 0 H140 L126 52 H26 A26 26 0 0 1 26 0 Z" fill="url(#pc-pill)" />
-        <SvgText x="74" y="38" textAnchor="middle" fill={ink} fontSize="38" fontWeight="800" fontFamily="Barlow_800ExtraBoldItalic">
-          {shortPos}
-        </SvgText>
-        <SvgText x={140 + labelWidth / 2} y="37" textAnchor="middle" fill="#ffffff" fontSize="33" fontWeight="600" fontFamily="Barlow_600SemiBold">
-          {positionLabel}
-        </SvgText>
-      </G>
+        <G transform={`translate(${pillX} 736)`}>
+          <Rect
+            x="0"
+            y="0"
+            width={pillWidth}
+            height="52"
+            rx="26"
+            fill="#0b1310"
+            stroke={accent}
+            strokeOpacity="0.45"
+            strokeWidth="2"
+          />
+          <Path d="M26 0 H140 L126 52 H26 A26 26 0 0 1 26 0 Z" fill="url(#pc-pill)" />
+          <SvgText
+            x="74"
+            y="38"
+            textAnchor="middle"
+            fill={ink}
+            fontSize="38"
+            fontWeight="800"
+            fontFamily="Barlow_800ExtraBoldItalic"
+          >
+            {shortPos}
+          </SvgText>
+          <SvgText
+            x={140 + labelWidth / 2}
+            y="37"
+            textAnchor="middle"
+            fill="#ffffff"
+            fontSize="33"
+            fontWeight="600"
+            fontFamily="Barlow_600SemiBold"
+          >
+            {positionLabel}
+          </SvgText>
+        </G>
       )}
 
       {/* location */}
@@ -371,7 +476,15 @@ export function PlayerCardArt({
             fill={accent}
             fillRule="evenodd"
           />
-          <SvgText x={512 + 8} y="832" textAnchor="middle" fill="#e1e6dd" fontSize="30" fontWeight="500" fontFamily="Barlow_500Medium">
+          <SvgText
+            x={512 + 8}
+            y="832"
+            textAnchor="middle"
+            fill="#e1e6dd"
+            fontSize="30"
+            fontWeight="500"
+            fontFamily="Barlow_500Medium"
+          >
             {place}
           </SvgText>
         </G>
@@ -383,7 +496,16 @@ export function PlayerCardArt({
       </G>
       <G transform="translate(484 893)">
         {[0, 1, 2].map((index) => (
-          <Rect key={index} x={index * 24} y={36 - index * 18} width="16" height={20 + index * 18} rx="4" fill={accent} opacity={index < bars ? 1 : 0.28} />
+          <Rect
+            key={index}
+            x={index * 24}
+            y={36 - index * 18}
+            width="16"
+            height={20 + index * 18}
+            rx="4"
+            fill={accent}
+            opacity={index < bars ? 1 : 0.28}
+          />
         ))}
       </G>
       {[
@@ -391,7 +513,16 @@ export function PlayerCardArt({
         { x: 520, value: levelLabel },
         { x: 780, value: shortPos },
       ].map((stat) => (
-        <SvgText key={stat.x} x={stat.x} y="988" textAnchor="middle" fill="#ffffff" fontSize="31" fontWeight="600" fontFamily="Barlow_600SemiBold">
+        <SvgText
+          key={stat.x}
+          x={stat.x}
+          y="988"
+          textAnchor="middle"
+          fill="#ffffff"
+          fontSize="31"
+          fontWeight="600"
+          fontFamily="Barlow_600SemiBold"
+        >
           {truncate(stat.value, 14)}
         </SvgText>
       ))}
@@ -400,7 +531,15 @@ export function PlayerCardArt({
       {days.every(Boolean) ? (
         <G>
           <Rect x="111" y="1106" width="428" height="58" rx="29" fill="url(#pc-pill)" />
-          <SvgText x="325" y="1146" textAnchor="middle" fill={ink} fontSize="32" fontWeight="700" fontFamily="Barlow_600SemiBold">
+          <SvgText
+            x="325"
+            y="1146"
+            textAnchor="middle"
+            fill={ink}
+            fontSize="32"
+            fontWeight="700"
+            fontFamily="Barlow_600SemiBold"
+          >
             {copy.profileCardEveryDay}
           </SvgText>
         </G>
@@ -409,8 +548,23 @@ export function PlayerCardArt({
           const cx = 137 + index * 62.7;
           return (
             <G key={index}>
-              <Circle cx={cx} cy="1135" r="26" fill={on ? accent : '#0f1714'} stroke={on ? accent : '#3d4c42'} strokeWidth="2.5" />
-              <SvgText x={cx} y="1145" textAnchor="middle" fill={on ? ink : '#c3cabf'} fontSize="27" fontWeight="600" fontFamily="Barlow_600SemiBold">
+              <Circle
+                cx={cx}
+                cy="1135"
+                r="26"
+                fill={on ? accent : '#0f1714'}
+                stroke={on ? accent : '#3d4c42'}
+                strokeWidth="2.5"
+              />
+              <SvgText
+                x={cx}
+                y="1145"
+                textAnchor="middle"
+                fill={on ? ink : '#c3cabf'}
+                fontSize="27"
+                fontWeight="600"
+                fontFamily="Barlow_600SemiBold"
+              >
                 {dayLetters[index] ?? ''}
               </SvgText>
             </G>
@@ -422,7 +576,15 @@ export function PlayerCardArt({
       {chosen.length === 4 ? (
         <G>
           <Rect x="614" y="1106" width="305" height="58" rx="29" fill="url(#pc-pill)" />
-          <SvgText x="766" y="1146" textAnchor="middle" fill={ink} fontSize="32" fontWeight="700" fontFamily="Barlow_600SemiBold">
+          <SvgText
+            x="766"
+            y="1146"
+            textAnchor="middle"
+            fill={ink}
+            fontSize="32"
+            fontWeight="700"
+            fontFamily="Barlow_600SemiBold"
+          >
             {copy.profileCardAnyFormat}
           </SvgText>
         </G>
@@ -432,14 +594,21 @@ export function PlayerCardArt({
           return (
             <G key={size}>
               <Rect x={x} y="1106" width={formatWidth} height="58" rx="29" fill="url(#pc-pill)" />
-              <SvgText x={x + formatWidth / 2} y="1146" textAnchor="middle" fill={ink} fontSize={chosen.length > 2 ? 26 : 32} fontWeight="700" fontFamily="Barlow_600SemiBold">
+              <SvgText
+                x={x + formatWidth / 2}
+                y="1146"
+                textAnchor="middle"
+                fill={ink}
+                fontSize={chosen.length > 2 ? 26 : 32}
+                fontWeight="700"
+                fontFamily="Barlow_600SemiBold"
+              >
                 {`${size}v${size}`}
               </SvgText>
             </G>
           );
         })
       )}
-
     </>
   );
 }
@@ -472,14 +641,23 @@ function FootMark({ foot, color, scale }: { foot: StrongFoot; color: string; sca
     );
   }
   return (
-    <G transform={foot === 'left' ? `translate(${24 * scale} 0) scale(${-scale} ${scale})` : `scale(${scale})`}>
+    <G
+      transform={
+        foot === 'left' ? `translate(${24 * scale} 0) scale(${-scale} ${scale})` : `scale(${scale})`
+      }
+    >
       <FootShape fill={color} />
     </G>
   );
 }
 
 const exportScale = 1;
-const cardFonts = ['BarlowCondensed_800ExtraBold', 'Barlow_800ExtraBoldItalic', 'Barlow_600SemiBold', 'Barlow_500Medium'];
+const cardFonts = [
+  'BarlowCondensed_800ExtraBold',
+  'Barlow_800ExtraBoldItalic',
+  'Barlow_600SemiBold',
+  'Barlow_500Medium',
+];
 
 async function toDataUrl(url: string): Promise<string> {
   const blob = await (await fetch(url)).blob();
@@ -557,7 +735,12 @@ function truncate(value: string, maxLength: number) {
 }
 
 const styles = StyleSheet.create({
-  modalRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#050b08' },
+  modalRoot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#050b08',
+  },
   closeButton: {
     position: 'absolute',
     right: 14,

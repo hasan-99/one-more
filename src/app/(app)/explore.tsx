@@ -266,7 +266,11 @@ export default function ExploreScreen() {
               </Text>
             </View>
             {anyActive ? (
-              <Pressable accessibilityRole="button" onPress={resetFilters} style={styles.inlineButton}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={resetFilters}
+                style={styles.inlineButton}
+              >
                 <Text style={styles.linkText}>{copy.matchClearFilters}</Text>
               </Pressable>
             ) : null}
@@ -307,7 +311,9 @@ export default function ExploreScreen() {
               <BouncingBall colors={colors} />
               <Text style={styles.emptyTitle}>{copy.matchEmptyTitle}</Text>
               <Text style={styles.emptyCopy}>{copy.matchEmptyCopy}</Text>
-              {anyActive ? <LimeButton label={copy.matchClearFilters} onPress={resetFilters} /> : null}
+              {anyActive ? (
+                <LimeButton label={copy.matchClearFilters} onPress={resetFilters} />
+              ) : null}
             </Rise>
           ) : (
             <View style={styles.results}>
@@ -602,7 +608,9 @@ function BouncingBall({ colors }: { colors: ThemeColors }) {
           ballStyles.shadow,
           {
             opacity: bounce.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] }),
-            transform: [{ scaleX: bounce.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }],
+            transform: [
+              { scaleX: bounce.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) },
+            ],
           },
         ]}
       />
@@ -623,7 +631,13 @@ function FilterSheet({
   const dim = useEntrance(250, 0, Easing.ease, visible);
   const slide = useEntrance(400, 0, Easing.bezier(0.2, 0.9, 0.2, 1), visible);
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={onClose} statusBarTranslucent>
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
       <View style={styles.modalRoot}>
         <Animated.View style={[styles.scrim, { opacity: dim }]}>
           <Pressable
@@ -780,7 +794,11 @@ function FilterInput({
         style={[
           styles.input,
           {
-            borderColor: error ? colors.errorText : focused ? colors.accentText : colors.optionBorder,
+            borderColor: error
+              ? colors.errorText
+              : focused
+                ? colors.accentText
+                : colors.optionBorder,
           },
           focused && styles.inputFocused,
         ]}
@@ -875,8 +893,18 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       backgroundColor: colors.well,
     },
     pickerCopy: { flex: 1, minWidth: 0, gap: 1 },
-    pickerLabel: { color: colors.textSecondary, fontFamily: medium, fontSize: 12, fontWeight: '500' },
-    pickerValue: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    pickerLabel: {
+      color: colors.textSecondary,
+      fontFamily: medium,
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    pickerValue: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 15,
+      fontWeight: '600',
+    },
     resultsHeader: {
       minHeight: 44,
       flexDirection: 'row',
@@ -885,7 +913,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       gap: 12,
     },
     resultCount: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-    resultText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    resultText: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 15,
+      fontWeight: '600',
+    },
     inlineButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
     linkText: { color: colors.accentText, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
     results: { width: '100%', gap: 12 },
@@ -969,7 +1002,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
     sheetScroll: { gap: 16 },
     sheetFields: { gap: 16 },
     fieldGroup: { gap: 8 },
-    fieldLabel: { color: colors.textSecondary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    fieldLabel: {
+      color: colors.textSecondary,
+      fontFamily: semibold,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     optionGridThree: {},
     optionThird: { flexBasis: '28%' },
@@ -985,7 +1023,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       borderColor: colors.optionBorder,
       backgroundColor: colors.option,
     },
-    optionText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 15, fontWeight: '600' },
+    optionText: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 15,
+      fontWeight: '600',
+    },
     inputGrid: { flexDirection: 'row', gap: 8 },
     filterInput: { flex: 1, minWidth: 0, gap: 8 },
     input: {
@@ -1010,7 +1053,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    ghostButtonText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 16, fontWeight: '600' },
+    ghostButtonText: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 16,
+      fontWeight: '600',
+    },
     limeButton: {
       height: 46,
       paddingHorizontal: 20,

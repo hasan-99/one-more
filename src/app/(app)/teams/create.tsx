@@ -135,10 +135,12 @@ export default function CreateTeamScreen() {
     return () => clearTimeout(task);
   }, [loadAreas]);
 
-  const designChange = <T,>(setter: (value: T) => void) => (value: T) => {
-    setter(value);
-    setFlips((count) => count + 1);
-  };
+  const designChange =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setFlips((count) => count + 1);
+    };
 
   const onCreate = async () => {
     if (!city || !selectedArea) {
@@ -176,12 +178,20 @@ export default function CreateTeamScreen() {
   };
 
   const stepTitle =
-    step === 1 ? copy.teamWizardStepOne : step === 2 ? copy.teamWizardStepTwo : copy.teamWizardStepThree;
+    step === 1
+      ? copy.teamWizardStepOne
+      : step === 2
+        ? copy.teamWizardStepTwo
+        : copy.teamWizardStepThree;
   const stepLabel = copy.teamWizardStep.replace('{{step}}', String(step));
 
   return (
     <View style={styles.root} nativeID="team-create-root">
-      <StageBackdrop id="team-stage" colors={colors} height={headerOverlap + stageHeight + insets.top} />
+      <StageBackdrop
+        id="team-stage"
+        colors={colors}
+        height={headerOverlap + stageHeight + insets.top}
+      />
       <KeyboardAvoidingView
         style={styles.keyboardFrame}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -191,10 +201,18 @@ export default function CreateTeamScreen() {
             accessibilityRole="button"
             accessibilityLabel={copy.teamWizardClose}
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/teams' as Href))}
-            style={({ pressed }) => [styles.closeButton, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+            style={({ pressed }) => [
+              styles.closeButton,
+              { transform: [{ scale: pressed ? 0.96 : 1 }] },
+            ]}
           >
             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path d="M6 6l12 12M18 6L6 18" stroke={colors.textPrimary} strokeWidth={2.4} strokeLinecap="round" />
+              <Path
+                d="M6 6l12 12M18 6L6 18"
+                stroke={colors.textPrimary}
+                strokeWidth={2.4}
+                strokeLinecap="round"
+              />
             </Svg>
           </Pressable>
           <Text accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>
@@ -241,7 +259,11 @@ export default function CreateTeamScreen() {
                 <Text accessibilityRole="alert" style={styles.helperText}>
                   {copy.teamWizardLoadError}
                 </Text>
-                <GhostButton label={copy.teamWizardRetry} onPress={() => void loadAreas()} styles={styles} />
+                <GhostButton
+                  label={copy.teamWizardRetry}
+                  onPress={() => void loadAreas()}
+                  styles={styles}
+                />
               </View>
             ) : loading ? (
               <View accessibilityRole="progressbar" style={styles.loadMessage}>
@@ -296,7 +318,11 @@ export default function CreateTeamScreen() {
           {canNext ? (
             <NextButton
               label={
-                saving ? copy.teamWizardCreateSaving : step === 3 ? copy.teamWizardCreate : copy.teamWizardNext
+                saving
+                  ? copy.teamWizardCreateSaving
+                  : step === 3
+                    ? copy.teamWizardCreate
+                    : copy.teamWizardNext
               }
               onPress={next}
               disabled={saving || loading || loadFailed}
@@ -324,7 +350,10 @@ export default function CreateTeamScreen() {
           chips={[
             { label: areaName },
             { label: `${format}v${format}` },
-            { label: openToPlayers ? copy.teamWizardOpenTitle : copy.teamWizardInviteOnly, accent: true },
+            {
+              label: openToPlayers ? copy.teamWizardOpenTitle : copy.teamWizardInviteOnly,
+              accent: true,
+            },
           ]}
           copy={copy}
           colors={colors}
@@ -383,7 +412,11 @@ function StepName({
       </View>
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{copy.teamWizardArea}</Text>
-        <View accessibilityRole="radiogroup" accessibilityLabel={copy.teamWizardArea} style={styles.grid}>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel={copy.teamWizardArea}
+          style={styles.grid}
+        >
           {areas.map((item) => (
             <OptionButton
               key={item.id}
@@ -436,7 +469,11 @@ function StepCrest({
     <>
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{copy.teamWizardShape}</Text>
-        <View accessibilityRole="radiogroup" accessibilityLabel={copy.teamWizardShape} style={styles.grid}>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel={copy.teamWizardShape}
+          style={styles.grid}
+        >
           {shapeOptions.map((item) => (
             <OptionButton
               key={item.key}
@@ -454,7 +491,11 @@ function StepCrest({
       </View>
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{copy.teamWizardColor}</Text>
-        <View accessibilityRole="radiogroup" accessibilityLabel={copy.teamWizardColor} style={styles.swatchRow}>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel={copy.teamWizardColor}
+          style={styles.swatchRow}
+        >
           {palette.map((item) => (
             <Swatch
               key={item.color}
@@ -469,7 +510,11 @@ function StepCrest({
       </View>
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{copy.teamWizardPattern}</Text>
-        <View accessibilityRole="radiogroup" accessibilityLabel={copy.teamWizardPattern} style={styles.grid}>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel={copy.teamWizardPattern}
+          style={styles.grid}
+        >
           {patterns.map((item) => (
             <OptionButton
               key={item.key}
@@ -527,7 +572,12 @@ function StepPlay({
           </Text>
           <Text style={styles.helperText}>{copy.teamWizardOpenDescription}</Text>
         </View>
-        <ToggleSwitch value={open} onToggle={onToggle} label={copy.teamWizardOpenTitle} colors={colors} />
+        <ToggleSwitch
+          value={open}
+          onToggle={onToggle}
+          label={copy.teamWizardOpenTitle}
+          colors={colors}
+        />
       </View>
       <Text style={styles.helperText}>{copy.teamWizardCaptainNote}</Text>
     </>
@@ -667,7 +717,9 @@ function ToggleSwitch({
           toggleStyles.knob,
           {
             backgroundColor: value ? colors.primaryButtonText : colors.textSecondary,
-            transform: [{ translateX: position.interpolate({ inputRange: [0, 1], outputRange: [0, 22] }) }],
+            transform: [
+              { translateX: position.interpolate({ inputRange: [0, 1], outputRange: [0, 22] }) },
+            ],
           },
         ]}
       />
@@ -740,7 +792,11 @@ function NextButton({
       <Text style={styles.nextText}>{label}</Text>
       {!busy ? (
         <Animated.View
-          style={{ transform: [{ translateX: nudge.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }] }}
+          style={{
+            transform: [
+              { translateX: nudge.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) },
+            ],
+          }}
         >
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
             <Path
@@ -757,7 +813,15 @@ function NextButton({
   );
 }
 
-function GhostButton({ label, onPress, styles }: { label: string; onPress: () => void; styles: Styles }) {
+function GhostButton({
+  label,
+  onPress,
+  styles,
+}: {
+  label: string;
+  onPress: () => void;
+  styles: Styles;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -795,7 +859,9 @@ function StepSlide({ children }: { children: ReactNode }) {
       style={{
         gap: 16,
         opacity: progress,
-        transform: [{ translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [34, 0] }) }],
+        transform: [
+          { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [34, 0] }) },
+        ],
       }}
     >
       {children}
@@ -839,7 +905,9 @@ function Crest({
                 <Rect key={x} x={x} y="0" width="9" height="110" fill={ink} opacity={0.24} />
               ))
             : null}
-          {pattern === 'half' ? <Rect x="50" y="0" width="50" height="110" fill={ink} opacity={0.28} /> : null}
+          {pattern === 'half' ? (
+            <Rect x="50" y="0" width="50" height="110" fill={ink} opacity={0.28} />
+          ) : null}
           <Rect width="100" height="40" fill="#ffffff" opacity={0.16} />
         </G>
         <Path d={crestPaths[shape]} fill="none" stroke={ink} strokeWidth={3} />
@@ -890,7 +958,9 @@ function FloatingCrest({ flips, children }: { flips: number; children: ReactNode
               : flip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
           },
           {
-            scale: played ? 1 : flip.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.18, 1] }),
+            scale: played
+              ? 1
+              : flip.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.18, 1] }),
           },
         ],
       }}
@@ -909,7 +979,9 @@ function CrestHalo({ color }: { color: string }) {
         haloStyles.halo,
         {
           opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.7] }),
-          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.15] }) }],
+          transform: [
+            { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.15] }) },
+          ],
         },
       ]}
     >
@@ -955,9 +1027,18 @@ function FloorShadow() {
 }
 
 const confetti: [string, number, number, number][] = [
-  ['#cfff4a', -120, -120, 240], ['#f2f5ec', -60, -165, -180], ['#cfff4a', 20, -175, 300], ['#f2f5ec', 105, -140, -260],
-  ['#cfff4a', 160, -55, 200], ['#f2f5ec', 150, 55, -220], ['#cfff4a', 95, 130, 280], ['#f2f5ec', 0, 160, -300],
-  ['#cfff4a', -95, 135, 220], ['#f2f5ec', -155, 50, -200], ['#cfff4a', -160, -45, 260], ['#f2f5ec', 65, -100, -240],
+  ['#cfff4a', -120, -120, 240],
+  ['#f2f5ec', -60, -165, -180],
+  ['#cfff4a', 20, -175, 300],
+  ['#f2f5ec', 105, -140, -260],
+  ['#cfff4a', 160, -55, 200],
+  ['#f2f5ec', 150, 55, -220],
+  ['#cfff4a', 95, 130, 280],
+  ['#f2f5ec', 0, 160, -300],
+  ['#cfff4a', -95, 135, 220],
+  ['#f2f5ec', -155, 50, -200],
+  ['#cfff4a', -160, -45, 260],
+  ['#f2f5ec', 65, -100, -240],
 ];
 
 function SuccessOverlay({
@@ -993,7 +1074,13 @@ function SuccessOverlay({
           pointerEvents="none"
           style={[
             styles.rays,
-            { transform: [{ rotate: rays.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] },
+            {
+              transform: [
+                {
+                  rotate: rays.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
+                },
+              ],
+            },
           ]}
         >
           <Svg width={520} height={520} viewBox="0 0 520 520">
@@ -1010,7 +1097,8 @@ function SuccessOverlay({
               {Array.from({ length: 16 }, (_, index) => {
                 const start = (index * 22.5 * Math.PI) / 180;
                 const end = ((index * 22.5 + 9) * Math.PI) / 180;
-                const point = (angle: number) => `${260 + 260 * Math.sin(angle)},${260 - 260 * Math.cos(angle)}`;
+                const point = (angle: number) =>
+                  `${260 + 260 * Math.sin(angle)},${260 - 260 * Math.cos(angle)}`;
                 return (
                   <Polygon
                     key={index}
@@ -1031,11 +1119,19 @@ function SuccessOverlay({
               styles.confetti,
               {
                 backgroundColor: color,
-                opacity: burst.interpolate({ inputRange: [0, 0.01, 0.7, 1], outputRange: [0, 1, 1, 0] }),
+                opacity: burst.interpolate({
+                  inputRange: [0, 0.01, 0.7, 1],
+                  outputRange: [0, 1, 1, 0],
+                }),
                 transform: [
                   { translateX: burst.interpolate({ inputRange: [0, 1], outputRange: [0, x] }) },
                   { translateY: burst.interpolate({ inputRange: [0, 1], outputRange: [0, y] }) },
-                  { rotate: burst.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${rotation}deg`] }) },
+                  {
+                    rotate: burst.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', `${rotation}deg`],
+                    }),
+                  },
                   { scale: burst.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) },
                 ],
               },
@@ -1047,7 +1143,9 @@ function SuccessOverlay({
             opacity: win,
             transform: [
               { perspective: 600 },
-              { rotateY: win.interpolate({ inputRange: [0, 1], outputRange: ['-540deg', '0deg'] }) },
+              {
+                rotateY: win.interpolate({ inputRange: [0, 1], outputRange: ['-540deg', '0deg'] }),
+              },
               { scale: win.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) },
             ],
           }}
@@ -1076,7 +1174,10 @@ function SuccessOverlay({
         <Pressable
           accessibilityRole="button"
           onPress={onDone}
-          style={({ pressed }) => [styles.doneButton, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+          style={({ pressed }) => [
+            styles.doneButton,
+            { transform: [{ scale: pressed ? 0.96 : 1 }] },
+          ]}
         >
           <Text style={styles.doneText}>{copy.teamWizardDone}</Text>
         </Pressable>
@@ -1101,7 +1202,9 @@ function PatternSample({ pattern }: { pattern: TeamCrestPattern }) {
   return (
     <View style={sampleStyles.sample}>
       {pattern === 'stripes'
-        ? [0, 8, 16].map((left) => <View key={left} style={[sampleStyles.stripe, { left: left + 4 }]} />)
+        ? [0, 8, 16].map((left) => (
+            <View key={left} style={[sampleStyles.stripe, { left: left + 4 }]} />
+          ))
         : null}
       {pattern === 'half' ? <View style={sampleStyles.half} /> : null}
     </View>
@@ -1154,7 +1257,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       lineHeight: 26,
       fontWeight: '800',
     },
-    stepLabel: { color: colors.textSecondary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    stepLabel: {
+      color: colors.textSecondary,
+      fontFamily: semibold,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     stage: {
       height: stageHeight,
       alignItems: 'center',
@@ -1171,15 +1279,36 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       fontWeight: '800',
       textAlign: 'center',
     },
-    previewLine: { color: colors.textSecondary, fontFamily: body, fontSize: 14, textAlign: 'center' },
+    previewLine: {
+      color: colors.textSecondary,
+      fontFamily: body,
+      fontSize: 14,
+      textAlign: 'center',
+    },
     bars: { flexDirection: 'row', gap: 6, paddingHorizontal: 18 },
     body: { flex: 1, minHeight: 0 },
     bodyContent: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18 },
-    stepTitle: { color: colors.textPrimary, fontFamily: display, fontSize: 30, lineHeight: 30, fontWeight: '800' },
+    stepTitle: {
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 30,
+      lineHeight: 30,
+      fontWeight: '800',
+    },
     helperText: { color: colors.textSecondary, fontFamily: body, fontSize: 14, lineHeight: 20 },
     fieldBlock: { gap: 8 },
-    fieldLabelRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
-    fieldLabel: { color: colors.textSecondary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    fieldLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    fieldLabel: {
+      color: colors.textSecondary,
+      fontFamily: semibold,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     characterCount: { color: colors.textSecondary, fontFamily: body, fontSize: 12 },
     field: {
       height: 54,
@@ -1253,7 +1382,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       overflow: 'hidden',
       backgroundColor: colors.primaryButton,
     },
-    nextText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 18, fontWeight: '600' },
+    nextText: {
+      color: colors.primaryButtonText,
+      fontFamily: semibold,
+      fontSize: 18,
+      fontWeight: '600',
+    },
     disabledNext: {
       flex: 1,
       height: 54,
@@ -1331,7 +1465,12 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       borderWidth: 1.5,
       borderColor: colors.optionBorder,
     },
-    successChipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 14, fontWeight: '600' },
+    successChipText: {
+      color: colors.textPrimary,
+      fontFamily: semibold,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     doneButton: {
       marginTop: 6,
       height: 54,
@@ -1341,13 +1480,25 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       justifyContent: 'center',
       backgroundColor: colors.primaryButton,
     },
-    doneText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 17, fontWeight: '600' },
+    doneText: {
+      color: colors.primaryButtonText,
+      fontFamily: semibold,
+      fontSize: 17,
+      fontWeight: '600',
+    },
   });
 }
 
 const swatchStyles = StyleSheet.create({
   hit: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
-  ring: { width: 50, height: 50, borderRadius: 25, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  ring: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   swatch: { width: 38, height: 38, borderRadius: 19 },
 });
 const haloStyles = StyleSheet.create({
@@ -1366,9 +1517,23 @@ const sampleStyles = StyleSheet.create({
     overflow: 'hidden',
   },
   stripe: { position: 'absolute', top: 0, bottom: 0, width: 4, backgroundColor: '#56634c' },
-  half: { position: 'absolute', top: 0, bottom: 0, right: 0, width: '50%', backgroundColor: '#56634c' },
+  half: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: '50%',
+    backgroundColor: '#56634c',
+  },
 });
 const toggleStyles = StyleSheet.create({
-  track: { width: 54, height: 32, paddingHorizontal: 3, justifyContent: 'center', borderWidth: 1.5, borderRadius: 999 },
+  track: {
+    width: 54,
+    height: 32,
+    paddingHorizontal: 3,
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderRadius: 999,
+  },
   knob: { width: 24, height: 24, borderRadius: 12 },
 });

@@ -37,6 +37,7 @@ import {
   isPosition,
   isSkillLevel,
   isStrongFoot,
+  isFormat,
   levelLabel,
   positionLabel,
   strongFootLabel,
@@ -83,7 +84,9 @@ const compactCardHeight = 72;
  * filling in live above it. Only name, city and area are required; the other steps can be
  * skipped and changed later from the profile.
  */
-export function PlayerOnboarding() {
+/** `create` is the first-run flow; `edit` opens the same steps filled with the saved profile. */
+export function PlayerOnboarding({ mode = 'create' }: { mode?: 'create' | 'edit' }) {
+  const editing = mode === 'edit';
   const { user } = useAuth();
   const { colors, locale } = useAppPreferences();
   const copy = translations[locale];
@@ -158,17 +161,18 @@ export function PlayerOnboarding() {
         strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
         shirtNumber: bundle.profile.shirt_number ?? 8,
         // Formats start empty: the profile default is not the player's own choice yet.
-        preferredFormats: [],
+        preferredFormats: editing ? bundle.preferences.preferred_formats.filter(isFormat) : [],
         availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilityValue),
         maxRadiusKm: bundle.preferences.max_radius_km,
         language: locale,
       });
+      if (editing) setFootPicked(true);
     } catch {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, [locale, user]);
+  }, [editing, locale, user]);
 
   useEffect(() => {
     const task = setTimeout(() => void load(), 0);
@@ -251,7 +255,12 @@ export function PlayerOnboarding() {
     setSaving(true);
     try {
       await saveProfile(user.id, { ...nextForm, language: locale });
-      setStep(stepCount);
+      if (editing) {
+        showToast(copy.profileSaveSuccess, 'success');
+        router.replace('/profile' as Href);
+      } else {
+        setStep(stepCount);
+      }
     } catch {
       showToast(copy.profileSaveError, 'error');
     } finally {
@@ -266,6 +275,12 @@ export function PlayerOnboarding() {
   };
   const skip = () => {
     if (saving) return;
+    if (editing) {
+      // Editing keeps what is saved: skipping just moves on.
+      if (step === stepCount - 1) void finish(form);
+      else setStep(step + 1);
+      return;
+    }
     if (step === 1) {
       update('preferredPosition', null);
       setStep(2);
@@ -419,7 +434,9 @@ export function PlayerOnboarding() {
         : step === stepCount - 1
           ? saving
             ? copy.wizSaving
-            : copy.wizCreate
+            : editing
+              ? copy.wizSave
+              : copy.wizCreate
           : copy.wizContinue;
   const disabled = !canContinue;
   const footer = (
@@ -484,7 +501,13 @@ export function PlayerOnboarding() {
                 label={copy.wizProgress
                   .replace('{step}', String(step + 1))
                   .replace('{total}', String(stepCount))}
-                onBack={step > 0 ? () => setStep(step - 1) : null}
+                onBack={
+                  step > 0
+                    ? () => setStep(step - 1)
+                    : editing
+                      ? () => router.replace('/profile' as Href)
+                      : null
+                }
                 backLabel={copy.wizBack}
               />
               <View style={own.preview}>{card}</View>

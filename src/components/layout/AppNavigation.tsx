@@ -147,7 +147,13 @@ const styles = StyleSheet.create({
 });
 
 /** Lime create button with the reference's expanding ring pulse (`ap-ring`). */
-function CreateActionButton({ background, foreground }: { background: string; foreground: string }) {
+function CreateActionButton({
+  background,
+  foreground,
+}: {
+  background: string;
+  foreground: string;
+}) {
   const ring = useLoop(2400, { easing: (value) => 1 - (1 - value) * (1 - value) });
   return (
     <View style={styles.createButton}>
@@ -158,7 +164,9 @@ function CreateActionButton({ background, foreground }: { background: string; fo
           {
             backgroundColor: background,
             opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
-            transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.58] }) }],
+            transform: [
+              { scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, 1.58] }) },
+            ],
           },
         ]}
       />
