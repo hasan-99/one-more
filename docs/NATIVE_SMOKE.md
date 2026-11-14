@@ -5,12 +5,12 @@
 - Android EAS internal APK: PASS for the multi-ABI build. Artifact: <https://expo.dev/accounts/hasan-jahouse/projects/one-more/builds/e6c7a28b-30bc-484e-b4cb-4cd41881a71a>. EAS uses a remotely stored keystore. Local Windows full-ABI builds can still hit the 260-character generated-path limit.
 - Android install/device smoke: NOT TESTED; `adb devices -l` listed no connected devices. No emulator is installed or running.
 - iOS Simulator EAS build: PASS; artifact: <https://expo.dev/accounts/hasan-jahouse/projects/one-more/builds/c197b894-d75a-44d0-bad5-c0eba8e34d31>. It has not been launched in a simulator or on an iPhone because this Windows host has no macOS/Xcode runtime.
-- Physical iPhone build: NOT BUILT; the iOS Simulator artifact cannot install on a real iPhone. EAS reports `No Apple teams found for account hasan-jahouse`, so there is no Apple team/device registration available for an internal `.ipa` yet.
+- Physical iPhone build: NOT BUILT; the iOS Simulator artifact cannot install on a real iPhone. EAS reports `No Apple teams found for account hasan-jahouse`; the interactive development build also stops until an Apple Developer account is connected and an iPhone is provisioned.
 - Expo Simulators cloud session: BLOCKED; `eas simulator:availability --json` returned `available: false` for `hasan-jahouse`. Do not call `simulator:start` until Expo enables access.
 - Auth email delivery: Resend accepted SMTP and a signup confirmation email arrived at the verified owner mailbox. The connected mail tool redacted the OTP, so app-side verification and native OTP are still NOT TESTED.
 - Native push: NOT CONFIGURED and therefore not in the smoke scope.
 
-Both preview builds currently use the temporary identifier `com.anonymous.onemore`; choose the permanent Android application ID and iOS bundle ID before a store release. The iOS build warned that `ios.infoPlist.ITSAppUsesNonExemptEncryption` is unset; review Apple's export-compliance declaration before App Store submission. No final logo or store assets were introduced.
+Both preview builds currently use the temporary identifier `com.anonymous.onemore`; choose the permanent Android application ID and iOS bundle ID before a store release. The iOS config declares `ITSAppUsesNonExemptEncryption: false` for standard/exempt encryption only. No final logo or store assets were introduced.
 
 When Expo Simulators access is enabled, check it first, then install each existing build in a controlled session:
 
@@ -22,14 +22,32 @@ npx eas-cli@latest simulator:start --platform ios --type agent-device --build-id
 
 The simulator session configuration contains controller credentials; `.env.eas-simulator` is ignored by Git. See [Expo's simulator installation guide](https://docs.expo.dev/eas/simulators/how-to/install-your-app/) and [availability instructions](https://docs.expo.dev/eas/simulators/get-started/).
 
-Expo Go on the iPhone cannot run this project: its App Store build supports SDK 54, while this app uses SDK 58. The grey project entry also has no running development server to connect to. For a real iPhone, register the device with the Apple Developer team, then create and install an internal device build:
+## Expo Go on iPhone — current path
+
+The project is linked to Expo owner `hasan-jahouse` as `@hasan-jahouse/one-more`, with display name `ONE MORE`. Expo Go and this project use SDK 58. The app source uses Expo Go-compatible modules; no app code imports a custom native module. `expo-dev-client` was removed from this Expo Go setup.
+
+An iOS EAS Update is published on branch/channel `preview`, runtime version `exposdk:58.0.0`. To open it the first time, sign into Expo Go as `hasan-jahouse` and open this link on the iPhone:
+
+[Open ONE MORE in Expo Go](exp://u.expo.dev/21afe9e8-5fec-4af0-baa0-3d0c4a8c2835?channel-name=preview)
+
+If the direct link does not open, this page returns the same launch URL as text: <https://qr.expo.dev/eas-update?projectId=21afe9e8-5fec-4af0-baa0-3d0c4a8c2835&runtimeVersion=exposdk%3A58.0.0&channel=preview&slug=exp&format=url>. After opening it once, look for `ONE MORE` (`@hasan-jahouse/one-more`) under Expo Go's Projects list. Later updates can be published to the same channel; no QR is needed for each update. Expo Go must be using the same Expo account that owns the project.
+
+The dashboard project is <https://expo.dev/accounts/hasan-jahouse/projects/one-more>; the current update is <https://expo.dev/accounts/hasan-jahouse/projects/one-more/updates/41491f59-e08d-4045-92b4-b270902cb8b7>.
+
+To publish later iOS updates, use:
+
+```powershell
+npx eas-cli@latest update --channel preview --message "Describe the change" --environment preview --platform ios
+```
+
+The `preview-device` profile remains available for a standalone physical-device build, but that path requires Apple Developer membership and iPhone provisioning:
 
 ```powershell
 npx eas-cli@latest device:create
 npx eas-cli@latest build --platform ios --profile preview-device
 ```
 
-The `preview-device` profile creates a physical-device build; it is separate from the existing iOS Simulator artifact. A development build on a physical iPhone requires Apple Developer Program membership and device provisioning. See [Expo's iOS device build guide](https://docs.expo.dev/tutorial/eas/ios-development-build-for-devices/) and [Expo Go SDK compatibility](https://docs.expo.dev/troubleshooting/expo-go-version-mismatch/).
+This Expo Go path is only for the current preview workflow; a standalone app distributed to testers or app stores will need its own native build. See [Expo's Expo Go SDK compatibility guide](https://docs.expo.dev/troubleshooting/expo-go-version-mismatch/) and [EAS Update QR links](https://docs.expo.dev/more/qr-codes/).
 
 ## Re-run on an Android workstation
 

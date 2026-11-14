@@ -24,6 +24,42 @@ test('signup shows validation and localized account creation form', async ({ pag
   await expect(page.getByRole('button', { name: 'Αλλαγή γλώσσας σε English' })).toContainText('EL');
 });
 
+test('auth fields accept tap and keyboard input on every credential screen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+
+  await page.goto('/sign-in');
+  const signInEmail = page.getByLabel('Email address');
+  await signInEmail.click();
+  await page.keyboard.type('player@example.invalid');
+  await expect(signInEmail).toHaveValue('player@example.invalid');
+  const signInPassword = page.getByLabel('Password');
+  await signInPassword.click();
+  await page.keyboard.type('safe-password-123');
+  await expect(signInPassword).toHaveValue('safe-password-123');
+
+  await page.goto('/sign-up');
+  const signUpName = page.getByLabel('Name in English');
+  await signUpName.click();
+  await page.keyboard.type('Player Example');
+  await expect(signUpName).toHaveValue('Player Example');
+  const signUpPhone = page.getByLabel('Phone number');
+  await signUpPhone.click();
+  await page.keyboard.type('+35799123456');
+  await expect(signUpPhone).toHaveValue('+35799123456');
+
+  await page.goto('/forgot-password');
+  const recoveryEmail = page.getByLabel('Email address');
+  await recoveryEmail.click();
+  await page.keyboard.type('player@example.invalid');
+  await expect(recoveryEmail).toHaveValue('player@example.invalid');
+
+  await page.goto('/verify-email?email=player%40example.invalid');
+  const verificationCode = page.getByLabel('Email verification code');
+  await verificationCode.click();
+  await page.keyboard.type('12345678');
+  await expect(verificationCode).toHaveValue('12345678');
+});
+
 test('successful signup opens code verification with the resend cooldown', async ({ page }) => {
   let submittedMetadata: Record<string, unknown> | undefined;
   await page.route('**/auth/v1/signup**', async (route) => {
@@ -41,7 +77,7 @@ test('successful signup opens code verification with the resend cooldown', async
         phone: '',
         app_metadata: { provider: 'email', providers: ['email'] },
         user_metadata: {},
-        identities: [],
+        identities: [{ identity_id: 'player@example.invalid', provider: 'email', id: 'player-id' }],
         created_at: '2026-11-12T00:00:00Z',
         updated_at: '2026-11-12T00:00:00Z',
       }),
@@ -349,8 +385,45 @@ test('an existing account receives a sign-in hint instead of a generic error', a
   await page.getByRole('checkbox', { name: 'I agree to the terms and privacy notice.' }).click();
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('alert')).toContainText(
-    'An account already uses this email. Sign in instead.',
+    'This email is already registered. Sign in instead.',
   );
+});
+
+test('an obfuscated duplicate signup response offers sign in without opening code verification', async ({
+  page,
+}) => {
+  await page.route('**/auth/v1/signup**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'X-Supabase-Api-Version': '2024-01-01' },
+      body: JSON.stringify({
+        id: 'obfuscated-user-id',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'player@example.invalid',
+        email_confirmed_at: null,
+        phone: '',
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: {},
+        identities: [],
+        created_at: '2026-11-12T00:00:00Z',
+        updated_at: '2026-11-12T00:00:00Z',
+      }),
+    }),
+  );
+  await page.goto('/sign-up');
+  await page.getByLabel('Name in English').fill('Player Example');
+  await page.getByLabel('Phone number').fill('+357 99 123456');
+  await page.getByLabel('Email address').fill('player@example.invalid');
+  await page.getByLabel('Password', { exact: true }).fill('safe-password-123');
+  await page.getByLabel('Confirm password').fill('safe-password-123');
+  await page.getByRole('checkbox', { name: 'I agree to the terms and privacy notice.' }).click();
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'This email is already registered. Sign in instead.',
+  );
+  await expect(page).not.toHaveURL(/\/verify-email/);
 });
 
 test('a failed preference save shows a dismissible error toast', async ({ page }) => {

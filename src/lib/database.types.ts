@@ -839,6 +839,8 @@ export type Database = {
           phone: string | null;
           preferred_position: string | null;
           skill_level: string | null;
+          strong_foot: string;
+          shirt_number: number;
           updated_at: string;
         };
         Insert: {
@@ -853,6 +855,8 @@ export type Database = {
           phone?: string | null;
           preferred_position?: string | null;
           skill_level?: string | null;
+          strong_foot?: string;
+          shirt_number?: number;
           updated_at?: string;
         };
         Update: {
@@ -867,6 +871,8 @@ export type Database = {
           phone?: string | null;
           preferred_position?: string | null;
           skill_level?: string | null;
+          strong_foot?: string;
+          shirt_number?: number;
           updated_at?: string;
         };
         Relationships: [
@@ -1056,9 +1062,15 @@ export type Database = {
           captain_id: string;
           city_id: string;
           created_at: string;
+          crest_color: string;
+          crest_pattern: string;
+          crest_shape: string;
           description: string | null;
           id: string;
+          home_area_id: string | null;
           name: string;
+          open_to_players: boolean;
+          preferred_format: number;
           status: string;
           updated_at: string;
         };
@@ -1066,9 +1078,15 @@ export type Database = {
           captain_id: string;
           city_id: string;
           created_at?: string;
+          crest_color?: string;
+          crest_pattern?: string;
+          crest_shape?: string;
           description?: string | null;
           id?: string;
+          home_area_id?: string | null;
           name: string;
+          open_to_players?: boolean;
+          preferred_format?: number;
           status?: string;
           updated_at?: string;
         };
@@ -1076,9 +1094,15 @@ export type Database = {
           captain_id?: string;
           city_id?: string;
           created_at?: string;
+          crest_color?: string;
+          crest_pattern?: string;
+          crest_shape?: string;
           description?: string | null;
           id?: string;
+          home_area_id?: string | null;
           name?: string;
+          open_to_players?: boolean;
+          preferred_format?: number;
           status?: string;
           updated_at?: string;
         };
@@ -1089,6 +1113,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'cities';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'teams_home_area_city_fkey';
+            columns: ['home_area_id', 'city_id'];
+            isOneToOne: false;
+            referencedRelation: 'areas';
+            referencedColumns: ['id', 'city_id'];
           },
         ];
       };
@@ -1275,6 +1306,19 @@ export type Database = {
       };
       create_team: {
         Args: { p_city_id: string; p_description?: string; p_name: string };
+        Returns: string;
+      };
+      create_team_with_design: {
+        Args: {
+          p_area_id: string;
+          p_city_id: string;
+          p_crest_color: string;
+          p_crest_pattern: string;
+          p_crest_shape: string;
+          p_format: number;
+          p_name: string;
+          p_open_to_players: boolean;
+        };
         Returns: string;
       };
       create_team_challenge: {

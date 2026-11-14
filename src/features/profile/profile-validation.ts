@@ -1,5 +1,6 @@
 export const positions = ['goalkeeper', 'defender', 'midfielder', 'forward', 'any'] as const;
 export const skillLevels = ['beginner', 'intermediate', 'advanced'] as const;
+export const strongFeet = ['left', 'right', 'both'] as const;
 export const formats = [5, 7, 8, 11] as const;
 export const availabilitySlots = [
   'weekday_morning',
@@ -12,6 +13,7 @@ export const availabilitySlots = [
 
 export type Position = (typeof positions)[number];
 export type SkillLevel = (typeof skillLevels)[number];
+export type StrongFoot = (typeof strongFeet)[number];
 export type Format = (typeof formats)[number];
 export type AvailabilitySlot = (typeof availabilitySlots)[number];
 
@@ -21,6 +23,8 @@ export type ProfileInput = {
   areaId: string;
   preferredPosition: Position | null;
   skillLevel: SkillLevel | null;
+  strongFoot: StrongFoot;
+  shirtNumber: number;
   preferredFormats: Format[];
   availabilitySlots: AvailabilitySlot[];
   maxRadiusKm: number | null;
@@ -43,6 +47,10 @@ export function validateProfileInput(
     return 'profileValidationLocation';
   }
   if (input.preferredFormats.some((format) => !formats.includes(format))) {
+    return 'profileValidationLocation';
+  }
+  if (!strongFeet.includes(input.strongFoot)) return 'profileValidationLocation';
+  if (!Number.isInteger(input.shirtNumber) || input.shirtNumber < 1 || input.shirtNumber > 99) {
     return 'profileValidationLocation';
   }
   if (

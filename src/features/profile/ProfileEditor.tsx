@@ -16,12 +16,14 @@ import {
   formats,
   positions,
   skillLevels,
+  strongFeet,
   validateProfileInput,
   type AvailabilitySlot,
   type Format,
   type Position,
   type ProfileInput,
   type SkillLevel,
+  type StrongFoot,
 } from './profile-validation';
 import { getProfileBundle, saveProfile, type AreaRow, type CityRow } from './profile-service';
 
@@ -54,6 +56,8 @@ export function ProfileEditor({ onboarding }: Props) {
         ? bundle.profile.preferred_position
         : null,
       skillLevel: isSkillLevel(bundle.profile.skill_level) ? bundle.profile.skill_level : null,
+      strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
+      shirtNumber: bundle.profile.shirt_number ?? 8,
       preferredFormats: bundle.preferences.preferred_formats.filter(isFormat),
       availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilitySlot),
       maxRadiusKm: bundle.preferences.max_radius_km,
@@ -373,6 +377,8 @@ function emptyForm(language: 'en' | 'el'): ProfileInput {
     areaId: '',
     preferredPosition: null,
     skillLevel: null,
+    strongFoot: 'right',
+    shirtNumber: 8,
     preferredFormats: [5, 7],
     availabilitySlots: [],
     maxRadiusKm: null,
@@ -386,6 +392,10 @@ function isPosition(value: string | null): value is Position {
 
 function isSkillLevel(value: string | null): value is SkillLevel {
   return skillLevels.some((level) => level === value);
+}
+
+function isStrongFoot(value: string | null | undefined): value is StrongFoot {
+  return strongFeet.some((foot) => foot === value);
 }
 
 function isFormat(value: number): value is Format {

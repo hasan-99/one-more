@@ -11,13 +11,15 @@
       },
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "preview"
     },
     "preview-device": {
       "extends": "preview",
       "ios": {
         "simulator": false
-      }
+      },
+      "channel": "preview-device"
     }
   }
 }

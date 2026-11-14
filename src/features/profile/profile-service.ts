@@ -62,6 +62,8 @@ export async function saveProfile(userId: string, input: ProfileInput): Promise<
       area_id: input.areaId,
       preferred_position: input.preferredPosition,
       skill_level: input.skillLevel,
+      strong_foot: input.strongFoot,
+      shirt_number: input.shirtNumber,
       language: input.language,
       onboarding_complete: true,
     })
@@ -81,10 +83,13 @@ export async function saveProfile(userId: string, input: ProfileInput): Promise<
 
 export async function saveNotificationPreferences(
   userId: string,
-  values: Pick<
+  values: Partial<Pick<
     NotificationPreferencesRow,
-    'in_app_enabled' | 'discovery_email_enabled' | 'chat_email_enabled'
-  >,
+    | 'in_app_enabled'
+    | 'discovery_email_enabled'
+    | 'chat_email_enabled'
+    | 'transactional_email_enabled'
+  >>,
 ): Promise<void> {
   const { error } = await getSupabaseClient()
     .from('notification_preferences')

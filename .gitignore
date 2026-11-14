@@ -44,6 +44,9 @@ yarn-error.*
 example
 _expo_scaffold/
 assets/images/
+!assets/images/
+assets/images/*
+!assets/images/one-more-logo.png
 assets/expo.icon/
 
 # generated native folders

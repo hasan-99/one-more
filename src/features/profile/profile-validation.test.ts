@@ -13,6 +13,8 @@ const validProfile: ProfileInput = {
   areaId: 'strovolos-id',
   preferredPosition: 'midfielder',
   skillLevel: 'intermediate',
+  strongFoot: 'right',
+  shirtNumber: 8,
   preferredFormats: [5, 7],
   availabilitySlots: ['weekday_evening'],
   maxRadiusKm: 20,
@@ -53,6 +55,15 @@ describe('validateProfileInput', () => {
       validateProfileInput({ ...validProfile, preferredFormats: [9 as 5] }, areaCityById),
     ).toBe('profileValidationLocation');
     expect(validateProfileInput({ ...validProfile, maxRadiusKm: 0 }, areaCityById)).toBe(
+      'profileValidationLocation',
+    );
+  });
+
+  it('keeps the shirt number within the supported range', () => {
+    expect(validateProfileInput({ ...validProfile, shirtNumber: 0 }, areaCityById)).toBe(
+      'profileValidationLocation',
+    );
+    expect(validateProfileInput({ ...validProfile, shirtNumber: 100 }, areaCityById)).toBe(
       'profileValidationLocation',
     );
   });

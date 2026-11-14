@@ -1,14 +1,4 @@
-import * as Linking from 'expo-linking';
-import { Platform } from 'react-native';
-
 import { getSupabaseClient } from '@/lib/supabase';
-
-function passwordRecoveryRedirectUrl(): string {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return new URL('/reset-password', window.location.origin).toString();
-  }
-  return Linking.createURL('reset-password');
-}
 
 export function signUpWithPassword(
   email: string,
@@ -44,8 +34,14 @@ export function signInWithPassword(email: string, password: string) {
 }
 
 export function requestPasswordReset(email: string) {
-  return getSupabaseClient().auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: passwordRecoveryRedirectUrl(),
+  return getSupabaseClient().auth.resetPasswordForEmail(email.trim());
+}
+
+export function verifyPasswordRecoveryOtp(email: string, token: string) {
+  return getSupabaseClient().auth.verifyOtp({
+    email: email.trim(),
+    token: token.trim(),
+    type: 'recovery',
   });
 }
 

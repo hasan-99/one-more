@@ -3,6 +3,7 @@
     "name": "ONE MORE",
     "slug": "one-more",
     "version": "1.0.0",
+    "icon": "./assets/images/one-more-logo.png",
     "orientation": "portrait",
     "scheme": "one-more",
     "userInterfaceStyle": "automatic",
@@ -69,7 +70,28 @@
           ]
         }
       ],
-      "expo-secure-store"
+      [
+        "expo-media-library",
+        {
+          "photosPermission": false,
+          "savePhotosPermission": "Allow ONE MORE to save your player card to Photos.",
+          "granularPermissions": ["photo"]
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/one-more-logo.png",
+          "imageWidth": 220,
+          "backgroundColor": "#000000",
+          "dark": {
+            "image": "./assets/images/one-more-logo.png",
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
@@ -78,7 +100,10 @@
       "package": "com.anonymous.onemore"
     },
     "ios": {
-      "bundleIdentifier": "com.anonymous.onemore"
+      "bundleIdentifier": "com.anonymous.onemore",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "extra": {
       "router": {
@@ -141,6 +166,12 @@
         "projectId": "21afe9e8-5fec-4af0-baa0-3d0c4a8c2835"
       }
     },
-    "owner": "hasan-jahouse"
+    "owner": "hasan-jahouse",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/21afe9e8-5fec-4af0-baa0-3d0c4a8c2835"
+    }
   }
 }

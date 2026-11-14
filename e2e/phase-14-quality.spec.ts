@@ -40,8 +40,12 @@ for (const theme of ['Dark', 'Light'] as const) {
 
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.addInitScript(
-        (value) => localStorage.setItem('one-more.theme', value),
-        theme.toLowerCase(),
+        (value) => {
+          localStorage.setItem('one-more.theme', value.theme);
+          // The page control switches to the opposite locale, so seed it predictably.
+          localStorage.setItem('one-more.locale', value.locale === 'en' ? 'el' : 'en');
+        },
+        { theme: theme.toLowerCase(), locale },
       );
       await page.goto('/');
       await expect(page.locator('html')).toHaveCSS('color-scheme', theme.toLowerCase());

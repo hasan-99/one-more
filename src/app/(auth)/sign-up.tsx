@@ -1,12 +1,11 @@
 import { router, type Href } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
-
 import {
   AuthButton,
   AuthCheckbox,
   AuthFeedback,
   AuthField,
+  AuthForm,
   AuthPage,
   AuthTextLink,
 } from '@/components/auth/AuthPage';
@@ -47,8 +46,12 @@ export default function SignUpScreen() {
     }
     setBusy(true);
     try {
-      const { error } = await signUpWithPassword(email, password, { displayName, phone });
+      const { data, error } = await signUpWithPassword(email, password, { displayName, phone });
       if (error) throw error;
+      if (data.user && data.user.identities?.length === 0) {
+        showToast(copy.authAccountExists, 'error');
+        return;
+      }
       showToast(copy.authSignupPending, 'success');
       const resendAfter = Date.now() + 60_000;
       router.replace(
@@ -61,8 +64,13 @@ export default function SignUpScreen() {
     }
   };
   return (
-    <AuthPage title={copy.authSignUpTitle} description={copy.authSignUpDescription}>
-      <View style={{ gap: 16 }}>
+    <AuthPage
+      title={copy.authSignUpTitle}
+      description={copy.authSignUpDescription}
+      pitchBackdrop
+      scrollable={false}
+    >
+      <AuthForm>
         <AuthField
           label={copy.authName}
           value={displayName}
@@ -105,7 +113,7 @@ export default function SignUpScreen() {
           onPress={() => void submit()}
         />
         <AuthTextLink href="/sign-in">{copy.authSignInLink}</AuthTextLink>
-      </View>
+      </AuthForm>
     </AuthPage>
   );
 }

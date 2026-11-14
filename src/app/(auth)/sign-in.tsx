@@ -6,6 +6,7 @@ import {
   AuthButton,
   AuthFeedback,
   AuthField,
+  AuthForm,
   AuthPage,
   AuthTextLink,
 } from '@/components/auth/AuthPage';
@@ -17,7 +18,7 @@ import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
 export default function SignInScreen() {
-  const { locale, colors } = useAppPreferences();
+  const { locale } = useAppPreferences();
   const copy = translations[locale];
   const { isConfigured } = useAuth();
   const { showToast } = useToast();
@@ -43,8 +44,13 @@ export default function SignInScreen() {
     }
   };
   return (
-    <AuthPage title={copy.authSignInTitle} description={copy.authSignInDescription}>
-      <View style={{ gap: 16 }}>
+    <AuthPage
+      title={copy.authSignInTitle}
+      description={copy.authSignInDescription}
+      pitchBackdrop
+      scrollable={false}
+    >
+      <AuthForm>
         <AuthField
           label={copy.authEmail}
           value={email}
@@ -65,10 +71,23 @@ export default function SignInScreen() {
           disabled={busy || !isConfigured}
           onPress={() => void submit()}
         />
-        <AuthTextLink href="/forgot-password">{copy.authForgotPassword}</AuthTextLink>
-        <Text style={{ color: colors.textSecondary }}>{copy.authNoAccount}</Text>
-        <AuthTextLink href="/sign-up">{copy.authSignUpLink}</AuthTextLink>
-      </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            columnGap: 16,
+            rowGap: 6,
+          }}
+        >
+          <AuthTextLink href="/forgot-password">{copy.authForgotPassword}</AuthTextLink>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 6 }}>
+            <Text style={{ color: '#b9c4b4' }}>{copy.authNoAccount}</Text>
+            <AuthTextLink href="/sign-up">{copy.authSignUpLink}</AuthTextLink>
+          </View>
+        </View>
+      </AuthForm>
     </AuthPage>
   );
 }

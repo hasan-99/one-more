@@ -3,44 +3,62 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { translations } from '@/i18n';
 import { useAppPreferences, type ThemePreference } from '@/preferences/AppPreferencesProvider';
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const { locale, setLocale, colors, preferencesReady } = useAppPreferences();
   const copy = translations[locale];
 
   return (
-    <View nativeID="language-switcher" style={styles.group}>
-      <Text style={[styles.label, { color: colors.textMuted }]}>{copy.languageLabel}</Text>
-      <View
-        style={[
-          styles.segment,
-          { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
-        ]}
-      >
-        {(['en', 'el'] as const).map((value) => {
-          const selected = locale === value;
-          const label = value === 'en' ? copy.languageEnglish : copy.languageGreek;
-          return (
-            <Pressable
-              key={value}
-              accessibilityRole="button"
-              accessibilityLabel={`${copy.languageLabel}: ${label}`}
-              accessibilityState={{ selected }}
-              disabled={!preferencesReady}
-              onPress={() => setLocale(value)}
-              style={[styles.option, selected && { backgroundColor: colors.primaryButton }]}
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: selected ? colors.primaryButtonText : colors.textSecondary },
-                ]}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+    <View nativeID="language-switcher" style={compact ? styles.compactGroup : styles.group}>
+      {compact ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${copy.languageLabel}: ${
+            locale === 'en' ? copy.languageEnglish : copy.languageGreek
+          }`}
+          disabled={!preferencesReady}
+          onPress={() => setLocale(locale === 'en' ? 'el' : 'en')}
+          style={[styles.compactOption, { backgroundColor: colors.primaryButton }]}
+        >
+          <Text style={[styles.optionText, { color: colors.primaryButtonText }]}>
+            {locale === 'en' ? copy.languageEnglishShort : copy.languageGreekShort}
+          </Text>
+        </Pressable>
+      ) : (
+        <>
+          <Text style={[styles.label, { color: colors.textMuted }]}>{copy.languageLabel}</Text>
+          <View
+            style={[
+              styles.segment,
+              { backgroundColor: colors.surfaceRaised, borderColor: colors.border },
+            ]}
+          >
+            {(['en', 'el'] as const).map((value) => {
+              const selected = locale === value;
+              const label = value === 'en' ? copy.languageEnglish : copy.languageGreek;
+              return (
+                <Pressable
+                  key={value}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${copy.languageLabel}: ${label}`}
+                  accessibilityState={{ selected }}
+                  disabled={!preferencesReady}
+                  onPress={() => setLocale(value)}
+                  style={[styles.option, selected && { backgroundColor: colors.primaryButton }]}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      { color: selected ? colors.primaryButtonText : colors.textSecondary },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -93,6 +111,14 @@ export function AppearanceSwitcher() {
 
 const styles = StyleSheet.create({
   group: { gap: 4 },
+  compactGroup: { flexShrink: 0 },
+  compactOption: {
+    minHeight: 44,
+    minWidth: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: { fontSize: 12, lineHeight: 16, letterSpacing: 0.4, textTransform: 'uppercase' },
   segment: {
     alignSelf: 'flex-start',

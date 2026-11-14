@@ -75,10 +75,17 @@ test('main navigation opens every shell section and secondary route', async ({
 }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile-chromium';
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Language: English' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Language: Ελληνικά' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Find a game' }).click();
-  await expect(page).toHaveURL(/\/explore$/);
+  const languageButton = page.getByRole('button', { name: 'Language: English' });
+  await expect(languageButton).toBeEnabled();
+  await expect(page.locator('#language-switcher').getByRole('button')).toHaveCount(1);
+  await languageButton.click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'el');
+  await expect(page.getByRole('button', { name: 'Γλώσσα: Ελληνικά' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Γλώσσα: Ελληνικά' }).click();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await page.getByRole('button', { name: 'Sign in or create account' }).click();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await page.goto('/explore');
 
   const navigation = page.getByRole('navigation', { name: 'Main navigation' });
   await navigation.getByRole('link', { name: 'Home' }).click();
@@ -193,7 +200,9 @@ test('main screens localize in Greek', async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile-chromium';
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Language: English' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Language: Ελληνικά' }).click();
+  await page
+    .getByRole('button', { name: mobile ? 'Language: English' : 'Language: Ελληνικά' })
+    .click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'el');
   await page.getByRole('button', { name: 'Βρες αγώνα' }).click();
   await expect(page.getByRole('heading', { name: 'Βρες τον επόμενο αγώνα σου' })).toBeVisible();

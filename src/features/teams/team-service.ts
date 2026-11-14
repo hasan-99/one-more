@@ -3,6 +3,9 @@ import { getSupabaseClient } from '@/lib/supabase';
 export { validateTeamInput } from './team-validation';
 
 export type TeamCity = Pick<Tables<'cities'>, 'id' | 'name_en' | 'name_el'>;
+export type TeamCrestShape = 'shield' | 'round' | 'hex';
+export type TeamCrestPattern = 'plain' | 'stripes' | 'half';
+export type TeamCrestColor = '#cfff4a' | '#f2f5ec' | '#ffa94d' | '#5cc8ff' | '#ff8fc0' | '#b79cff';
 export type TeamDirectoryItem = {
   teamId: string;
   name: string;
@@ -177,6 +180,30 @@ export async function createTeam(values: {
     p_name: values.name,
     p_city_id: values.cityId,
     p_description: values.description || undefined,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function createTeamWithDesign(values: {
+  name: string;
+  cityId: string;
+  areaId: string;
+  crestShape: TeamCrestShape;
+  crestColor: TeamCrestColor;
+  crestPattern: TeamCrestPattern;
+  format: 5 | 7 | 8 | 11;
+  openToPlayers: boolean;
+}): Promise<string> {
+  const { data, error } = await getSupabaseClient().rpc('create_team_with_design', {
+    p_name: values.name,
+    p_city_id: values.cityId,
+    p_area_id: values.areaId,
+    p_crest_shape: values.crestShape,
+    p_crest_color: values.crestColor,
+    p_crest_pattern: values.crestPattern,
+    p_format: values.format,
+    p_open_to_players: values.openToPlayers,
   });
   if (error) throw error;
   return data;

@@ -1,24 +1,20 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/toast/ToastProvider';
 import { AppCard, AppPage, EmptyState } from '@/components/layout/AppPage';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import {
-  createTeam,
   listMyTeamInvites,
   listMyTeams,
   listTeamDirectory,
   respondTeamInvite,
   type MyTeam,
-  type TeamCity,
   type TeamDirectoryItem,
   type TeamInvite,
 } from '@/features/teams/team-service';
-import { validateTeamInput } from '@/features/teams/team-validation';
-import { getSupabaseClient } from '@/lib/supabase';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -30,33 +26,16 @@ export default function TeamsScreen() {
   const [directory, setDirectory] = useState<TeamDirectoryItem[]>([]);
   const [teams, setTeams] = useState<MyTeam[]>([]);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
-  const [cities, setCities] = useState<TeamCity[]>([]);
-  const [selectedCity, setSelectedCity] = useState('');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [profileComplete, setProfileComplete] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
     try {
-      const [publicTeams, cityResult] = await Promise.all([
-        listTeamDirectory(),
-        getSupabaseClient()
-          .from('cities')
-          .select('id,name_en,name_el')
-          .order('name_en')
-          .then(({ data, error }) => {
-            if (error) throw error;
-            return data;
-          }),
-      ]);
+      const publicTeams = await listTeamDirectory();
       setDirectory(publicTeams);
-      setCities(cityResult);
-      setSelectedCity((current) => current || cityResult[0]?.id || '');
       if (session) {
         const [myTeams, myInvites, complete] = await Promise.all([
           listMyTeams(),
@@ -83,25 +62,6 @@ export default function TeamsScreen() {
     const task = setTimeout(() => void load(), 0);
     return () => clearTimeout(task);
   }, [load]);
-
-  const onCreate = async () => {
-    const validation = validateTeamInput({ name, cityId: selectedCity, description });
-    if (validation) return showToast(copy[validation], 'error');
-    setSaving(true);
-    try {
-      const id = await createTeam({
-        name: name.trim(),
-        cityId: selectedCity,
-        description: description.trim(),
-      });
-      showToast(copy.teamCreateSuccess, 'success');
-      router.push(`/teams/${id}` as Href);
-    } catch {
-      showToast(copy.teamActionError, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const respond = async (inviteId: string, decision: 'accept' | 'decline') => {
     try {
@@ -184,36 +144,11 @@ export default function TeamsScreen() {
                   <Text accessibilityRole="header" style={styles.cardTitle}>
                     {copy.teamCreateTitle}
                   </Text>
-                  <Field
-                    label={copy.teamName}
-                    value={name}
-                    onChangeText={setName}
-                    colors={colors}
-                  />
-                  <Field
-                    label={copy.teamDescription}
-                    value={description}
-                    onChangeText={setDescription}
-                    colors={colors}
-                    multiline
-                  />
-                  <Text style={styles.meta}>{copy.teamCity}</Text>
-                  <View style={styles.chips}>
-                    {cities.map((city) => (
-                      <Choice
-                        key={city.id}
-                        label={locale === 'el' ? city.name_el : city.name_en}
-                        selected={selectedCity === city.id}
-                        onPress={() => setSelectedCity(city.id)}
-                        colors={colors}
-                      />
-                    ))}
-                  </View>
+                  <Text style={styles.meta}>{copy.teamWizardPrompt}</Text>
                   <Action
-                    label={saving ? copy.matchSaving : copy.teamCreateAction}
-                    onPress={() => void onCreate()}
+                    label={copy.teamCreateAction}
+                    onPress={() => router.push('/teams/create' as Href)}
                     colors={colors}
-                    disabled={saving || !name.trim() || !selectedCity}
                   />
                 </AppCard>
               ) : (
@@ -270,42 +205,6 @@ function TeamCard({
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  colors,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  colors: ReturnType<typeof useAppPreferences>['colors'];
-  multiline?: boolean;
-}) {
-  return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ color: colors.textSecondary }}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={onChangeText}
-        multiline={multiline}
-        style={{
-          color: colors.textPrimary,
-          backgroundColor: colors.surfaceRaised,
-          borderColor: colors.border,
-          borderWidth: 1,
-          borderRadius: 10,
-          padding: 12,
-          minHeight: multiline ? 78 : 46,
-          textAlignVertical: multiline ? 'top' : 'center',
-        }}
-      />
-    </View>
-  );
-}
-
 function Action({
   label,
   onPress,
@@ -348,38 +247,6 @@ function Action({
   );
 }
 
-function Choice({
-  label,
-  selected,
-  onPress,
-  colors,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  colors: ReturnType<typeof useAppPreferences>['colors'];
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={{
-        backgroundColor: selected ? colors.primaryButton : colors.surfaceRaised,
-        borderColor: colors.border,
-        borderWidth: 1,
-        borderRadius: 18,
-        paddingHorizontal: 12,
-        paddingVertical: 9,
-      }}
-    >
-      <Text style={{ color: selected ? colors.primaryButtonText : colors.textPrimary }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
     sectionTitle: { color: colors.textPrimary, fontSize: 21, fontWeight: '800', marginTop: 8 },
@@ -410,6 +277,5 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       fontWeight: '700',
     },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   });
 }
