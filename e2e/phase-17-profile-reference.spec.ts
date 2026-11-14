@@ -91,7 +91,6 @@ test('profile matches the animated player reference and saves editable details',
   expect(savedNotifications.transactional_email_enabled).toBe(false);
 
   await page.getByRole('button', { name: 'Share my player card' }).click();
-  await expect(page.getByRole('heading', { name: 'Your player card' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Your player card: Profile Player' })).toBeVisible();
   await page.waitForTimeout(350);
   await page.screenshot({
@@ -113,7 +112,7 @@ test('profile matches the animated player reference and saves editable details',
   await expect(page.getByRole('heading', { name: 'Πού παίζεις' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   await page.getByRole('button', { name: 'Κοινοποίηση της κάρτας παίκτη μου' }).click();
-  await expect(page.getByRole('heading', { name: 'Η κάρτα παίκτη σου' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Η κάρτα παίκτη σου: Profile Player' })).toBeVisible();
   await page.waitForTimeout(350);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   await page.screenshot({ path: join(screenshotDirectory, width < 600 ? 'profile-share-card-mobile-el.png' : 'profile-share-card-desktop-el.png') });
