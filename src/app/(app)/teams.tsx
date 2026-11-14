@@ -121,25 +121,19 @@ export default function TeamsScreen() {
             >
               {copy.appTeamsTitle}
             </Text>
+            {session && profileComplete ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/teams/create' as Href)}
+                style={({ pressed }) => [styles.headCreate, pressed && { opacity: 0.88 }]}
+              >
+                <View style={styles.headCreatePlus}>
+                  <Text style={styles.headCreatePlusText}>+</Text>
+                </View>
+                <Text style={styles.createText}>{copy.teamCreateAction}</Text>
+              </Pressable>
+            ) : null}
           </View>
-          {session && !loading && !loadError ? (
-            <View style={styles.tiles}>
-              <SummaryTile label={copy.teamMine} value={teams.length} styles={styles} />
-              <SummaryTile
-                label={copy.teamInvites}
-                value={invites.length}
-                hot={invites.length > 0}
-                styles={styles}
-              />
-              {isCaptain ? (
-                <SummaryTile
-                  label={copy.challengeDirectory}
-                  value={openChallenges.length}
-                  styles={styles}
-                />
-              ) : null}
-            </View>
-          ) : null}
         </View>
       }
     >
@@ -378,31 +372,6 @@ function NameTile({ name, styles }: { name: string; styles: Styles }) {
   );
 }
 
-function SummaryTile({
-  label,
-  value,
-  hot = false,
-  styles,
-}: {
-  label: string;
-  value: number;
-  hot?: boolean;
-  styles: Styles;
-}) {
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${label}: ${value}`}
-      style={[styles.tile, hot && styles.tileHot]}
-    >
-      <Text style={[styles.tileValue, hot && styles.tileValueHot]}>{value}</Text>
-      <Text numberOfLines={2} style={styles.tileLabel}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 function SectionHeader({
   title,
   count,
@@ -540,21 +509,30 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       flexShrink: 1,
     },
     headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 30, lineHeight: 38 },
-    tiles: { flexDirection: 'row', gap: 8 },
-    tile: {
-      flex: 1,
-      minWidth: 0,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      borderRadius: 14,
-      paddingVertical: 9,
-      paddingHorizontal: 12,
+    headCreate: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minHeight: 48,
+      paddingLeft: 6,
+      paddingRight: 16,
+      borderRadius: 24,
+      backgroundColor: colors.primaryButton,
     },
-    tileHot: { borderColor: colors.primaryButton },
-    tileValue: { color: colors.textPrimary, fontSize: 22, lineHeight: 26, fontWeight: '800' },
-    tileValueHot: { color: colors.accentText },
-    tileLabel: { color: colors.textSecondary, fontSize: 12, lineHeight: 15 },
+    headCreatePlus: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primaryButtonText,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headCreatePlusText: {
+      color: colors.primaryButton,
+      fontSize: 22,
+      lineHeight: 24,
+      fontWeight: '800',
+    },
     createButton: {
       alignSelf: 'flex-start',
       minHeight: 44,

@@ -1704,3 +1704,7 @@
 - Team cards (My teams and Teams near you) draw the team's real crest instead of two letters; captains get a round "C" armband badge instead of the word. The team page's player list uses the same captain badge.
 - Migration `20261114220000_team_lists_crest.sql` makes `list_team_directory` and `get_my_teams` return the crest design (drop + recreate with grants). NOT applied from this environment; until applied the cards fall back to the coloured initials tile (the app parses the fields defensively).
 - Layout audit mocks now include crests; tsc, eslint, vitest 39, Playwright layout audit + create-team 18 passed.
+
+## Phase 17 — Teams header: title and Create team on one row
+
+- Teams header is one row again: "Teams" on the left and a pill "Create team" (round plus badge) on the right, shown when the signed-in player has a completed profile. The summary tiles were removed; the sections below (My teams, invitations, captain challenge banner, Teams near you) are unchanged. Layout audit and create-team specs pass.
