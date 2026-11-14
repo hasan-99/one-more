@@ -3,6 +3,7 @@ import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from 'react';
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Animated,
   Easing,
   Platform,
@@ -18,18 +19,50 @@ import {
 } from 'react-native';
 
 import { BrandMark } from '@/components/brand-mark';
+import { AuthButton, AuthPage } from '@/components/auth/AuthPage';
 import { DemoPlayerMovement } from '@/components/demo-player-movement';
 import { ReferenceLandingNative } from '@/components/landing/ReferenceLandingNative';
 import { LanguageSwitcher } from '@/components/preferences-switchers';
 import { PitchBackdrop } from '@/components/pitch-backdrop';
 import { translations } from '@/i18n';
+import { useAuth } from '@/auth/AuthProvider';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
 
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 export default function LandingScreen() {
-  return Platform.OS === 'web' ? <LandingScreenWeb /> : <ReferenceLandingNative />;
+  return Platform.OS === 'web' ? <LandingScreenWeb /> : <NativeLandingEntry />;
+}
+
+function NativeLandingEntry() {
+  const { session, isLoading, sessionError, refreshSession } = useAuth();
+  const { locale } = useAppPreferences();
+  const copy = translations[locale];
+
+  useEffect(() => {
+    if (session && !isLoading && !sessionError) router.replace('/home' as Href);
+  }, [isLoading, session, sessionError]);
+
+  if (isLoading || session) {
+    return (
+      <AuthPage title={copy.authSessionLoading} description={copy.authProtectedDescription}>
+        <View style={{ alignItems: 'center', padding: 24 }} accessibilityRole="progressbar">
+          <ActivityIndicator color="#c7ff28" />
+        </View>
+      </AuthPage>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <AuthPage title={copy.authSessionError} description={copy.authProtectedDescription}>
+        <AuthButton label={copy.authRetry} onPress={() => void refreshSession()} />
+      </AuthPage>
+    );
+  }
+
+  return <ReferenceLandingNative />;
 }
 
 function LandingScreenWeb() {

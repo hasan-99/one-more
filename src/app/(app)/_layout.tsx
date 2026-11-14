@@ -21,6 +21,7 @@ export default function AppLayout() {
     error: boolean;
   } | null>(null);
   const protectedRoute =
+    pathname === '/home' ||
     pathname === '/create' ||
     pathname === '/profile' ||
     pathname === '/settings' ||
