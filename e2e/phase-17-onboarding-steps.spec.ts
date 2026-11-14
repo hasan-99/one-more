@@ -102,6 +102,20 @@ async function expectOnboardingControlsFit(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+/** The card and the footer sit in the same place on every step, so nothing jumps between them. */
+async function expectSameLayout(page: Page, first: { card: { x: number; y: number; width: number }; footerY: number }) {
+  await page.waitForTimeout(700); // let the card's pop animation settle
+  const card = await page.getByTestId('onboarding-player-card').boundingBox();
+  const footer = await page.getByTestId('onboarding-footer').boundingBox();
+  expect(card).not.toBeNull();
+  expect(footer).not.toBeNull();
+  expect(Math.abs(card!.y - first.card.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(card!.x - first.card.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(card!.width - first.card.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(footer!.y - first.footerY)).toBeLessThanOrEqual(1);
+  await expectOnboardingControlsFit(page);
+}
+
 test('the first-run profile is a step-by-step flow that fills in the player card', async ({ page }, testInfo) => {
   const saved = await signInWithIncompleteProfile(page);
   const width = testInfo.project.name === 'mobile-chromium' ? 393 : 1440;
@@ -132,7 +146,7 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await expect(page.getByRole('radio', { name: 'Strovolos' })).toHaveCount(0);
   const unselectedContinueBounds = await cta.boundingBox();
   expect(unselectedContinueBounds).not.toBeNull();
-  expect(viewportHeight - (unselectedContinueBounds!.y + unselectedContinueBounds!.height)).toBeGreaterThanOrEqual(80);
+  expect(viewportHeight - (unselectedContinueBounds!.y + unselectedContinueBounds!.height)).toBeGreaterThanOrEqual(32);
   await page.getByRole('radio', { name: 'Larnaca' }).click();
   await expect(page.getByRole('radio', { name: 'Aradippou' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Germasogeia' })).toHaveCount(0);
@@ -156,14 +170,16 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   const continueBounds = await page
     .getByRole('button', { name: /^Continue/ })
     .evaluate((element) => element.getBoundingClientRect());
-  expect(viewportHeight - continueBounds.bottom).toBeGreaterThanOrEqual(80);
+  expect(viewportHeight - continueBounds.bottom).toBeGreaterThanOrEqual(32);
   await expectNoScroll(page);
+  await page.waitForTimeout(700); // let the card's pop animation settle
   const firstStepCard = await page.getByTestId('onboarding-player-card').boundingBox();
   expect(firstStepCard).not.toBeNull();
   const firstStepContinue = await page.getByRole('button', { name: /^Continue/ }).boundingBox();
   expect(firstStepContinue).not.toBeNull();
   const firstStepFooter = await page.getByTestId('onboarding-footer').boundingBox();
   expect(firstStepFooter).not.toBeNull();
+  const first = { card: firstStepCard!, footerY: firstStepFooter!.y };
   await shot('step-1');
   await page.getByRole('button', { name: /^Continue/ }).click();
 
@@ -179,6 +195,7 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await expect(page.getByRole('button', { name: 'Pick a position' })).toBeDisabled();
   await page.getByRole('radio', { name: /Midfielder/ }).click();
   await expectNoScroll(page);
+  await expectSameLayout(page, first);
   await shot('step-2');
   await page.getByRole('button', { name: /^Continue/ }).click();
 
@@ -187,6 +204,7 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await page.getByRole('radio', { name: 'Left Foot' }).click();
   await page.getByRole('radio', { name: 'Competitive' }).click();
   await expectNoScroll(page);
+  await expectSameLayout(page, first);
   await shot('step-3');
   await page.getByRole('button', { name: /^Continue/ }).click();
 
@@ -196,6 +214,7 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await page.getByRole('checkbox', { name: 'Thursday' }).click();
   await page.getByRole('checkbox', { name: '7v7' }).click();
   await expectNoScroll(page);
+  await expectSameLayout(page, first);
   await shot('step-4');
   await page.getByRole('checkbox', { name: 'Any day' }).click();
   await expect(page.getByRole('checkbox', { name: 'Monday' })).toBeChecked();
