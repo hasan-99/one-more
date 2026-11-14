@@ -9,10 +9,10 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
@@ -27,12 +27,11 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { useEntrance, useLoop } from '@/components/motion';
-import { StageBackdrop } from '@/components/stage-backdrop';
+import { useEntrance } from '@/components/motion';
 import { useToast } from '@/components/toast/ToastProvider';
 import type { TranslationKey } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
-import { bodyFont, displayFont } from '@/theme/typography';
+import { bodyFont } from '@/theme/typography';
 
 import type { Position, SkillLevel, StrongFoot } from './profile-validation';
 
@@ -64,6 +63,7 @@ type PlayerCardShareModalProps = PlayerCardData & {
 const W = 1024;
 const H = 1536;
 const ink = '#0c1210';
+const paperWhite = '#f2f5ec';
 const lime = '#cfff4a';
 const shortPositions: Record<Position, string> = {
   forward: 'ST',
@@ -74,14 +74,13 @@ const shortPositions: Record<Position, string> = {
 };
 
 export function PlayerCardShareModal({ visible, onClose, copy, ...card }: PlayerCardShareModalProps) {
-  const { locale, colors } = useAppPreferences();
+  const { locale } = useAppPreferences();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const cardRef = useRef<Svg>(null);
   const [busyAction, setBusyAction] = useState<'share' | 'save' | null>(null);
   const reveal = useEntrance(800, 120, Easing.bezier(0.2, 1.2, 0.3, 1), visible);
-  const sheen = useLoop(4200, { delay: 900, easing: Easing.inOut(Easing.ease) });
-  const [cardWidth, setCardWidth] = useState(0);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
   const exportCard = () =>
     Platform.OS === 'web' ? exportCardOnWeb() : exportCardNative();
@@ -131,7 +130,7 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
         return;
       }
 
-      const fileUri = `${FileSystem.cacheDirectory}one-more-player-card-${Date.now()}.png`;
+      const fileUri = `${FileSystem.cacheDirectory}one-more-player-card-${new Date().getTime()}.png`;
       await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
       if (action === 'share') {
         if (!(await Sharing.isAvailableAsync())) throw new Error('System sharing is unavailable.');
@@ -154,55 +153,72 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
   const cardName = card.name.trim() || (locale === 'en' ? 'ONE MORE Player' : 'Παίκτης ONE MORE');
   const semibold = bodyFont(locale, 'semibold');
 
+  const available = {
+    width: windowWidth,
+    height: windowHeight - Math.max(insets.top, 12) - Math.max(insets.bottom, 12),
+  };
+  const cardWidth = Math.min(available.width, (available.height * W) / H, 560);
+  const actionButton = (action: 'share' | 'save', left: number) => (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => void handleAction(action)}
+      disabled={busyAction !== null}
+      style={({ pressed }) => [
+        styles.cardButton,
+        {
+          left: `${(left / W) * 100}%`,
+          top: `${(1362 / H) * 100}%`,
+          width: `${(384 / W) * 100}%`,
+          height: `${(86 / H) * 100}%`,
+          borderRadius: cardWidth * (43 / W),
+          transform: [{ scale: pressed ? 0.96 : 1 }],
+        },
+      ]}
+    >
+      {busyAction === action ? (
+        <ActivityIndicator color={paperWhite} />
+      ) : (
+        <Svg width={cardWidth * 0.045} height={cardWidth * 0.045} viewBox="0 0 24 24" fill="none">
+          <Path
+            d={
+              action === 'share'
+                ? 'M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5'
+                : 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14'
+            }
+            stroke={paperWhite}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      )}
+      <Text style={[styles.cardButtonText, { fontSize: cardWidth * 0.041, fontFamily: semibold }]}>
+        {action === 'share'
+          ? copy.profileCardShare
+          : busyAction === 'save'
+            ? copy.profileCardSaving
+            : copy.profileCardSaveImage}
+      </Text>
+    </Pressable>
+  );
+
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View
         style={[
           styles.modalRoot,
-          {
-            backgroundColor: colors.background === '#0C1210' ? '#070b09' : colors.background,
-            paddingTop: Math.max(insets.top, 12),
-            paddingBottom: Math.max(insets.bottom, 18),
-          },
+          { paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 12) },
         ]}
       >
-        <StageBackdrop id="player-card-stage" colors={colors} height="100%" glowY="45%" glowStop={0.7} rise={420} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.profileCardClose}
-          onPress={onClose}
-          style={[styles.closeButton, { top: Math.max(insets.top, 12), borderColor: colors.optionBorder }]}
+        <Animated.View
+          style={{
+            width: cardWidth,
+            aspectRatio: W / H,
+            opacity: reveal,
+            transform: [{ scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+          }}
         >
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Path d="M6 6l12 12M18 6L6 18" stroke={colors.textPrimary} strokeWidth={2.4} strokeLinecap="round" />
-          </Svg>
-        </Pressable>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text
-            accessibilityRole="header"
-            style={[styles.heading, { color: colors.textPrimary, fontFamily: displayFont(locale) }]}
-          >
-            {copy.profileShareCardTitle}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary, fontFamily: bodyFont(locale) }]}>
-            {copy.profileShareCardSubtitle}
-          </Text>
-
-          <Animated.View
-            onLayout={(event) => setCardWidth(event.nativeEvent.layout.width)}
-            style={[
-              styles.cardFrame,
-              {
-                opacity: reveal,
-                transform: [
-                  { perspective: 900 },
-                  { rotateY: reveal.interpolate({ inputRange: [0, 1], outputRange: ['-35deg', '0deg'] }) },
-                  { scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) },
-                ],
-              },
-            ]}
-          >
-            <View nativeID="player-card-art" style={StyleSheet.absoluteFill}>
+          <View nativeID="player-card-art" style={StyleSheet.absoluteFill}>
             <Svg
               ref={cardRef}
               width="100%"
@@ -213,107 +229,26 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
             >
               <PlayerCardArt {...card} name={cardName} copy={copy} />
             </Svg>
-            </View>
-            {cardWidth > 0 ? (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.sheen,
-                  {
-                    width: cardWidth * 0.6,
-                    transform: [
-                      {
-                        translateX: sheen.interpolate({
-                          inputRange: [0, 0.4, 1],
-                          outputRange: [-cardWidth, cardWidth * 1.4, cardWidth * 1.4],
-                        }),
-                      },
-                      { rotate: '18deg' },
-                    ],
-                  },
-                ]}
-              >
-                <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 10">
-                  <Defs>
-                    <LinearGradient id="card-sheen" x1="0" y1="0" x2="1" y2="0">
-                      <Stop offset="0" stopColor="#ffffff" stopOpacity="0" />
-                      <Stop offset="0.5" stopColor="#ffffff" stopOpacity="0.14" />
-                      <Stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-                    </LinearGradient>
-                  </Defs>
-                  <Rect width="10" height="10" fill="url(#card-sheen)" />
-                </Svg>
-              </Animated.View>
-            ) : null}
-          </Animated.View>
-
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void handleAction('share')}
-              disabled={busyAction !== null}
-              style={({ pressed }) => [
-                styles.actionButton,
-                { backgroundColor: colors.primaryButton, transform: [{ scale: pressed ? 0.96 : 1 }] },
-              ]}
-            >
-              {busyAction === 'share' ? (
-                <ActivityIndicator color={colors.primaryButtonText} />
-              ) : (
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"
-                    stroke={colors.primaryButtonText}
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              )}
-              <Text style={[styles.actionText, { color: colors.primaryButtonText, fontFamily: semibold }]}>
-                {copy.profileCardShare}
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void handleAction('save')}
-              disabled={busyAction !== null}
-              style={({ pressed }) => [
-                styles.actionButton,
-                styles.secondaryAction,
-                { borderColor: colors.optionBorder, transform: [{ scale: pressed ? 0.96 : 1 }] },
-              ]}
-            >
-              {busyAction === 'save' ? (
-                <ActivityIndicator color={colors.textPrimary} />
-              ) : (
-                <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                  <Path
-                    d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"
-                    stroke={colors.textPrimary}
-                    strokeWidth={2.2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </Svg>
-              )}
-              <Text style={[styles.actionText, { color: colors.textPrimary, fontFamily: semibold }]}>
-                {busyAction === 'save' ? copy.profileCardSaving : copy.profileCardSaveImage}
-              </Text>
-            </Pressable>
           </View>
-        </ScrollView>
+          {actionButton('share', 110)}
+          {actionButton('save', 528)}
+        </Animated.View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.profileCardClose}
+          onPress={onClose}
+          hitSlop={8}
+          style={[styles.closeButton, { top: Math.max(insets.top, 12) + 6 }]}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Path d="M6 6l12 12M18 6L6 18" stroke={paperWhite} strokeWidth={2.4} strokeLinecap="round" />
+          </Svg>
+        </Pressable>
       </View>
     </Modal>
   );
 }
 
-/** Stable short ID derived from the player's name and number. */
-function playerCode(text: string) {
-  let hash = 2166136261;
-  for (const character of text) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
-  return (hash >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(0, 6);
-}
 
 /** Rough width of a string in em for sizing text to fit a box. */
 function fitSize(text: string, maxWidth: number, maxSize: number, emPerChar: number) {
@@ -356,7 +291,6 @@ function PlayerCardArt({
   const placeWidth = place.length * 15;
   const chosen = [5, 7, 8, 11].filter((size) => formats.includes(size));
   const formatWidth = chosen.length > 2 ? (305 - 10 * (chosen.length - 1)) / chosen.length : 142;
-  const code = `${playerCode(`${name}|${number}`)}-${numberText.padStart(2, '0')}`;
 
   return (
     <>
@@ -462,9 +396,6 @@ function PlayerCardArt({
         );
       })}
 
-      <SvgText x="512" y="1410" textAnchor="middle" fill="#ffffff" opacity="0.4" fontSize="22" fontWeight="600" letterSpacing="6" fontFamily="Barlow_600SemiBold">
-        {`${copy.profileCardPlayerId} ${code}`}
-      </SvgText>
     </>
   );
 }
@@ -582,45 +513,28 @@ function truncate(value: string, maxLength: number) {
 }
 
 const styles = StyleSheet.create({
-  modalRoot: { flex: 1, paddingHorizontal: 18, overflow: 'hidden' },
+  modalRoot: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#050b08' },
   closeButton: {
     position: 'absolute',
-    right: 18,
-    zIndex: 4,
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    backgroundColor: 'rgba(12,18,16,0.6)',
+    right: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(207,255,74,0.45)',
+    backgroundColor: 'rgba(5,11,8,0.7)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 48, paddingBottom: 12, gap: 6 },
-  heading: { fontSize: 30, lineHeight: 32, fontWeight: '800', width: '100%', maxWidth: 400 },
-  subtitle: { fontSize: 15, width: '100%', maxWidth: 400, marginBottom: 14 },
-  cardFrame: {
-    width: '100%',
-    maxWidth: 400,
-    aspectRatio: W / H,
-    borderRadius: 30,
-    overflow: 'hidden',
-    shadowColor: lime,
-    shadowOpacity: 0.25,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 10 },
-  },
-  sheen: { position: 'absolute', top: '-20%', bottom: '-20%', left: 0 },
-  actions: { width: '100%', maxWidth: 400, flexDirection: 'row', gap: 10, marginTop: 16 },
-  actionButton: {
-    flex: 1,
-    height: 54,
-    borderRadius: 16,
+  cardButton: {
+    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(207,255,74,0.55)',
+    backgroundColor: 'rgba(8,16,12,0.85)',
   },
-  secondaryAction: { borderWidth: 1.5, backgroundColor: 'rgba(12,18,16,0.6)' },
-  actionText: { fontSize: 16, fontWeight: '600', flexShrink: 1, textAlign: 'center' },
+  cardButtonText: { color: paperWhite, fontWeight: '600' },
 });
