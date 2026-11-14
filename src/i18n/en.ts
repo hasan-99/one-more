@@ -639,6 +639,7 @@ export const en = {
   teamFilterAll: 'All',
   teamPlayersCount: '{count} players',
   teamPlayerOne: '1 player',
+  teamCreateShort: 'Create team',
   teamNoCityTeams: 'No teams in this city yet.',
   teamMembers: 'Players',
   teamCaptain: 'Captain',

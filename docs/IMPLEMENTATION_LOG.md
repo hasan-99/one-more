@@ -1708,3 +1708,4 @@
 ## Phase 17 — Teams header: title and Create team on one row
 
 - Teams header is one row again: "Teams" on the left and a pill "Create team" (round plus badge) on the right, shown when the signed-in player has a completed profile. The summary tiles were removed; the sections below (My teams, invitations, captain challenge banner, Teams near you) are unchanged. Layout audit and create-team specs pass.
+- The header button uses a short label (`teamCreateShort`: "Create team" / "Νέα ομάδα") so the Greek header fits at 360 px; the layout audit caught the long label and passes now (18 passed).

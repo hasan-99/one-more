@@ -130,7 +130,7 @@ export default function TeamsScreen() {
                 <View style={styles.headCreatePlus}>
                   <Text style={styles.headCreatePlusText}>+</Text>
                 </View>
-                <Text style={styles.createText}>{copy.teamCreateAction}</Text>
+                <Text style={styles.createText}>{copy.teamCreateShort}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -510,6 +510,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     },
     headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 30, lineHeight: 38 },
     headCreate: {
+      flexShrink: 0,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,

@@ -642,6 +642,7 @@ export const el = {
   teamFilterAll: 'Όλες',
   teamPlayersCount: '{count} παίκτες',
   teamPlayerOne: '1 παίκτης',
+  teamCreateShort: 'Νέα ομάδα',
   teamNoCityTeams: 'Δεν υπάρχουν ακόμη ομάδες σε αυτή την πόλη.',
   teamMembers: 'Παίκτες',
   teamCaptain: 'Αρχηγός',
