@@ -71,7 +71,11 @@ const headerHeight = 40;
 const footerHeight = 54;
 const columnGap = 10;
 /** Room kept for the controls of the tallest step; the card takes the rest. */
-const controlsReserve = 250;
+const minControlsReserve = 250;
+/** Step one without its area chips: name, shirt number, city, labels and gaps. */
+const firstStepControls = 212;
+/** One row of wrapped area chips and the gap under it. */
+const areaRowHeight = 38;
 const minSlotHeight = 190;
 const compactSlotHeight = 72;
 
@@ -108,6 +112,29 @@ export function PlayerOnboarding() {
   );
   const locationOptions = useMemo(() => filterCityAreaOptions(cities, areas), [cities, areas]);
   const visibleAreas = locationOptions.areas.filter((area) => area.city_id === form.cityId);
+  // The first step is the tallest, and its area chips wrap onto more rows for some cities.
+  // Reserving room for the city with the most rows keeps the card slot, and so every step,
+  // the same size whichever city is chosen, and keeps all of it on one screen.
+  const areaRowsMost = useMemo(() => {
+    const rowWidth = Math.min(width - (width < 400 ? 16 : 20) * 2, 480);
+    const charWidth = locale === 'el' ? 7.6 : 7.1;
+    let most = 1;
+    for (const item of locationOptions.cities) {
+      let rows = 1;
+      let used = 0;
+      for (const place of locationOptions.areas.filter((area) => area.city_id === item.id)) {
+        const chip = (locale === 'en' ? place.name_en : place.name_el).length * charWidth + 26;
+        if (used > 0 && used + 6 + chip > rowWidth) {
+          rows += 1;
+          used = chip;
+        } else {
+          used += (used > 0 ? 6 : 0) + chip;
+        }
+      }
+      most = Math.max(most, rows);
+    }
+    return most;
+  }, [locale, locationOptions, width]);
   const city = cities.find((item) => item.id === form.cityId);
   const area = areas.find((item) => item.id === form.areaId);
   const done = step > stepCount - 1;
@@ -291,6 +318,10 @@ export function PlayerOnboarding() {
   // is what is left after the header, the footer and the tallest set of controls.
   const columnWidth = Math.min(width - horizontalPad * 2, 480);
   const columnHeight = measuredColumnHeight || windowHeight - topPad - bottomPad;
+  const controlsReserve = Math.max(
+    minControlsReserve,
+    firstStepControls + areaRowsMost * areaRowHeight,
+  );
   const slotHeight = keyboardVisible
     ? compactSlotHeight
     : Math.max(
@@ -572,14 +603,10 @@ export function PlayerOnboarding() {
                       {visibleAreas.length === 0 ? (
                         <Text style={own.muted}>{copy.profileNoAreas}</Text>
                       ) : (
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          keyboardShouldPersistTaps="handled"
+                        <View
                           accessibilityRole="radiogroup"
                           accessibilityLabel={copy.profileArea}
-                          style={own.areaScroll}
-                          contentContainerStyle={own.areaRow}
+                          style={own.areaRow}
                         >
                           {visibleAreas.map((item) => (
                             <Pressable
@@ -599,7 +626,7 @@ export function PlayerOnboarding() {
                               </Text>
                             </Pressable>
                           ))}
-                        </ScrollView>
+                        </View>
                       )}
                     </View>
                   ) : null}
@@ -1279,8 +1306,7 @@ function makeStyles(
       paddingHorizontal: 2,
     },
     chipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 12.5 },
-    areaScroll: { flexGrow: 0 },
-    areaRow: { flexDirection: 'row', gap: 6, paddingRight: 8 },
+    areaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     areaChip: {
       height: 34,
       paddingHorizontal: 11,
