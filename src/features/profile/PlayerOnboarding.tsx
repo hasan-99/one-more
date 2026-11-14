@@ -58,8 +58,8 @@ import { getProfileBundle, saveProfile, type AreaRow, type CityRow } from './pro
 
 const ink = '#0c1210';
 const stepCount = 4;
-/** How much of the card artwork (1024 wide) each step shows: it grows as the card fills in. */
-const cardCrop = [880, 880, 1030, 1220, 1469] as const;
+/** How much of the card artwork (1024 wide) each step shows: the whole card, then the finished one. */
+const cardCrop = [1220, 1220, 1220, 1220, 1469] as const;
 const pickable: { position: Exclude<Position, 'any'>; code: string }[] = [
   { position: 'forward', code: 'ST' },
   { position: 'midfielder', code: 'MF' },
@@ -70,14 +70,14 @@ const quickNumbers = [7, 8, 9, 10, 11];
 const headerHeight = 36;
 const footerHeight = 48;
 const columnGap = 8;
-/** Room kept for the controls of the tallest step; the card takes the rest. */
-const minControlsReserve = 235;
-/** Step one without its area chips: name, shirt number, city, labels and gaps. */
+/** Step one without its area chips: name, shirt number, city and the gaps between them. */
 const firstStepControls = 140;
 /** One row of wrapped area chips and the gap under it. */
 const areaRowHeight = 33;
-const minSlotHeight = 190;
-const compactSlotHeight = 72;
+/** Height of the options on steps two to four (title and controls). */
+const otherStepControls = { en: [257, 197, 185], el: [266, 200, 188] } as const;
+const minCardWidth = 150;
+const compactCardHeight = 72;
 
 /**
  * First-run profile as a step-by-step flow: one question per screen with the player card
@@ -313,25 +313,23 @@ export function PlayerOnboarding() {
   const horizontalPad = width < 400 ? 16 : 20;
   const topPad = Math.max(insets.top, 12) + 4;
   const bottomPad = Math.max(insets.bottom, 16) + 24;
-  // One fixed slot holds the card on every step, so it never moves between steps: its top
-  // and width stay the same and it only grows downward as more of it is filled in. The slot
-  // is what is left after the header, the footer and the tallest set of controls.
+  // The card keeps one top and one width on every step and only grows downward as it fills
+  // in, with the options right under it and the buttons pinned to the bottom. Its width is the
+  // largest at which the tallest step (card plus its options) still fits the screen.
   const columnWidth = Math.min(width - horizontalPad * 2, 480);
   const columnHeight = measuredColumnHeight || windowHeight - topPad - bottomPad;
-  const controlsReserve = Math.max(
-    minControlsReserve,
+  const available = columnHeight - headerHeight - footerHeight - columnGap * 3;
+  const controlsByStep = [
     firstStepControls + areaRowsMost * areaRowHeight,
-  );
-  const slotHeight = keyboardVisible
-    ? compactSlotHeight
-    : Math.max(
-        minSlotHeight,
-        columnHeight - headerHeight - footerHeight - controlsReserve - columnGap * 3,
-      );
-  const cardWidth = Math.min(
+    ...otherStepControls[locale],
+  ];
+  const fittingWidth = Math.min(
     columnWidth,
-    (slotHeight * 1024) / (keyboardVisible ? crop : cardCrop[cardCrop.length - 2]),
+    ...controlsByStep.map((controls, index) => ((available - controls) * 1024) / cardCrop[index]),
   );
+  const cardWidth = keyboardVisible
+    ? (compactCardHeight * 1024) / crop
+    : Math.max(minCardWidth, fittingWidth);
 
   const card = (
     <FitCard
@@ -459,405 +457,411 @@ export function PlayerOnboarding() {
 
   return (
     <KeyboardAvoidingView
-      style={[
-        own.root,
-        {
-          paddingTop: topPad,
-          paddingBottom: bottomPad,
-          paddingHorizontal: horizontalPad,
-        },
-      ]}
+      style={own.keyboard}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={own.dismissSurface}>
-          <View
-            style={own.column}
-            onLayout={(event) => setMeasuredColumnHeight(event.nativeEvent.layout.height)}
-          >
-            <Header
-              own={own}
-              step={step + 1}
-              label={copy.wizProgress
-                .replace('{step}', String(step + 1))
-                .replace('{total}', String(stepCount))}
-              onBack={step > 0 ? () => setStep(step - 1) : null}
-              backLabel={copy.wizBack}
-            />
-            <View style={[own.preview, { height: slotHeight }]}>{card}</View>
-
-            <ScrollView
-              testID="onboarding-controls"
-              ref={controlsScrollRef}
-              style={own.controlsScroll}
-              contentContainerStyle={own.controls}
-              automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-              showsVerticalScrollIndicator={false}
+      <View
+        style={[
+          own.root,
+          {
+            paddingTop: topPad,
+            paddingBottom: bottomPad,
+            paddingHorizontal: horizontalPad,
+          },
+        ]}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={own.dismissSurface}>
+            <View
+              style={own.column}
+              onLayout={(event) => setMeasuredColumnHeight(event.nativeEvent.layout.height)}
             >
-              {step === 0 ? (
-                <>
-                  <View style={[own.group, own.groupFirstStep]}>
-                    <TextInput
-                      accessibilityLabel={copy.wizName}
-                      value={form.displayName}
-                      onChangeText={(value) => update('displayName', value)}
-                      maxLength={24}
-                      autoComplete="off"
-                      autoCorrect={false}
-                      placeholder={copy.wizNamePlaceholder}
-                      placeholderTextColor={colors.textMuted}
-                      onFocus={() => setNameFocused(true)}
-                      onBlur={() => setNameFocused(false)}
-                      style={[own.field, own.fieldFirstStep, nameFocused && own.fieldFocused]}
-                    />
-                  </View>
-                  <View style={[own.group, own.groupFirstStep]}>
-                    <View style={own.numberRow}>
-                      <View style={[own.stepper, own.stepperFirstStep]}>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={copy.wizNumberDown}
-                          onPress={() => setNumber(form.shirtNumber - 1)}
-                          style={own.stepperButton}
-                        >
-                          <Text style={own.stepperSign}>−</Text>
-                        </Pressable>
-                        <Text
-                          accessibilityLabel={`${copy.wizNumber} ${form.shirtNumber}`}
-                          style={own.stepperValue}
-                        >
-                          {form.shirtNumber}
-                        </Text>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={copy.wizNumberUp}
-                          onPress={() => setNumber(form.shirtNumber + 1)}
-                          style={own.stepperButton}
-                        >
-                          <Text style={own.stepperSign}>+</Text>
-                        </Pressable>
-                      </View>
-                      <View style={own.quick}>
-                        {quickNumbers.map((value) => (
+              <Header
+                own={own}
+                step={step + 1}
+                label={copy.wizProgress
+                  .replace('{step}', String(step + 1))
+                  .replace('{total}', String(stepCount))}
+                onBack={step > 0 ? () => setStep(step - 1) : null}
+                backLabel={copy.wizBack}
+              />
+              <View style={own.preview}>{card}</View>
+
+              <ScrollView
+                testID="onboarding-controls"
+                ref={controlsScrollRef}
+                style={own.controlsScroll}
+                contentContainerStyle={own.controls}
+                automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                showsVerticalScrollIndicator={false}
+              >
+                {step === 0 ? (
+                  <>
+                    <View style={[own.group, own.groupFirstStep]}>
+                      <TextInput
+                        accessibilityLabel={copy.wizName}
+                        value={form.displayName}
+                        onChangeText={(value) => update('displayName', value)}
+                        maxLength={24}
+                        autoComplete="off"
+                        autoCorrect={false}
+                        placeholder={copy.wizNamePlaceholder}
+                        placeholderTextColor={colors.textMuted}
+                        onFocus={() => setNameFocused(true)}
+                        onBlur={() => setNameFocused(false)}
+                        style={[own.field, own.fieldFirstStep, nameFocused && own.fieldFocused]}
+                      />
+                    </View>
+                    <View style={[own.group, own.groupFirstStep]}>
+                      <View style={own.numberRow}>
+                        <View style={[own.stepper, own.stepperFirstStep]}>
                           <Pressable
-                            key={value}
                             accessibilityRole="button"
-                            accessibilityLabel={`${copy.wizNumber} ${value}`}
-                            accessibilityState={{ selected: form.shirtNumber === value }}
-                            onPress={() => setNumber(value)}
-                            style={[own.quickButton, form.shirtNumber === value && own.on]}
+                            accessibilityLabel={copy.wizNumberDown}
+                            onPress={() => setNumber(form.shirtNumber - 1)}
+                            style={own.stepperButton}
                           >
-                            <Text style={[own.quickText, form.shirtNumber === value && own.onText]}>
-                              {value}
+                            <Text style={own.stepperSign}>−</Text>
+                          </Pressable>
+                          <Text
+                            accessibilityLabel={`${copy.wizNumber} ${form.shirtNumber}`}
+                            style={own.stepperValue}
+                          >
+                            {form.shirtNumber}
+                          </Text>
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={copy.wizNumberUp}
+                            onPress={() => setNumber(form.shirtNumber + 1)}
+                            style={own.stepperButton}
+                          >
+                            <Text style={own.stepperSign}>+</Text>
+                          </Pressable>
+                        </View>
+                        <View style={own.quick}>
+                          {quickNumbers.map((value) => (
+                            <Pressable
+                              key={value}
+                              accessibilityRole="button"
+                              accessibilityLabel={`${copy.wizNumber} ${value}`}
+                              accessibilityState={{ selected: form.shirtNumber === value }}
+                              onPress={() => setNumber(value)}
+                              style={[own.quickButton, form.shirtNumber === value && own.on]}
+                            >
+                              <Text
+                                style={[own.quickText, form.shirtNumber === value && own.onText]}
+                              >
+                                {value}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                    <View style={[own.group, own.groupFirstStep]}>
+                      <View
+                        accessibilityRole="radiogroup"
+                        accessibilityLabel={copy.wizCity}
+                        style={own.cityRow}
+                      >
+                        {locationOptions.cities.map((item) => (
+                          <Pressable
+                            key={item.id}
+                            accessibilityRole="radio"
+                            accessibilityState={{ checked: form.cityId === item.id }}
+                            aria-checked={form.cityId === item.id}
+                            onPress={() =>
+                              setForm((current) => ({
+                                ...current,
+                                cityId: item.id,
+                                areaId: current.cityId === item.id ? current.areaId : '',
+                              }))
+                            }
+                            style={[
+                              own.cityChip,
+                              own.cityChipFirstStep,
+                              form.cityId === item.id && own.on,
+                            ]}
+                          >
+                            <Text
+                              style={[own.chipText, form.cityId === item.id && own.onText]}
+                              numberOfLines={1}
+                            >
+                              {locale === 'en' ? item.name_en : item.name_el}
                             </Text>
                           </Pressable>
                         ))}
                       </View>
                     </View>
-                  </View>
-                  <View style={[own.group, own.groupFirstStep]}>
-                    <View
-                      accessibilityRole="radiogroup"
-                      accessibilityLabel={copy.wizCity}
-                      style={own.cityRow}
-                    >
-                      {locationOptions.cities.map((item) => (
-                        <Pressable
-                          key={item.id}
-                          accessibilityRole="radio"
-                          accessibilityState={{ checked: form.cityId === item.id }}
-                          aria-checked={form.cityId === item.id}
-                          onPress={() =>
-                            setForm((current) => ({
-                              ...current,
-                              cityId: item.id,
-                              areaId: current.cityId === item.id ? current.areaId : '',
-                            }))
-                          }
-                          style={[
-                            own.cityChip,
-                            own.cityChipFirstStep,
-                            form.cityId === item.id && own.on,
-                          ]}
-                        >
-                          <Text
-                            style={[own.chipText, form.cityId === item.id && own.onText]}
-                            numberOfLines={1}
+                    {form.cityId ? (
+                      <View style={[own.group, own.groupFirstStep]}>
+                        {visibleAreas.length === 0 ? (
+                          <Text style={own.muted}>{copy.profileNoAreas}</Text>
+                        ) : (
+                          <View
+                            accessibilityRole="radiogroup"
+                            accessibilityLabel={copy.wizAreaIn.replace('{city}', cityName)}
+                            style={own.areaRow}
                           >
-                            {locale === 'en' ? item.name_en : item.name_el}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                  {form.cityId ? (
-                    <View style={[own.group, own.groupFirstStep]}>
-                      {visibleAreas.length === 0 ? (
-                        <Text style={own.muted}>{copy.profileNoAreas}</Text>
-                      ) : (
-                        <View
-                          accessibilityRole="radiogroup"
-                          accessibilityLabel={copy.wizAreaIn.replace('{city}', cityName)}
-                          style={own.areaRow}
-                        >
-                          {visibleAreas.map((item) => (
-                            <Pressable
-                              key={item.id}
-                              accessibilityRole="radio"
-                              accessibilityState={{ checked: form.areaId === item.id }}
-                              aria-checked={form.areaId === item.id}
-                              onPress={() => update('areaId', item.id)}
-                              style={[
-                                own.areaChip,
-                                own.areaChipFirstStep,
-                                form.areaId === item.id && own.on,
-                              ]}
-                            >
-                              <Text style={[own.areaText, form.areaId === item.id && own.onText]}>
-                                {locale === 'en' ? item.name_en : item.name_el}
-                              </Text>
-                            </Pressable>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                  ) : null}
-                </>
-              ) : null}
-
-              {step === 1 ? (
-                <>
-                  <View style={own.titleBlock}>
-                    <Text style={own.kicker}>{copy.wizPosKicker}</Text>
-                    <AccentTitle text={copy.wizPosTitle} own={own} accent={accent} header />
-                  </View>
-                  <View
-                    accessibilityRole="radiogroup"
-                    accessibilityLabel={copy.profilePosition}
-                    style={own.list}
-                  >
-                    {pickable.map(({ position: value, code }) => {
-                      const on = form.preferredPosition === value;
-                      return (
-                        <Pressable
-                          key={value}
-                          accessibilityRole="radio"
-                          accessibilityState={{ checked: on }}
-                          aria-checked={on}
-                          onPress={() => update('preferredPosition', value)}
-                          style={[own.row, on && own.rowOn]}
-                        >
-                          <View style={[own.code, on && own.on]}>
-                            <Text style={[own.codeText, on && own.onText]}>{code}</Text>
+                            {visibleAreas.map((item) => (
+                              <Pressable
+                                key={item.id}
+                                accessibilityRole="radio"
+                                accessibilityState={{ checked: form.areaId === item.id }}
+                                aria-checked={form.areaId === item.id}
+                                onPress={() => update('areaId', item.id)}
+                                style={[
+                                  own.areaChip,
+                                  own.areaChipFirstStep,
+                                  form.areaId === item.id && own.on,
+                                ]}
+                              >
+                                <Text style={[own.areaText, form.areaId === item.id && own.onText]}>
+                                  {locale === 'en' ? item.name_en : item.name_el}
+                                </Text>
+                              </Pressable>
+                            ))}
                           </View>
-                          <View style={own.rowText}>
-                            <Text style={own.rowTitle}>{positionLabel(value, copy)}</Text>
-                            <Text style={own.rowHint}>{copy[positionHints[value]]}</Text>
-                          </View>
-                          <View style={[own.radio, on && own.radioOn]} />
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </>
-              ) : null}
+                        )}
+                      </View>
+                    ) : null}
+                  </>
+                ) : null}
 
-              {step === 2 ? (
-                <>
-                  <View style={own.titleBlock}>
-                    <Text style={own.kicker}>{copy.wizStyleKicker}</Text>
-                    <AccentTitle text={copy.wizStyleTitle} own={own} accent={accent} header />
-                  </View>
-                  <View style={own.group}>
-                    <Text style={own.label}>{copy.profileStrongFoot.toUpperCase()}</Text>
+                {step === 1 ? (
+                  <>
+                    <View style={own.titleBlock}>
+                      <Text style={own.kicker}>{copy.wizPosKicker}</Text>
+                      <AccentTitle text={copy.wizPosTitle} own={own} accent={accent} header />
+                    </View>
                     <View
                       accessibilityRole="radiogroup"
-                      accessibilityLabel={copy.profileStrongFoot}
-                      style={own.tiles}
+                      accessibilityLabel={copy.profilePosition}
+                      style={own.list}
                     >
-                      {strongFeet.map((foot) => {
-                        const on = footPicked && form.strongFoot === foot;
-                        return (
-                          <Pressable
-                            key={foot}
-                            accessibilityRole="radio"
-                            accessibilityLabel={strongFootLabel(foot, copy)}
-                            accessibilityState={{ checked: on }}
-                            aria-checked={on}
-                            onPress={() => {
-                              setFootPicked(true);
-                              update('strongFoot', foot);
-                            }}
-                            style={[own.tile, own.tileRow, on && own.on]}
-                          >
-                            <FootGlyph foot={foot} color={on ? ink : colors.textPrimary} />
-                            <Text style={[own.tileText, on && own.onText]}>
-                              {footShort(foot, copy)}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                  <View style={own.group}>
-                    <Text style={own.label}>{copy.wizLevelLabel.toUpperCase()}</Text>
-                    <View
-                      accessibilityRole="radiogroup"
-                      accessibilityLabel={copy.profileLevel}
-                      style={own.tiles}
-                    >
-                      {skillLevels.map((value) => {
-                        const on = form.skillLevel === value;
+                      {pickable.map(({ position: value, code }) => {
+                        const on = form.preferredPosition === value;
                         return (
                           <Pressable
                             key={value}
                             accessibilityRole="radio"
-                            accessibilityLabel={levelLabel(value, copy)}
                             accessibilityState={{ checked: on }}
                             aria-checked={on}
-                            onPress={() => update('skillLevel', value)}
-                            style={[own.tile, on && own.on]}
+                            onPress={() => update('preferredPosition', value)}
+                            style={[own.row, on && own.rowOn]}
                           >
-                            <Text
-                              style={[own.tileText, on && own.onText]}
-                              numberOfLines={1}
-                              adjustsFontSizeToFit
-                            >
-                              {levelLabel(value, copy)}
-                            </Text>
-                            <Text
-                              style={[own.tileHint, on && own.onText]}
-                              numberOfLines={1}
-                              adjustsFontSizeToFit
-                            >
-                              {copy[levelHints[value]]}
-                            </Text>
+                            <View style={[own.code, on && own.on]}>
+                              <Text style={[own.codeText, on && own.onText]}>{code}</Text>
+                            </View>
+                            <View style={own.rowText}>
+                              <Text style={own.rowTitle}>{positionLabel(value, copy)}</Text>
+                              <Text style={own.rowHint}>{copy[positionHints[value]]}</Text>
+                            </View>
+                            <View style={[own.radio, on && own.radioOn]} />
                           </Pressable>
                         );
                       })}
                     </View>
-                  </View>
-                </>
-              ) : null}
+                  </>
+                ) : null}
 
-              {step === 3 ? (
-                <>
-                  <View style={own.titleBlock}>
-                    <Text style={own.kicker}>{copy.wizAvailKicker}</Text>
-                    <AccentTitle text={copy.wizAvailTitle} own={own} accent={accent} header />
-                  </View>
-                  <View style={own.group}>
-                    <Text style={own.label}>{copy.wizDays.toUpperCase()}</Text>
-                    <View style={own.dayRow}>
-                      {availabilityDays.map((day, index) => {
-                        const on = days.includes(day);
-                        return (
-                          <Pressable
-                            key={day}
-                            accessibilityRole="checkbox"
-                            accessibilityLabel={copy[dayKeysByDay[day]]}
-                            accessibilityState={{ checked: on }}
-                            aria-checked={on}
-                            onPress={() =>
-                              setDays(on ? days.filter((item) => item !== day) : [...days, day])
-                            }
-                            style={[own.day, on && own.on]}
-                          >
-                            <Text style={[own.dayText, on && own.onText]}>
-                              {letters[index] ?? ''}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                      <Pressable
-                        accessibilityRole="checkbox"
-                        accessibilityLabel={copy.profileAnyDay}
-                        accessibilityState={{ checked: days.length === availabilityDays.length }}
-                        aria-checked={days.length === availabilityDays.length}
-                        onPress={() =>
-                          setDays(days.length === availabilityDays.length ? [] : availabilityDays)
-                        }
-                        style={[own.allPill, days.length === availabilityDays.length && own.on]}
+                {step === 2 ? (
+                  <>
+                    <View style={own.titleBlock}>
+                      <Text style={own.kicker}>{copy.wizStyleKicker}</Text>
+                      <AccentTitle text={copy.wizStyleTitle} own={own} accent={accent} header />
+                    </View>
+                    <View style={own.group}>
+                      <Text style={own.label}>{copy.profileStrongFoot.toUpperCase()}</Text>
+                      <View
+                        accessibilityRole="radiogroup"
+                        accessibilityLabel={copy.profileStrongFoot}
+                        style={own.tiles}
                       >
-                        <Text
+                        {strongFeet.map((foot) => {
+                          const on = footPicked && form.strongFoot === foot;
+                          return (
+                            <Pressable
+                              key={foot}
+                              accessibilityRole="radio"
+                              accessibilityLabel={strongFootLabel(foot, copy)}
+                              accessibilityState={{ checked: on }}
+                              aria-checked={on}
+                              onPress={() => {
+                                setFootPicked(true);
+                                update('strongFoot', foot);
+                              }}
+                              style={[own.tile, own.tileRow, on && own.on]}
+                            >
+                              <FootGlyph foot={foot} color={on ? ink : colors.textPrimary} />
+                              <Text style={[own.tileText, on && own.onText]}>
+                                {footShort(foot, copy)}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                    <View style={own.group}>
+                      <Text style={own.label}>{copy.wizLevelLabel.toUpperCase()}</Text>
+                      <View
+                        accessibilityRole="radiogroup"
+                        accessibilityLabel={copy.profileLevel}
+                        style={own.tiles}
+                      >
+                        {skillLevels.map((value) => {
+                          const on = form.skillLevel === value;
+                          return (
+                            <Pressable
+                              key={value}
+                              accessibilityRole="radio"
+                              accessibilityLabel={levelLabel(value, copy)}
+                              accessibilityState={{ checked: on }}
+                              aria-checked={on}
+                              onPress={() => update('skillLevel', value)}
+                              style={[own.tile, on && own.on]}
+                            >
+                              <Text
+                                style={[own.tileText, on && own.onText]}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                              >
+                                {levelLabel(value, copy)}
+                              </Text>
+                              <Text
+                                style={[own.tileHint, on && own.onText]}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                              >
+                                {copy[levelHints[value]]}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  </>
+                ) : null}
+
+                {step === 3 ? (
+                  <>
+                    <View style={own.titleBlock}>
+                      <Text style={own.kicker}>{copy.wizAvailKicker}</Text>
+                      <AccentTitle text={copy.wizAvailTitle} own={own} accent={accent} header />
+                    </View>
+                    <View style={own.group}>
+                      <Text style={own.label}>{copy.wizDays.toUpperCase()}</Text>
+                      <View style={own.dayRow}>
+                        {availabilityDays.map((day, index) => {
+                          const on = days.includes(day);
+                          return (
+                            <Pressable
+                              key={day}
+                              accessibilityRole="checkbox"
+                              accessibilityLabel={copy[dayKeysByDay[day]]}
+                              accessibilityState={{ checked: on }}
+                              aria-checked={on}
+                              onPress={() =>
+                                setDays(on ? days.filter((item) => item !== day) : [...days, day])
+                              }
+                              style={[own.day, on && own.on]}
+                            >
+                              <Text style={[own.dayText, on && own.onText]}>
+                                {letters[index] ?? ''}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                        <Pressable
+                          accessibilityRole="checkbox"
+                          accessibilityLabel={copy.profileAnyDay}
+                          accessibilityState={{ checked: days.length === availabilityDays.length }}
+                          aria-checked={days.length === availabilityDays.length}
+                          onPress={() =>
+                            setDays(days.length === availabilityDays.length ? [] : availabilityDays)
+                          }
+                          style={[own.allPill, days.length === availabilityDays.length && own.on]}
+                        >
+                          <Text
+                            style={[
+                              own.allText,
+                              days.length === availabilityDays.length && own.onText,
+                            ]}
+                          >
+                            {copy.wizAll}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                    <View style={own.group}>
+                      <Text style={own.label}>{copy.wizFormats.toUpperCase()}</Text>
+                      <View style={own.formatRow}>
+                        {formats.map((size) => {
+                          const on = form.preferredFormats.includes(size);
+                          return (
+                            <Pressable
+                              key={size}
+                              accessibilityRole="checkbox"
+                              accessibilityLabel={`${size}v${size}`}
+                              accessibilityState={{ checked: on }}
+                              aria-checked={on}
+                              onPress={() =>
+                                update(
+                                  'preferredFormats',
+                                  on
+                                    ? form.preferredFormats.filter((item) => item !== size)
+                                    : sortFormats([...form.preferredFormats, size]),
+                                )
+                              }
+                              style={[own.format, on && own.on]}
+                            >
+                              <Text
+                                style={[own.formatText, on && own.onText]}
+                              >{`${size}v${size}`}</Text>
+                            </Pressable>
+                          );
+                        })}
+                        <Pressable
+                          accessibilityRole="checkbox"
+                          accessibilityLabel={copy.profileFormatsAll}
+                          accessibilityState={{
+                            checked: form.preferredFormats.length === formats.length,
+                          }}
+                          aria-checked={form.preferredFormats.length === formats.length}
+                          onPress={() =>
+                            update(
+                              'preferredFormats',
+                              form.preferredFormats.length === formats.length ? [] : [...formats],
+                            )
+                          }
                           style={[
-                            own.allText,
-                            days.length === availabilityDays.length && own.onText,
+                            own.format,
+                            own.anyFormat,
+                            form.preferredFormats.length === formats.length && own.on,
                           ]}
                         >
-                          {copy.wizAll}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                  <View style={own.group}>
-                    <Text style={own.label}>{copy.wizFormats.toUpperCase()}</Text>
-                    <View style={own.formatRow}>
-                      {formats.map((size) => {
-                        const on = form.preferredFormats.includes(size);
-                        return (
-                          <Pressable
-                            key={size}
-                            accessibilityRole="checkbox"
-                            accessibilityLabel={`${size}v${size}`}
-                            accessibilityState={{ checked: on }}
-                            aria-checked={on}
-                            onPress={() =>
-                              update(
-                                'preferredFormats',
-                                on
-                                  ? form.preferredFormats.filter((item) => item !== size)
-                                  : sortFormats([...form.preferredFormats, size]),
-                              )
-                            }
-                            style={[own.format, on && own.on]}
+                          <Text
+                            style={[
+                              own.allText,
+                              form.preferredFormats.length === formats.length && own.onText,
+                            ]}
                           >
-                            <Text
-                              style={[own.formatText, on && own.onText]}
-                            >{`${size}v${size}`}</Text>
-                          </Pressable>
-                        );
-                      })}
-                      <Pressable
-                        accessibilityRole="checkbox"
-                        accessibilityLabel={copy.profileFormatsAll}
-                        accessibilityState={{
-                          checked: form.preferredFormats.length === formats.length,
-                        }}
-                        aria-checked={form.preferredFormats.length === formats.length}
-                        onPress={() =>
-                          update(
-                            'preferredFormats',
-                            form.preferredFormats.length === formats.length ? [] : [...formats],
-                          )
-                        }
-                        style={[
-                          own.format,
-                          own.anyFormat,
-                          form.preferredFormats.length === formats.length && own.on,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            own.allText,
-                            form.preferredFormats.length === formats.length && own.onText,
-                          ]}
-                        >
-                          {copy.wizAny}
-                        </Text>
-                      </Pressable>
+                            {copy.wizAny}
+                          </Text>
+                        </Pressable>
+                      </View>
                     </View>
-                  </View>
-                </>
-              ) : null}
-            </ScrollView>
+                  </>
+                ) : null}
+              </ScrollView>
 
-            {footer}
+              {footer}
+            </View>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -1026,7 +1030,7 @@ function FitCard({
 
 const fitStyles = StyleSheet.create({
   box: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center', justifyContent: 'center' },
-  boxTop: { justifyContent: 'flex-start' },
+  boxTop: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', justifyContent: 'flex-start' },
   artworkClip: { overflow: 'hidden', borderRadius: 12 },
   svg: { overflow: 'hidden' },
 });
@@ -1166,6 +1170,7 @@ function makeStyles(
   // Barlow Condensed has no Greek glyphs, so Greek headings and buttons use Inter instead.
   const heading = locale === 'el' ? semibold : display;
   return StyleSheet.create({
+    keyboard: { flex: 1, minHeight: 0, backgroundColor: colors.background },
     root: { flex: 1, minHeight: 0, backgroundColor: colors.background },
     clip: { overflow: 'hidden' },
     column: { flex: 1, minHeight: 0, width: '100%', maxWidth: 480, alignSelf: 'center', gap: 10 },
@@ -1201,10 +1206,10 @@ function makeStyles(
       minWidth: 28,
       textAlign: 'right',
     },
-    preview: { flex: 0, alignItems: 'center', justifyContent: 'flex-start' },
+    preview: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', alignItems: 'center' },
     dismissSurface: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center' },
     controlsScroll: { flex: 1, minHeight: 0 },
-    controls: { flexGrow: 1, justifyContent: 'flex-end', gap: 6, paddingBottom: 2 },
+    controls: { gap: 6, paddingBottom: 2 },
     groupFirstStep: { gap: 4 },
     fieldFirstStep: { height: 44 },
     stepperFirstStep: { height: 40 },

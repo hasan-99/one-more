@@ -303,7 +303,8 @@ export function PlayerCardArt({
   const surnameSize = fitSize(surname, 170, 60, 0.5);
   const numberText = String(number);
   const numberSize = numberText.length > 1 ? 200 : 236;
-  const shortPos = shortPositions[position];
+  // While the position pill is hidden (first steps of the profile flow) no position is chosen yet.
+  const shortPos = hidePill ? '—' : shortPositions[position];
   const bars = skillLevel === 'advanced' ? 3 : skillLevel === 'intermediate' ? 2 : skillLevel === 'beginner' ? 1 : 0;
   const labelWidth = Math.max(130, positionLabel.length * 19);
   const pillWidth = 140 + labelWidth;
