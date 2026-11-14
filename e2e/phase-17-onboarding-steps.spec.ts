@@ -60,7 +60,15 @@ async function signInWithIncompleteProfile(page: Page) {
       areas: [
         { id: strovolosId, city_id: nicosiaId, slug: 'strovolos', name_en: 'Strovolos', name_el: 'Στρόβολος', created_at: iso },
         { id: 'engomi-area', city_id: nicosiaId, slug: 'engomi', name_en: 'Engomi', name_el: 'Έγκωμη', created_at: iso },
+        { id: 'limassol-area', city_id: limassolId, slug: 'limassol', name_en: 'Limassol', name_el: 'Λεμεσός', created_at: iso },
+        { id: 'agios-athanasios-area', city_id: limassolId, slug: 'agios-athanasios', name_en: 'Agios Athanasios', name_el: 'Άγιος Αθανάσιος', created_at: iso },
         { id: 'germasogeia-area', city_id: limassolId, slug: 'germasogeia', name_en: 'Germasogeia', name_el: 'Γερμασόγεια', created_at: iso },
+        { id: 'mesa-geitonia-area', city_id: limassolId, slug: 'mesa-geitonia', name_en: 'Mesa Geitonia', name_el: 'Μέσα Γειτονιά', created_at: iso },
+        { id: 'kato-polemidia-area', city_id: limassolId, slug: 'kato-polemidia', name_en: 'Kato Polemidia', name_el: 'Κάτω Πολεμίδια', created_at: iso },
+        { id: 'ypsonas-area', city_id: limassolId, slug: 'ypsonas', name_en: 'Ypsonas', name_el: 'Ύψωνας', created_at: iso },
+        { id: 'episkopi-area', city_id: limassolId, slug: 'episkopi', name_en: 'Episkopi', name_el: 'Επισκοπή', created_at: iso },
+        { id: 'kolossi-area', city_id: limassolId, slug: 'kolossi', name_en: 'Kolossi', name_el: 'Κολόσσι', created_at: iso },
+        { id: 'parekklisia-area', city_id: limassolId, slug: 'parekklisia', name_en: 'Parekklisia', name_el: 'Παρεκκλησιά', created_at: iso },
         { id: 'aradippou-area', city_id: larnacaId, slug: 'aradippou', name_en: 'Aradippou', name_el: 'Αραδίππου', created_at: iso },
         { id: 'geroskipou-area', city_id: paphosId, slug: 'geroskipou', name_en: 'Geroskipou', name_el: 'Γεροσκήπου', created_at: iso },
         { id: 'paralimni-area', city_id: famagustaId, slug: 'paralimni', name_en: 'Paralimni', name_el: 'Παραλίμνι', created_at: iso },
@@ -86,6 +94,14 @@ async function expectNoScroll(page: Page) {
   expect(size.scrollWidth).toBeLessThanOrEqual(size.innerWidth);
 }
 
+async function expectOnboardingControlsFit(page: Page) {
+  const overflow = await page.getByTestId('onboarding-controls').evaluate((element) => {
+    const scroll = element as HTMLElement;
+    return scroll.scrollHeight - scroll.clientHeight;
+  });
+  expect(overflow).toBeLessThanOrEqual(1);
+}
+
 test('the first-run profile is a step-by-step flow that fills in the player card', async ({ page }, testInfo) => {
   const saved = await signInWithIncompleteProfile(page);
   const width = testInfo.project.name === 'mobile-chromium' ? 393 : 1440;
@@ -97,12 +113,16 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await page.goto('/create');
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole('progressbar', { name: 'Step 1 of 4' })).toBeVisible();
-  for (const city of ['Nicosia', 'Limassol', 'Larnaca', 'Paphos', 'Famagusta', 'Kyrenia']) {
+  for (const city of ['Nicosia', 'Limassol', 'Larnaca']) {
     await expect(page.getByRole('radio', { name: city })).toBeVisible();
   }
+  await expect(page.getByRole('radio', { name: 'Paphos' })).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'Famagusta' })).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'Kyrenia' })).toHaveCount(0);
 
   // Step 1: name, shirt number, city and area. Continue stays off until all three are set.
   const cta = page.getByRole('button', { name: 'Add name, city and area' });
+  const viewportHeight = await page.evaluate(() => window.innerHeight);
   await expect(cta).toBeDisabled();
   await page.getByRole('textbox', { name: 'Your name' }).fill('Alex Demo');
   await expect(page.getByRole('img', { name: 'Your player card: Alex Demo' })).toBeVisible();
@@ -110,19 +130,52 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await page.getByRole('button', { name: 'Shirt number 10' }).click();
   await expect(page.getByLabel('Shirt number 10', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Strovolos' })).toHaveCount(0);
-  await page.getByRole('radio', { name: 'Famagusta' }).click();
-  await expect(page.getByRole('radio', { name: 'Paralimni' })).toBeVisible();
+  const unselectedContinueBounds = await cta.boundingBox();
+  expect(unselectedContinueBounds).not.toBeNull();
+  expect(viewportHeight - (unselectedContinueBounds!.y + unselectedContinueBounds!.height)).toBeGreaterThanOrEqual(80);
+  await page.getByRole('radio', { name: 'Larnaca' }).click();
+  await expect(page.getByRole('radio', { name: 'Aradippou' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Germasogeia' })).toHaveCount(0);
-  await page.getByRole('radio', { name: 'Nicosia' }).click();
-  await expect(page.getByRole('radio', { name: 'Germasogeia' })).toHaveCount(0);
+  await page.getByRole('radio', { name: 'Limassol' }).click();
+  await expect(page.getByRole('radio', { name: 'Germasogeia' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'Strovolos' })).toHaveCount(0);
   await expect(cta).toBeDisabled();
-  await page.getByRole('radio', { name: 'Strovolos' }).click();
+  await page.getByRole('radio', { name: 'Germasogeia' }).click();
+  await expectOnboardingControlsFit(page);
+  await expect(page.getByTestId('onboarding-player-card')).toHaveCSS('border-radius', '12px');
+  for (const locator of [
+    page.getByRole('progressbar', { name: 'Step 1 of 4' }),
+    page.getByRole('textbox', { name: 'Your name' }),
+    page.getByRole('button', { name: /^Continue/ }),
+  ]) {
+    const bounds = await locator.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewportHeight);
+  }
+  const continueBounds = await page
+    .getByRole('button', { name: /^Continue/ })
+    .evaluate((element) => element.getBoundingClientRect());
+  expect(viewportHeight - continueBounds.bottom).toBeGreaterThanOrEqual(80);
   await expectNoScroll(page);
+  const firstStepCard = await page.getByTestId('onboarding-player-card').boundingBox();
+  expect(firstStepCard).not.toBeNull();
+  const firstStepContinue = await page.getByRole('button', { name: /^Continue/ }).boundingBox();
+  expect(firstStepContinue).not.toBeNull();
+  const firstStepFooter = await page.getByTestId('onboarding-footer').boundingBox();
+  expect(firstStepFooter).not.toBeNull();
   await shot('step-1');
   await page.getByRole('button', { name: /^Continue/ }).click();
 
   // Step 2: position. The first step is not skippable, this one is; the pill needs a pick.
   await expect(page.getByRole('heading', { name: 'Where on the pitch?' })).toBeVisible();
+  const secondStepCard = await page.getByTestId('onboarding-player-card').boundingBox();
+  expect(secondStepCard).not.toBeNull();
+  expect(Math.abs(firstStepCard!.width - secondStepCard!.width)).toBeLessThanOrEqual(8);
+  expect(Math.abs(firstStepCard!.height - secondStepCard!.height)).toBeLessThanOrEqual(8);
+  const secondStepFooter = await page.getByTestId('onboarding-footer').boundingBox();
+  expect(secondStepFooter).not.toBeNull();
+  expect(Math.abs(firstStepFooter!.y - secondStepFooter!.y)).toBeLessThanOrEqual(2);
   await expect(page.getByRole('button', { name: 'Pick a position' })).toBeDisabled();
   await page.getByRole('radio', { name: /Midfielder/ }).click();
   await expectNoScroll(page);
@@ -159,8 +212,8 @@ test('the first-run profile is a step-by-step flow that fills in the player card
   await shot('done');
   expect(saved.profile).toMatchObject({
     display_name: 'Alex Demo',
-    city_id: nicosiaId,
-    area_id: strovolosId,
+    city_id: limassolId,
+    area_id: 'germasogeia-area',
     preferred_position: 'midfielder',
     skill_level: 'advanced',
     strong_foot: 'left',

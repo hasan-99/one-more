@@ -41,6 +41,7 @@ import { translations, type Locale, type TranslationKey } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
 import { bodyFont, displayFont } from '@/theme/typography';
+import { filterCityAreaOptions } from '@/features/location/city-options';
 
 import {
   availabilityDays,
@@ -1220,6 +1221,7 @@ function ProfileEditorSheet({
   }
   const slide = useEntrance(400, 0, Easing.bezier(0.2, 0.9, 0.2, 1), visible);
   const name = (row: CityRow | AreaRow) => (locale === 'en' ? row.name_en : row.name_el);
+  const locationOptions = filterCityAreaOptions(cities, areas);
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.modalRoot}>
@@ -1265,7 +1267,7 @@ function ProfileEditorSheet({
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>{copy.profileCity}</Text>
               <View style={styles.sheetGrid}>
-                {cities.map((city) => (
+                {locationOptions.cities.map((city) => (
                   <SheetOption
                     key={city.id}
                     label={name(city)}
@@ -1274,7 +1276,7 @@ function ProfileEditorSheet({
                       setDraft((current) => ({
                         ...current,
                         cityId: city.id,
-                        areaId: areas.find((area) => area.city_id === city.id)?.id ?? '',
+                        areaId: locationOptions.areas.find((area) => area.city_id === city.id)?.id ?? '',
                       }))
                     }
                     colors={colors}
@@ -1286,7 +1288,7 @@ function ProfileEditorSheet({
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>{copy.profileArea}</Text>
               <View style={styles.sheetGrid}>
-                {areas
+                {locationOptions.areas
                   .filter((area) => area.city_id === draft.cityId)
                   .map((area) => (
                     <SheetOption

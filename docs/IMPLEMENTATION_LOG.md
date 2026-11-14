@@ -1,5 +1,89 @@
 # ONE MORE implementation log
 
+### 2026-11-14 — Phase 17 Fit the first onboarding step on one screen
+
+- **Phase:** 17 — player onboarding layout; Phase 18 not started.
+- **Status:** PARTIAL — layout is updated and published to Expo Go Preview; physical iPhone confirmation is pending.
+- **Summary:** Raised the step-one player card within its preview, reserved more space for city and area controls, and increased the bottom safe margin so the Continue button is fully visible. The first step now fits all nine Limassol areas, the name and shirt controls, city choices, progress and action button without scrolling the controls list.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (39 tests); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-onboarding-steps.spec.ts --project=mobile-chromium --workers=1` — PASS (2/2), verifies the control list fits at 393×852 and the progress, input and Continue button remain inside the viewport with at least 24 px below the button; `git diff --check` — PASS; Expo Preview update — PASS, group `b1fb795d-b98b-4ac6-9fd1-cfca2b9e935a`, iOS update `01a1db8d-4feb-7280-bd69-cd9320f56b29`, Android update `01a1db8d-4feb-7a8c-ad79-2074cc2e03a6`.
+- **Browser verification:** Mobile Chromium at 393×852 with all Limassol areas loaded; header, name input and Continue action are within the screen. Physical iPhone not inspected.
+- **Security verification:** No auth, database or permission changes.
+- **Remaining issues:** Confirm on iPhone that the card and Continue button are fully visible on the first setup step.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Slightly round the onboarding player card
+
+- **Phase:** 17 — onboarding layout; Phase 18 not started.
+- **Status:** PASS in mobile Chromium; physical iPhone review remains pending.
+- **Summary:** Added a subtle 12 px clip radius to the player-card preview in onboarding so its square outer corners are softened without changing the card artwork or inner details.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including a border-radius assertion and the >=80 px Continue button clearance; Expo preview update PASS, group `b2f32a3e-2cfd-48c7-b9b0-64dd7151a2a4`, iOS update `01a1dba0-84e4-79c3-a53d-b7e9a7808372`, Android update `01a1dba0-84e4-7479-a035-6b8771c50515`; `git diff --check` PASS.
+- **Browser verification:** Mobile Chromium 393×852; screenshot `docs/screenshots/phase-17/onboarding-step-1-mobile.png` inspected for the softened card corners and visible Continue button. Physical iPhone not inspected.
+- **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
+- **Remaining issues:** Ask user to confirm appearance on iPhone.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Keep onboarding Continue beside the first-step fields
+
+- **Phase:** 17 — onboarding layout; Phase 18 not started.
+- **Status:** PASS in mobile Chromium; physical iPhone review remains pending.
+- **Summary:** The user's iPhone screenshot showed the first-step action anchored at the screen bottom, leaving a large empty gap after the city row. Moved the first-step footer into the controls list so it follows the city/area choices; later-step actions remain in their existing footer position. Added a regression assertion for the no-city-selected state shown in the screenshot, plus the existing selected-city/full-area checks.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including CTA proximity to city row, >=80 px viewport clearance, full area list/no overflow, and 12 px card radius; `git diff --check` PASS; Expo preview update PASS, group `67beeab9-e1e4-46ee-87f1-5adcd0bbfd96`, iOS update `01a1dba6-84a0-732b-aca7-6b1c23064dc3`, Android update `01a1dba6-84a0-745f-ad61-7c8c72b61b65`.
+- **Browser verification:** Mobile Chromium 393×852; screenshot `docs/screenshots/phase-17/onboarding-step-1-mobile.png` shows Continue immediately after the selected area list with ample room below. Physical iPhone not inspected.
+- **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
+- **Remaining issues:** Confirm the newly published preview on the user's iPhone.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Match player-card preview size on step one
+
+- **Phase:** 17 — onboarding layout; Phase 18 not started.
+- **Status:** PASS in mobile Chromium; physical iPhone review remains pending.
+- **Summary:** The first-step card preview had been reduced to create space for its denser form. Restored it to the same on-screen dimensions as step two (within 8 px for width and height) by reserving a width-based card height on mobile and compacting only first-step control spacing slightly. Kept Continue after the city/area options and visible with at least 80 px to the screen edge; all Limassol areas fit without scrolling.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including preview-size comparison between steps one and two, >=80 px CTA clearance, first-step area fit, and save flow; Expo preview update PASS, group `2f48a82d-8f05-4aef-9f53-55537a82089d`, iOS update `01a1dbad-6fe2-7020-ab6f-20a6eb30059b`, Android update `01a1dbad-6fe2-7ab4-8ce6-1ec2e89bc5b3`; `git diff --check` PASS.
+- **Browser verification:** Mobile Chromium 393×852; first and second preview bounding boxes differ by no more than 8 px; screenshot `docs/screenshots/phase-17/onboarding-step-1-mobile.png` inspected. Physical iPhone not inspected.
+- **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
+- **Remaining issues:** Have user verify on iPhone.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Align Continue footer across onboarding steps
+
+- **Phase:** 17 — onboarding layout; Phase 18 not started.
+- **Status:** PASS in mobile Chromium; physical iPhone review remains pending.
+- **Summary:** Moved the first-step Continue action back to the shared footer used by every onboarding step. All steps now place the footer at the same vertical position, with at least 80 px below it; the button remains fully visible. First-step controls retain their full-area fit and the player card stays the same size as step two.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including no control overflow, CTA clearance, and footer y-position match between steps one and two; Expo preview update PASS, group `bf3a0e83-b35d-4c9e-a168-8c32e75f9cef`, iOS update `01a1dbb3-6b1f-7147-8c3d-3d637b337835`, Android update `01a1dbb3-6b1f-732f-8d94-823d9692f010`; `git diff --check` PASS.
+- **Browser verification:** Mobile Chromium 393×852; checked the first-step screenshot, button bottom clearance, and the shared footer position on step two. Physical iPhone not inspected.
+- **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
+- **Remaining issues:** Publish Expo preview and have user verify on iPhone.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 04 Limit location options to Nicosia, Limassol and Larnaca
+
+- **Phase:** 04 — profile location catalog; Phase 18 not started.
+- **Status:** PARTIAL — options are removed from the app and the Expo preview is published; device review is pending.
+- **Summary:** Limited location choices in onboarding, profile editing and match filters to Nicosia, Limassol and Larnaca with their areas. Paphos, Famagusta and Kyrenia are hidden in all pickers. Existing Supabase rows are retained. Updated English and Greek city-scope copy.
+- **Changed files:** `src/features/location/city-options.ts`, `src/features/location/city-options.test.ts`, `src/features/profile/PlayerOnboarding.tsx`, `src/features/profile/PlayerProfile.tsx`, `src/features/matches/match-service.ts`, `src/i18n/en.ts`, `src/i18n/el.ts`, `docs/01_PRODUCT_REQUIREMENTS.md`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (39 tests); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-onboarding-steps.spec.ts --project=mobile-chromium --workers=1` — PASS (2/2); `git diff --check` — PASS; Expo Preview update — PASS, group `32b56248-8844-4fe5-885b-87ff9ced0789`, iOS update `01a1db7f-1ad8-71b6-93f7-1704a3affee7`, Android update `01a1db7f-1ad8-7107-b970-363405a56473`.
+- **Browser verification:** Mobile Chromium onboarding at 393×852 shows only Nicosia, Limassol and Larnaca; Paphos, Famagusta and Kyrenia are excluded. Unit tests verify the shared location filtering. Physical iPhone review remains pending.
+- **Security verification:** No database rows, schema, RLS, or user profiles were deleted or modified.
+- **Remaining issues:** Reopen Expo Go and confirm only Nicosia, Limassol and Larnaca appear in city selectors.
+- **Next phase:** Continue Phase 04 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Smooth keyboard movement in player onboarding
+
+- **Phase:** 17 — onboarding keyboard behavior; Phase 18 not started.
+- **Status:** PARTIAL — synced transitions are implemented and published to Expo Go Preview; physical iPhone animation review remains pending.
+- **Summary:** On iOS, onboarding layout changes now use the keyboard's native animation timing. Android uses a short ease-in/ease-out layout transition. Removed forced scroll-to-top calls on keyboard show/hide so the focused field and scroll position are not snapped away; normal keyboard avoidance now restores the screen layout when the keyboard closes. Reduced Motion skips the added layout transition.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx` and this log.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (38 tests); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-onboarding-steps.spec.ts --project=mobile-chromium --workers=1` — PASS (2/2); `git diff --check` — PASS; `npm run dev:web -- --host localhost` — started on port 8083 (8081 occupied); EAS Preview update — PASS, group `cfac382b-80a9-4c3f-8a21-68f4022b8368`, iOS update `01a1db6b-1f66-7f2d-844b-9cc5a3dbbda4`, Android update `01a1db6b-1f66-7560-8c61-46333922b1a7`.
+- **Browser verification:** Mobile Chromium onboarding flow at 393×852 passed through all steps. Browser cannot reproduce the native iPhone keyboard motion; physical iPhone review is pending.
+- **Security verification:** No auth, database, or permissions behavior changed.
+- **Remaining issues:** Confirm on iPhone that the focused field stays visible while typing, the layout moves smoothly, and the original layout returns after dismissing the keyboard.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
 ## 2026-11-12 — Phase 00: Repo bootstrap and tooling
 
 - **Status:** PASS
@@ -1522,4 +1606,28 @@
 - **Browser verification:** Web root `/` opened in Playwright and displayed the expected guest landing heading; zero console errors. Native session restore cannot be validated on this Windows host without the user's physical iPhone; check the published preview in Expo Go.
 - **Security verification:** No session lifetime, database, RLS, secret, or Supabase Auth settings were changed. Existing `AsyncStorage` persistence and Supabase automatic refresh remain in place. No store build or submission.
 - **Remaining issues:** User should reopen/reload ONE MORE in Expo Go and confirm a saved session takes them to Home without signing in again; then check sign-out still returns to the guest landing/sign-in flow. `format:check` remains failing across 29 source files.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Onboarding Continue button bottom spacing
+
+- **Phase:** 17 — onboarding layout; Phase 18 not started.
+- **Status:** PASS for 393×852 mobile Chromium; physical iPhone review remains pending.
+- **Summary:** Raised the first-step Continue button to leave at least 40 px below it by reserving safe-area space and allocating more vertical room to the controls. Reduced the preview card's share of the first-step layout so all Limassol areas, the profile fields, and Continue fit without scrolling.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (39 tests); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-onboarding-steps.spec.ts --project=mobile-chromium --workers=1` — PASS (2/2); test confirmed no controls overflow, Continue is within the 393×852 viewport with at least 40 px below it; `npm run dev:web -- --port 8097` — PASS; `git diff --check` — PASS; Expo preview update — PASS, group `8f0a8735-9c4f-4c40-86cb-bfbd4f982151`, iOS update `01a1db94-7668-787d-8df5-1349ff5ed0ef`, Android update `01a1db94-7668-71e2-90d2-886120182de9`.
+- **Browser verification:** Playwright E2E on mobile Chromium at 393×852; screenshot in `docs/screenshots/phase-17/onboarding-step-1-mobile.png`. Local web app started at `http://localhost:8097`; browser opened `/onboarding` and showed session check because this browser had no authenticated user. Physical iPhone not inspected.
+- **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
+- **Remaining issues:** User to reopen the preview on iPhone Expo Go and confirm the button appears fully above the screen edge.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Raise onboarding Continue button further
+
+- **Phase:** 17 — onboarding layout; Phase 18 not started.
+- **Status:** PASS in mobile Chromium; physical iPhone review remains pending.
+- **Summary:** User's iPhone screenshot showed the Continue button still clipped. Increased the first-step bottom safe spacing by 44 px, reduced the player-card preview's flex share, and gave the controls more room. The button now clears the viewport edge by at least 80 px, and all nine Limassol areas remain visible without scrolling.
+- **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including >=80 px below Continue and no internal control overflow; `git diff --check` PASS; Expo preview update PASS, group `dbb73989-f0b5-4a35-b0e7-5759cbf2ac79`, iOS update `01a1db9d-3795-7071-8887-42659bbf2bee`, Android update `01a1db9d-3795-7b34-8170-9a9d89483860`.
+- **Browser verification:** Mobile Chromium 393×852, screenshot `docs/screenshots/phase-17/onboarding-step-1-mobile.png`; button fully visible with generous space beneath. Physical iPhone not inspected.
+- **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
+- **Remaining issues:** Have user verify the published preview on iPhone.
 - **Next phase:** Continue Phase 17 after device review; Phase 18 not started.

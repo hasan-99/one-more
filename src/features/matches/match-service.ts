@@ -1,5 +1,6 @@
 import type { Json, Tables } from '@/lib/database.types';
 import { getSupabaseClient } from '@/lib/supabase';
+import { filterCityAreaOptions } from '@/features/location/city-options';
 
 import { matchPageSize, parseOpenPositions, type OpenPosition } from './match-validation';
 
@@ -221,7 +222,7 @@ export async function loadMatchFilters(): Promise<{ cities: MatchCity[]; areas: 
   ]);
   if (cities.error) throw cities.error;
   if (areas.error) throw areas.error;
-  return { cities: cities.data, areas: areas.data };
+  return filterCityAreaOptions(cities.data, areas.data);
 }
 
 export async function loadMatches(

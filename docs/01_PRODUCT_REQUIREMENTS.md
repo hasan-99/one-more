@@ -2,7 +2,7 @@
 
 ## 1. Vision and value
 
-**Positioning:** "ONE MORE — Your game starts here." A football-only community for finding local games, filling missing player slots, creating squads and challenging other squads. Launch market: Cyprus, with major city and local-area choices from Nicosia, Limassol, Larnaca, Paphos, Famagusta and Kyrenia. Currency EUR. English/Greek on release. First platform web; native mobile is an explicit compatibility requirement.
+**Positioning:** "ONE MORE — Your game starts here." A football-only community for finding local games, filling missing player slots, creating squads and challenging other squads. Initial location choices: Nicosia, Limassol and Larnaca with their areas. Currency EUR. English/Greek on release. First platform web; native mobile is an explicit compatibility requirement.
 
 **Primary jobs**
 - Solo player: find an upcoming 5v5, 7v7, 8v8 or 11v11 game nearby, request a seat and get confirmation.

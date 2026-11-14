@@ -6,6 +6,7 @@ import {
   Easing,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Pressable,
   Platform,
   ScrollView,
@@ -27,6 +28,7 @@ import { useToast } from '@/components/toast/ToastProvider';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import { bodyFont, displayFont } from '@/theme/typography';
+import { filterCityAreaOptions } from '@/features/location/city-options';
 
 import { PlayerCardArt, cardThemes } from './PlayerCardShareModal';
 import {
@@ -96,7 +98,11 @@ export function PlayerOnboarding() {
     () => new Map(areas.map((area) => [area.id, area.city_id])),
     [areas],
   );
-  const visibleAreas = areas.filter((area) => area.city_id === form.cityId);
+  const locationOptions = useMemo(
+    () => filterCityAreaOptions(cities, areas),
+    [cities, areas],
+  );
+  const visibleAreas = locationOptions.areas.filter((area) => area.city_id === form.cityId);
   const city = cities.find((item) => item.id === form.cityId);
   const area = areas.find((item) => item.id === form.areaId);
   const done = step > stepCount - 1;
@@ -140,19 +146,31 @@ export function PlayerOnboarding() {
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSubscription = Keyboard.addListener(showEvent, () => {
+    const syncLayoutWithKeyboard = (
+      event: Parameters<typeof Keyboard.scheduleLayoutAnimation>[0],
+    ) => {
+      if (reducedMotion) return;
+      if (Platform.OS === 'ios') {
+        Keyboard.scheduleLayoutAnimation(event);
+      } else {
+        LayoutAnimation.configureNext(
+          LayoutAnimation.create(180, LayoutAnimation.Types.easeInEaseOut, 'opacity'),
+        );
+      }
+    };
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      syncLayoutWithKeyboard(event);
       setKeyboardVisible(true);
-      requestAnimationFrame(() => controlsScrollRef.current?.scrollTo({ y: 0, animated: true }));
     });
-    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+    const hideSubscription = Keyboard.addListener(hideEvent, (event) => {
+      syncLayoutWithKeyboard(event);
       setKeyboardVisible(false);
-      requestAnimationFrame(() => controlsScrollRef.current?.scrollTo({ y: 0, animated: false }));
     });
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, []);
+  }, [reducedMotion]);
 
   const update = <K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -261,9 +279,16 @@ export function PlayerOnboarding() {
   const position = form.preferredPosition ?? 'any';
   const letters = copy.profileDayLettersMonToSun.split(',');
   const horizontalPad = width < 400 ? 16 : 20;
+  const firstStepCardHeight =
+    (Math.min(width - horizontalPad * 2, 480) * cardCrop[0]) / 1024;
 
   const card = (
-    <FitCard crop={crop} pulse={pulse} label={`${copy.profileShareCardTitle}: ${cardName}`}>
+    <FitCard
+      crop={crop}
+      pulse={pulse}
+      label={`${copy.profileShareCardTitle}: ${cardName}`}
+      alignTop={step === 0}
+    >
       <PlayerCardArt
         name={cardName}
         location={areaName && cityName ? `${areaName}, ${cityName}` : ''}
@@ -347,6 +372,39 @@ export function PlayerOnboarding() {
             : copy.wizCreate
           : copy.wizContinue;
   const disabled = !canContinue;
+  const footer = (
+    <View testID="onboarding-footer" style={own.footer}>
+      {optional ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={skip}
+          disabled={saving}
+          style={({ pressed }) => [own.skip, pressed && own.pressed]}
+        >
+          <Text style={own.skipText}>{copy.wizSkip}</Text>
+        </Pressable>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        onPress={next}
+        disabled={disabled || saving}
+        style={({ pressed }) => [
+          own.cta,
+          disabled && own.ctaOff,
+          pressed && !disabled && own.pressed,
+        ]}
+      >
+        {saving ? (
+          <ActivityIndicator color={ink} />
+        ) : (
+          <Text style={[own.ctaText, disabled && own.ctaTextOff]}>
+            {disabled ? ctaLabel : `${ctaLabel}${step < stepCount - 1 ? ' →' : ''}`}
+          </Text>
+        )}
+      </Pressable>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -354,7 +412,7 @@ export function PlayerOnboarding() {
         own.root,
         {
           paddingTop: Math.max(insets.top, 12) + 4,
-          paddingBottom: Math.max(insets.bottom, 12) + 8,
+          paddingBottom: Math.max(insets.bottom, 28) + 52,
           paddingHorizontal: horizontalPad,
         },
       ]}
@@ -372,12 +430,23 @@ export function PlayerOnboarding() {
           onBack={step > 0 ? () => setStep(step - 1) : null}
           backLabel={copy.wizBack}
         />
-        <View style={[own.preview, keyboardVisible && own.previewCompact]}>{card}</View>
+          <View
+            style={[
+              own.preview,
+              step === 0 && width < 600
+                ? { flex: 0, height: firstStepCardHeight, minHeight: firstStepCardHeight }
+                : step === 0 && own.previewFirstStep,
+              keyboardVisible && own.previewCompact,
+            ]}
+          >
+            {card}
+          </View>
 
         <ScrollView
+          testID="onboarding-controls"
           ref={controlsScrollRef}
-          style={own.controlsScroll}
-          contentContainerStyle={own.controls}
+          style={[own.controlsScroll, step === 0 && own.controlsFirstStep]}
+          contentContainerStyle={[own.controls, step === 0 && own.controlsFirstStepContent]}
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -385,7 +454,7 @@ export function PlayerOnboarding() {
         >
           {step === 0 ? (
             <>
-              <View style={own.group}>
+              <View style={[own.group, own.groupFirstStep]}>
                 <Text style={own.label}>{copy.wizName.toUpperCase()}</Text>
                 <TextInput
                   accessibilityLabel={copy.wizName}
@@ -398,13 +467,13 @@ export function PlayerOnboarding() {
                   placeholderTextColor={colors.textMuted}
                   onFocus={() => setNameFocused(true)}
                   onBlur={() => setNameFocused(false)}
-                  style={[own.field, nameFocused && own.fieldFocused]}
+                  style={[own.field, own.fieldFirstStep, nameFocused && own.fieldFocused]}
                 />
               </View>
-              <View style={own.group}>
+              <View style={[own.group, own.groupFirstStep]}>
                 <Text style={own.label}>{copy.wizNumber.toUpperCase()}</Text>
                 <View style={own.numberRow}>
-                  <View style={own.stepper}>
+                  <View style={[own.stepper, own.stepperFirstStep]}>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={copy.wizNumberDown}
@@ -446,14 +515,14 @@ export function PlayerOnboarding() {
                   </View>
                 </View>
               </View>
-              <View style={own.group}>
+              <View style={[own.group, own.groupFirstStep]}>
                 <Text style={own.label}>{copy.wizCity.toUpperCase()}</Text>
                 <View
                   accessibilityRole="radiogroup"
                   accessibilityLabel={copy.wizCity}
                   style={own.cityRow}
                 >
-                  {cities.map((item) => (
+                  {locationOptions.cities.map((item) => (
                     <Pressable
                       key={item.id}
                       accessibilityRole="radio"
@@ -466,7 +535,7 @@ export function PlayerOnboarding() {
                           areaId: current.cityId === item.id ? current.areaId : '',
                         }))
                       }
-                      style={[own.cityChip, form.cityId === item.id && own.on]}
+                      style={[own.cityChip, own.cityChipFirstStep, form.cityId === item.id && own.on]}
                     >
                       <Text
                         style={[own.chipText, form.cityId === item.id && own.onText]}
@@ -479,7 +548,7 @@ export function PlayerOnboarding() {
                 </View>
               </View>
               {form.cityId ? (
-                <View style={own.group}>
+                <View style={[own.group, own.groupFirstStep]}>
                   <Text style={own.label}>
                     {copy.wizAreaIn.replace('{city}', cityName).toUpperCase()}
                   </Text>
@@ -498,7 +567,7 @@ export function PlayerOnboarding() {
                           accessibilityState={{ checked: form.areaId === item.id }}
                           aria-checked={form.areaId === item.id}
                           onPress={() => update('areaId', item.id)}
-                          style={[own.areaChip, form.areaId === item.id && own.on]}
+                          style={[own.areaChip, own.areaChipFirstStep, form.areaId === item.id && own.on]}
                         >
                           <Text style={[own.areaText, form.areaId === item.id && own.onText]}>
                             {locale === 'en' ? item.name_en : item.name_el}
@@ -732,37 +801,7 @@ export function PlayerOnboarding() {
           ) : null}
         </ScrollView>
 
-        <View style={own.footer}>
-          {optional ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={skip}
-              disabled={saving}
-              style={({ pressed }) => [own.skip, pressed && own.pressed]}
-            >
-              <Text style={own.skipText}>{copy.wizSkip}</Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled }}
-            onPress={next}
-            disabled={disabled || saving}
-            style={({ pressed }) => [
-              own.cta,
-              disabled && own.ctaOff,
-              pressed && !disabled && own.pressed,
-            ]}
-          >
-            {saving ? (
-              <ActivityIndicator color={ink} />
-            ) : (
-              <Text style={[own.ctaText, disabled && own.ctaTextOff]}>
-                {disabled ? ctaLabel : `${ctaLabel}${step < stepCount - 1 ? ' →' : ''}`}
-              </Text>
-            )}
-          </Pressable>
-        </View>
+        {footer}
       </View>
       </View>
       </TouchableWithoutFeedback>
@@ -888,11 +927,13 @@ function FitCard({
   crop,
   pulse,
   label,
+  alignTop = false,
   children,
 }: {
   crop: number;
   pulse: Animated.Value;
   label: string;
+  alignTop?: boolean;
   children: ReactNode;
 }) {
   const [box, setBox] = useState({ width: 0, height: 0 });
@@ -900,14 +941,15 @@ function FitCard({
   const cardHeight = (cardWidth * crop) / 1024;
   return (
     <View
-      style={fitStyles.box}
+      style={[fitStyles.box, alignTop && fitStyles.boxTop]}
       onLayout={(event) =>
         setBox({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })
       }
     >
       {cardWidth > 0 ? (
         <Animated.View
-          style={{ width: cardWidth, height: cardHeight, transform: [{ scale: pulse }] }}
+          testID="onboarding-player-card"
+          style={[fitStyles.artworkClip, { width: cardWidth, height: cardHeight, transform: [{ scale: pulse }] }]}
         >
           <Svg
             width={cardWidth}
@@ -927,6 +969,8 @@ function FitCard({
 
 const fitStyles = StyleSheet.create({
   box: { flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center' },
+  boxTop: { justifyContent: 'flex-start' },
+  artworkClip: { overflow: 'hidden', borderRadius: 12 },
   svg: { overflow: 'hidden' },
 });
 
@@ -1101,10 +1145,18 @@ function makeStyles(
       textAlign: 'right',
     },
     preview: { flex: 1, minHeight: 120 },
+    previewFirstStep: { flex: 1 },
     previewCompact: { flex: 0, height: 72, minHeight: 72 },
     dismissSurface: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center' },
     controlsScroll: { flex: 1, minHeight: 0 },
+    controlsFirstStep: { flex: 1 },
     controls: { gap: 10, paddingBottom: 8 },
+    controlsFirstStepContent: { gap: 4, paddingBottom: 4 },
+    groupFirstStep: { gap: 4 },
+    fieldFirstStep: { height: 48 },
+    stepperFirstStep: { height: 46 },
+    cityChipFirstStep: { height: 36 },
+    areaChipFirstStep: { height: 32 },
     titleBlock: { gap: 2 },
     kicker: {
       color: accent,
