@@ -54,10 +54,10 @@
 - **Status:** PASS in mobile Chromium; physical iPhone review remains pending.
 - **Summary:** Moved the first-step Continue action back to the shared footer used by every onboarding step. All steps now place the footer at the same vertical position, with at least 80 px below it; the button remains fully visible. First-step controls retain their full-area fit and the player card stays the same size as step two.
 - **Changed files:** `src/features/profile/PlayerOnboarding.tsx`, `e2e/phase-17-onboarding-steps.spec.ts`, and this log.
-- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including no control overflow, CTA clearance, and footer y-position match between steps one and two; Expo preview update PASS, group `bf3a0e83-b35d-4c9e-a168-8c32e75f9cef`, iOS update `01a1dbb3-6b1f-7147-8c3d-3d637b337835`, Android update `01a1dbb3-6b1f-732f-8d94-823d9692f010`; `git diff --check` PASS.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (39/39); web export PASS; E2E `phase-17-onboarding-steps` mobile Chromium PASS (2/2), including no control overflow, CTA clearance, and footer y-position match between steps one and two; Expo preview update PASS, group `bf3a0e83-b35d-4c9e-a168-8c32e75f9cef`, iOS update `01a1dbb3-6b1f-7147-8c3d-3d637b337835`, Android update `01a1dbb3-6b1f-732f-8d94-823d9692f010`; commit `75eda85` pushed to `origin/main`; iOS EAS Build (`preview-device`) BLOCKED because the Expo account has no Apple Developer team connected and no internal-distribution credentials; `git diff --check` PASS.
 - **Browser verification:** Mobile Chromium 393×852; checked the first-step screenshot, button bottom clearance, and the shared footer position on step two. Physical iPhone not inspected.
 - **Security verification:** No auth, database, RLS, secrets, or store distribution settings changed.
-- **Remaining issues:** Publish Expo preview and have user verify on iPhone.
+- **Remaining issues:** Have user verify the preview update on iPhone. An installable iOS build requires connecting an active Apple Developer team to the Expo account and registering the target iPhone for internal distribution.
 - **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
 
 ### 2026-11-14 — Phase 04 Limit location options to Nicosia, Limassol and Larnaca
