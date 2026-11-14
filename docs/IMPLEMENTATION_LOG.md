@@ -1417,6 +1417,17 @@
 - **Summary:** Rebuilt the share card from the user's supplied mockup using only real profile data: stadium night scene (floodlights, light cones, stands), glowing jersey with surname and number, italic name, position pill, location, Foot / Level / Position panel, availability days, chosen formats, "Find me on ONE MORE" call to action and Player ID; glowing frame. Accent colour still follows level. The mockup's AI photo, goals/assists/rating, heatmap and "LVL" were not used (no such data/feature in V1).
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium). Exported 1080×1920 PNG inspected.
 
+### 2026-11-14 — Phase 17 merge of `claude/app-clone-9xhzm1` into `main`
+
+- **Phase:** 17 — Integrate the user's recent Explore, Create Team and Profile work.
+- **Status:** PARTIAL — code merged and all app checks passed; physical-device review remains pending.
+- **Summary:** Fast-forwarded `main` by six commits from `claude/app-clone-9xhzm1` (latest source commit `edae940`). Includes the latest Explore, Create Team, Profile and player-card UI, navigation fixes, motion/typography utilities, and an availability-days migration plus pgTAP test. Removed only trailing whitespace from the bundled Barlow font license.
+- **Changed files:** Branch changes across 42 files, including the screens, shared components, translations, font assets, tests, screenshots, migration, and pgTAP test; `assets/fonts/Barlow-OFL.txt` whitespace cleanup; this log.
+- **Checks:** `git merge --ff-only origin/claude/app-clone-9xhzm1` — PASS; `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (11 files / 38 tests); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-create-team.spec.ts e2e/phase-17-profile-reference.spec.ts --project=mobile-chromium --project=desktop-chromium --workers=1` — PASS (8/8); `git diff --check` — PASS after license whitespace cleanup.
+- **Browser verification:** Playwright verified Create Team's three-step flow, retryable save failure, guest navigation, and Profile rendering/editing at mobile and desktop Chromium. Physical iPhone was not inspected.
+- **Security verification:** Migration only widens the accepted values for `user_preferences.availability_slots`; it does not change RLS or grants. The migration and pgTAP tests were not applied/run because there is no connected Supabase test database. No Expo publish or database deployment was performed.
+- **Remaining issues:** Apply and test the migration separately in an approved Supabase environment. Publish the merged app to Expo preview when requested; physical-device review remains open.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
 ### 2026-11-14 — Phase 17 Player card v5 (user's own design as template)
 
 - **Summary:** The user's supplied card design image is now the card background (`assets/images/player-card-template.jpg`, 1024×1536). Its demo text, jersey print, position pill, location, stat labels, level bars, foot icon, days, formats and the Share/Save buttons were removed with OpenCV inpainting; the app draws each player's real data in the same positions (surname and number on the jersey, italic name, position pill, location, foot/level/position, availability days, chosen formats, Player ID). Added Barlow ExtraBold Italic (OFL). Exports a 1024×1536 PNG on web (fonts/images inlined) and via `toDataURL` on native.
@@ -1432,3 +1443,9 @@
 
 - **Summary:** Share and Save image are app buttons below the card, not part of the artwork. Removed the empty band they left inside the template so the frame closes under "Find me on ONE MORE" (all three colourways now 1024×1469). Exported images contain only the card.
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile + create-team PASS (mobile + desktop Chromium).
+
+### 2026-11-14 — Phase 17 merge into `main` (card template, colourways, actions outside card)
+
+- **Summary:** Merged `origin/main` (`652cc52`, the user's earlier integration plus OFL whitespace fix) into `claude/app-clone-9xhzm1`, resolving the log conflict by keeping both entries, then fast-forwarded `main` to the branch. Brings the template-based player card, jersey creases, Casual/Regular/Competitive colourways, Share/Save outside the card, and the `.gitignore` fix that tracks card images.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile + create-team PASS (8/8, mobile + desktop Chromium).
+- **Remaining issues:** Migration `20261114160000_profile_availability_days.sql` still to be applied to Supabase; Expo preview not published (hosts blocked here); physical-device review pending.
