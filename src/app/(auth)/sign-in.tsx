@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import {
@@ -20,12 +20,34 @@ import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 export default function SignInScreen() {
   const { locale } = useAppPreferences();
   const copy = translations[locale];
-  const { isConfigured } = useAuth();
+  const { isConfigured, session, isLoading, sessionError, refreshSession } = useAuth();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (session && !isLoading && !sessionError) router.replace('/home');
+  }, [isLoading, session, sessionError]);
+
+  if (isLoading || session) {
+    return (
+      <AuthPage title={copy.authSessionLoading} description={copy.authProtectedDescription}>
+        <View accessibilityRole="progressbar" style={{ alignItems: 'center', padding: 24 }}>
+          <Text style={{ color: '#c7ff28' }}>{copy.authSessionLoading}</Text>
+        </View>
+      </AuthPage>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <AuthPage title={copy.authSessionError} description={copy.authProtectedDescription}>
+        <AuthButton label={copy.authRetry} onPress={() => void refreshSession()} />
+      </AuthPage>
+    );
+  }
   const submit = async () => {
     if (!validateEmail(email)) {
       showToast(copy.authEmailRequired, 'error');
