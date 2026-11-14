@@ -801,4 +801,5 @@ export const el = {
   wizProgress: "Βήμα {step} από {total}",
   profileCardEveryDay: "Κάθε μέρα",
   profileCardAnyFormat: "Όλες οι μορφές",
+  wizPickCityFirst: "Διάλεξε πόλη για να δεις τις περιοχές",
 } as const;

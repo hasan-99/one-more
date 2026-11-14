@@ -296,6 +296,8 @@ test('a verified signup session saves profile onboarding with the signup name', 
   await page.getByRole('radio', { name: /Midfielder/ }).click();
   await page.getByRole('button', { name: /^Continue/ }).click();
   await page.getByRole('button', { name: 'Skip' }).click();
+  await page.getByRole('checkbox', { name: '5v5' }).click();
+  await page.getByRole('checkbox', { name: '7v7' }).click();
   await page.getByRole('button', { name: 'Create my card' }).click();
   await expect(page.getByRole('heading', { name: /Your card is ready/ })).toBeVisible();
   expect(savedProfile).toMatchObject({

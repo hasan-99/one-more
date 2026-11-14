@@ -34,7 +34,6 @@ import { PlayerCardArt, cardThemes } from './PlayerCardShareModal';
 import {
   FootGlyph,
   footShort,
-  isFormat,
   isPosition,
   isSkillLevel,
   isStrongFoot,
@@ -117,7 +116,7 @@ export function PlayerOnboarding() {
   // the same size whichever city is chosen, and keeps all of it on one screen.
   const areaRowsMost = useMemo(() => {
     const rowWidth = Math.min(width - (width < 400 ? 16 : 20) * 2, 480);
-    const charWidth = locale === 'el' ? 7.6 : 7.1;
+    const charWidth = locale === 'el' ? 6.9 : 6.4;
     let most = 1;
     for (const item of locationOptions.cities) {
       let rows = 1;
@@ -158,7 +157,8 @@ export function PlayerOnboarding() {
         skillLevel: isSkillLevel(bundle.profile.skill_level) ? bundle.profile.skill_level : null,
         strongFoot: isStrongFoot(bundle.profile.strong_foot) ? bundle.profile.strong_foot : 'right',
         shirtNumber: bundle.profile.shirt_number ?? 8,
-        preferredFormats: bundle.preferences.preferred_formats.filter(isFormat),
+        // Formats start empty: the profile default is not the player's own choice yet.
+        preferredFormats: [],
         availabilitySlots: bundle.preferences.availability_slots.filter(isAvailabilityValue),
         maxRadiusKm: bundle.preferences.max_radius_km,
         language: locale,
@@ -597,38 +597,46 @@ export function PlayerOnboarding() {
                         ))}
                       </View>
                     </View>
-                    {form.cityId ? (
-                      <View style={[own.group, own.groupFirstStep]}>
-                        {visibleAreas.length === 0 ? (
-                          <Text style={own.muted}>{copy.profileNoAreas}</Text>
-                        ) : (
-                          <View
-                            accessibilityRole="radiogroup"
-                            accessibilityLabel={copy.wizAreaIn.replace('{city}', cityName)}
-                            style={own.areaRow}
-                          >
-                            {visibleAreas.map((item) => (
-                              <Pressable
-                                key={item.id}
-                                accessibilityRole="radio"
-                                accessibilityState={{ checked: form.areaId === item.id }}
-                                aria-checked={form.areaId === item.id}
-                                onPress={() => update('areaId', item.id)}
-                                style={[
-                                  own.areaChip,
-                                  own.areaChipFirstStep,
-                                  form.areaId === item.id && own.on,
-                                ]}
-                              >
-                                <Text style={[own.areaText, form.areaId === item.id && own.onText]}>
-                                  {locale === 'en' ? item.name_en : item.name_el}
-                                </Text>
-                              </Pressable>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    ) : null}
+                    <View
+                      style={[
+                        own.group,
+                        own.groupFirstStep,
+                        { minHeight: areaRowsMost * 28 + (areaRowsMost - 1) * 5 },
+                      ]}
+                    >
+                      {!form.cityId ? (
+                        <View style={own.areaHint}>
+                          <Text style={own.areaHintText}>{copy.wizPickCityFirst}</Text>
+                        </View>
+                      ) : visibleAreas.length === 0 ? (
+                        <Text style={own.muted}>{copy.profileNoAreas}</Text>
+                      ) : (
+                        <View
+                          accessibilityRole="radiogroup"
+                          accessibilityLabel={copy.wizAreaIn.replace('{city}', cityName)}
+                          style={own.areaRow}
+                        >
+                          {visibleAreas.map((item) => (
+                            <Pressable
+                              key={item.id}
+                              accessibilityRole="radio"
+                              accessibilityState={{ checked: form.areaId === item.id }}
+                              aria-checked={form.areaId === item.id}
+                              onPress={() => update('areaId', item.id)}
+                              style={[
+                                own.areaChip,
+                                own.areaChipFirstStep,
+                                form.areaId === item.id && own.on,
+                              ]}
+                            >
+                              <Text style={[own.areaText, form.areaId === item.id && own.onText]}>
+                                {locale === 'en' ? item.name_en : item.name_el}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      )}
+                    </View>
                   </>
                 ) : null}
 
@@ -1310,6 +1318,16 @@ function makeStyles(
     },
     chipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 12.5 },
     areaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    areaHint: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 11,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.optionBorder,
+    },
+    areaHintText: { color: colors.textMuted, fontFamily: body, fontSize: 12.5 },
     areaChip: {
       height: 34,
       paddingHorizontal: 11,

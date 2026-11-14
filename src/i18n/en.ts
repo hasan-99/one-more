@@ -796,4 +796,5 @@ export const en = {
   wizProgress: "Step {step} of {total}",
   profileCardEveryDay: "Every day",
   profileCardAnyFormat: "Any format",
+  wizPickCityFirst: "Pick a city to see its areas",
 } as const;
