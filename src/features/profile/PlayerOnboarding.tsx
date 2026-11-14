@@ -67,15 +67,15 @@ const pickable: { position: Exclude<Position, 'any'>; code: string }[] = [
   { position: 'goalkeeper', code: 'GK' },
 ];
 const quickNumbers = [7, 8, 9, 10, 11];
-const headerHeight = 40;
-const footerHeight = 54;
-const columnGap = 10;
+const headerHeight = 36;
+const footerHeight = 48;
+const columnGap = 8;
 /** Room kept for the controls of the tallest step; the card takes the rest. */
-const minControlsReserve = 250;
+const minControlsReserve = 235;
 /** Step one without its area chips: name, shirt number, city, labels and gaps. */
-const firstStepControls = 212;
+const firstStepControls = 140;
 /** One row of wrapped area chips and the gap under it. */
-const areaRowHeight = 38;
+const areaRowHeight = 33;
 const minSlotHeight = 190;
 const compactSlotHeight = 72;
 
@@ -499,7 +499,6 @@ export function PlayerOnboarding() {
               {step === 0 ? (
                 <>
                   <View style={[own.group, own.groupFirstStep]}>
-                    <Text style={own.label}>{copy.wizName.toUpperCase()}</Text>
                     <TextInput
                       accessibilityLabel={copy.wizName}
                       value={form.displayName}
@@ -515,7 +514,6 @@ export function PlayerOnboarding() {
                     />
                   </View>
                   <View style={[own.group, own.groupFirstStep]}>
-                    <Text style={own.label}>{copy.wizNumber.toUpperCase()}</Text>
                     <View style={own.numberRow}>
                       <View style={[own.stepper, own.stepperFirstStep]}>
                         <Pressable
@@ -560,7 +558,6 @@ export function PlayerOnboarding() {
                     </View>
                   </View>
                   <View style={[own.group, own.groupFirstStep]}>
-                    <Text style={own.label}>{copy.wizCity.toUpperCase()}</Text>
                     <View
                       accessibilityRole="radiogroup"
                       accessibilityLabel={copy.wizCity}
@@ -597,15 +594,12 @@ export function PlayerOnboarding() {
                   </View>
                   {form.cityId ? (
                     <View style={[own.group, own.groupFirstStep]}>
-                      <Text style={own.label}>
-                        {copy.wizAreaIn.replace('{city}', cityName).toUpperCase()}
-                      </Text>
                       {visibleAreas.length === 0 ? (
                         <Text style={own.muted}>{copy.profileNoAreas}</Text>
                       ) : (
                         <View
                           accessibilityRole="radiogroup"
-                          accessibilityLabel={copy.profileArea}
+                          accessibilityLabel={copy.wizAreaIn.replace('{city}', cityName)}
                           style={own.areaRow}
                         >
                           {visibleAreas.map((item) => (
@@ -1187,9 +1181,9 @@ function makeStyles(
     muted: { color: colors.textSecondary, fontFamily: body, fontSize: 14 },
     header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     back: {
-      width: 40,
-      height: 40,
-      borderRadius: 13,
+      width: 36,
+      height: 36,
+      borderRadius: 12,
       borderWidth: 1.5,
       borderColor: colors.optionBorder,
       alignItems: 'center',
@@ -1210,12 +1204,12 @@ function makeStyles(
     preview: { flex: 0, alignItems: 'center', justifyContent: 'flex-start' },
     dismissSurface: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center' },
     controlsScroll: { flex: 1, minHeight: 0 },
-    controls: { flexGrow: 1, justifyContent: 'flex-end', gap: 10, paddingBottom: 2 },
+    controls: { flexGrow: 1, justifyContent: 'flex-end', gap: 6, paddingBottom: 2 },
     groupFirstStep: { gap: 4 },
-    fieldFirstStep: { height: 48 },
-    stepperFirstStep: { height: 46 },
-    cityChipFirstStep: { height: 36 },
-    areaChipFirstStep: { height: 32 },
+    fieldFirstStep: { height: 44 },
+    stepperFirstStep: { height: 40 },
+    cityChipFirstStep: { height: 32 },
+    areaChipFirstStep: { height: 28 },
     titleBlock: { gap: 2 },
     kicker: {
       color: accent,
@@ -1227,11 +1221,11 @@ function makeStyles(
     title: {
       color: colors.textPrimary,
       fontFamily: heading,
-      fontSize: locale === 'el' ? 26 : 31,
-      lineHeight: 32,
+      fontSize: locale === 'el' ? 24 : 27,
+      lineHeight: 28,
       fontWeight: '800',
     },
-    group: { gap: 6 },
+    group: { gap: 4 },
     label: {
       color: colors.textSecondary,
       fontFamily: semibold,
@@ -1320,7 +1314,7 @@ function makeStyles(
     areaText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 12.5 },
     on: { backgroundColor: accent, borderColor: accent },
     onText: { color: ink },
-    list: { gap: 8 },
+    list: { gap: 6 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1329,13 +1323,13 @@ function makeStyles(
       borderWidth: 1.5,
       borderColor: colors.optionBorder,
       backgroundColor: colors.option,
-      paddingVertical: 11,
-      paddingHorizontal: 14,
+      paddingVertical: 5,
+      paddingHorizontal: 12,
     },
     rowOn: { borderColor: accent },
     code: {
-      minWidth: 48,
-      height: 36,
+      minWidth: 44,
+      height: 28,
       borderRadius: 10,
       borderWidth: 1.5,
       borderColor: colors.borderStrong,
@@ -1357,7 +1351,7 @@ function makeStyles(
     radioOn: { backgroundColor: accent, borderColor: accent },
     tiles: { flexDirection: 'row', gap: 8 },
     tile: {
-      minHeight: 62,
+      minHeight: 50,
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
@@ -1406,7 +1400,7 @@ function makeStyles(
     formatRow: { flexDirection: 'row', gap: 6 },
     format: {
       flex: 1,
-      height: 54,
+      height: 46,
       minWidth: 0,
       borderRadius: 16,
       borderWidth: 1.5,
@@ -1425,7 +1419,7 @@ function makeStyles(
     },
     footer: { flexDirection: 'row', gap: 10 },
     skip: {
-      height: 54,
+      height: 48,
       paddingHorizontal: 22,
       borderRadius: 17,
       borderWidth: 1.5,
@@ -1436,7 +1430,7 @@ function makeStyles(
     skipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 16 },
     cta: {
       flex: 1,
-      height: 54,
+      height: 48,
       borderRadius: 17,
       backgroundColor: accent,
       alignItems: 'center',
