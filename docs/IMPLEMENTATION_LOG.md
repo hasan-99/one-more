@@ -1682,3 +1682,11 @@
 - Added a small animated Style score chip (top-left of the stage): 40 base, +10 shape, +10 color, +20 pattern, +20 emblem; count-up, floating +N, filling bar, tiers Rookie/Club/Pro/Legend (en/el).
 - Options are smaller (shape/pattern rows 44-46 px, 42 px swatches and emblems) so the whole step fits a 393x852 screen without scrolling. The crest only gets a short pop on a change (the full flip is gone with the dice).
 - Checks: tsc, eslint, vitest 39, Playwright create-team 10 passed (new test for score, undo, no dice/looks, no scroll, emblem saved).
+
+## Phase 17 — Team page redesign (crest hero, quick actions, folded editor)
+
+- `/teams/[id]` now opens with the team's crest, name, city · format · recruiting status, chips (role, player count, style tier/score) and quick actions: Invite (scrolls to the search), Challenge (captains, opens /challenges) and Share (system share sheet). Players are cards with avatar, role badge and compact Make captain / Remove buttons; invite search and pending invites keep their features; "Edit team details" is folded until opened; members get a quiet Leave link.
+- Crest drawing and style score moved to `features/teams/TeamCrest.tsx`, shared by the create wizard and the team page. `TeamDetails` gained `crest`, `format`, `openToPlayers` (parsed defensively: without them the page shows a default shield).
+- Migration `20261114210000_team_details_crest.sql` makes `get_team_details` return the crest design, format and recruiting flag (emblem read via `to_jsonb` so it works before the emblem migration). NOT applied from this environment; until applied the team page shows the default crest.
+- Singular "1 player" copy on Teams and the team page.
+- Checks: tsc, eslint, vitest 39, Playwright create-team 12 (new team-page test), onboarding/profile/auth passed.

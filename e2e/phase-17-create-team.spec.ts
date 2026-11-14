@@ -257,3 +257,58 @@ test('the crest step shows a style score, undo and emblems, and saves the emblem
   await page.getByRole('button', { name: 'Create team' }).click();
   await expect.poll(() => saved?.p_crest_emblem).toBe('crown');
 });
+
+test('the team page shows the crest, quick actions and a collapsed edit section', async ({
+  page,
+}) => {
+  await seedSession(page);
+  const details = {
+    id: teamId,
+    name: 'Tigers',
+    city_id: cityId,
+    city_name_en: 'Nicosia',
+    city_name_el: 'Λευκωσία',
+    description: null,
+    viewer_role: 'captain',
+    members: [
+      {
+        id: 'm1',
+        user_id: userId,
+        display_name: 'Hasan',
+        role: 'captain',
+        joined_at: '2026-11-14T10:00:00Z',
+      },
+    ],
+    invites: [],
+    crest_shape: 'hex',
+    crest_color: '#ffa94d',
+    crest_pattern: 'half',
+    crest_emblem: 'star',
+    preferred_format: 5,
+    open_to_players: true,
+  };
+  await page.route('**/rest/v1/rpc/get_team_details', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(details) }),
+  );
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto(`/teams/${teamId}`);
+  await expect(page.getByRole('heading', { name: 'Tigers' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Team crest: Tigers' })).toBeVisible();
+  await expect(page.getByText('Nicosia · 5v5 · open to players')).toBeVisible();
+  await expect(page.getByText('You are the captain')).toBeVisible();
+  await expect(page.getByText('1 player', { exact: true })).toBeVisible();
+  await expect(page.getByText('Legend · 100')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Invite/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Challenge/ })).toBeVisible();
+  await expect(
+    page.getByText('Your team is just you for now. Invite players to fill the squad.'),
+  ).toBeVisible();
+  // The edit form stays folded until asked for.
+  await expect(page.getByLabel('Team name')).toHaveCount(0);
+  await page.waitForTimeout(300);
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'team-page-mobile.png'),
+  });
+  await page.getByRole('button', { name: /Edit team details/ }).click();
+  await expect(page.getByLabel('Team name')).toHaveValue('Tigers');
+});

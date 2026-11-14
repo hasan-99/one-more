@@ -55,7 +55,49 @@ export type TeamDetails = {
   viewerRole: string | null;
   members: TeamMember[];
   invites: TeamPendingInvite[];
+  /** Crest design; null when the database does not return it yet. */
+  crest: {
+    shape: TeamCrestShape;
+    color: TeamCrestColor;
+    pattern: TeamCrestPattern;
+    emblem: TeamCrestEmblem;
+  } | null;
+  format: number | null;
+  openToPlayers: boolean | null;
 };
+
+const crestShapes: readonly string[] = ['shield', 'round', 'hex'];
+const crestPatterns: readonly string[] = ['plain', 'stripes', 'half'];
+const crestEmblems: readonly string[] = ['initials', 'ball', 'bolt', 'star', 'crown'];
+const crestColors: readonly string[] = [
+  '#cfff4a',
+  '#f2f5ec',
+  '#ffa94d',
+  '#5cc8ff',
+  '#ff8fc0',
+  '#b79cff',
+];
+
+function toCrest(value: { [key: string]: Json | undefined }): TeamDetails['crest'] {
+  const { crest_shape: shape, crest_color: color, crest_pattern: pattern } = value;
+  const emblem = typeof value.crest_emblem === 'string' ? value.crest_emblem : 'initials';
+  if (
+    typeof shape === 'string' &&
+    crestShapes.includes(shape) &&
+    typeof color === 'string' &&
+    crestColors.includes(color) &&
+    typeof pattern === 'string' &&
+    crestPatterns.includes(pattern) &&
+    crestEmblems.includes(emblem)
+  )
+    return {
+      shape: shape as TeamCrestShape,
+      color: color as TeamCrestColor,
+      pattern: pattern as TeamCrestPattern,
+      emblem: emblem as TeamCrestEmblem,
+    };
+  return null;
+}
 
 function isRecord(value: Json): value is { [key: string]: Json | undefined } {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -119,6 +161,9 @@ function toTeamDetails(value: Json): TeamDetails | null {
     viewerRole: typeof value.viewer_role === 'string' ? value.viewer_role : null,
     members: parsedMembers,
     invites: parsedInvites,
+    crest: toCrest(value),
+    format: typeof value.preferred_format === 'number' ? value.preferred_format : null,
+    openToPlayers: typeof value.open_to_players === 'boolean' ? value.open_to_players : null,
   };
 }
 

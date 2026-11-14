@@ -99,7 +99,8 @@ export default function TeamsScreen() {
   const openChallenges = challenges.filter(
     (challenge) => challenge.status === 'open' && !myTeamIds.has(challenge.homeTeamId),
   );
-  const players = (count: number) => copy.teamPlayersCount.replace('{count}', String(count));
+  const players = (count: number) =>
+    count === 1 ? copy.teamPlayerOne : copy.teamPlayersCount.replace('{count}', String(count));
   const cityOptions = Array.from(
     new Map(directory.map((team) => [team.cityId, cityName(team)])).entries(),
   );

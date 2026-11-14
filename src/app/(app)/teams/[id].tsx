@@ -1,9 +1,18 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 
 import { useToast } from '@/components/toast/ToastProvider';
-import { AppCard, AppPage, EmptyState } from '@/components/layout/AppPage';
+import { AppPage, EmptyState } from '@/components/layout/AppPage';
 import { loadMatchFilters, type MatchCity } from '@/features/matches/match-service';
 import {
   inviteTeamMember,
@@ -17,6 +26,7 @@ import {
   type TeamCandidate,
   type TeamDetails,
 } from '@/features/teams/team-service';
+import { Crest, scoreOf, scoreTiers } from '@/features/teams/TeamCrest';
 import { validateTeamInput } from '@/features/teams/team-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
@@ -36,6 +46,9 @@ export default function TeamDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [working, setWorking] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [inviteY, setInviteY] = useState(0);
+  const scrollRef = useRef<ScrollViewInstance>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -130,168 +143,344 @@ export default function TeamDetailsScreen() {
 
   const isCaptain = team.viewerRole === 'captain';
   const isMember = team.viewerRole === 'member';
+  const cityLabel = locale === 'el' ? team.cityNameEl : team.cityNameEn;
+  const crest = team.crest ?? {
+    shape: 'shield',
+    color: '#cfff4a',
+    pattern: 'plain',
+    emblem: 'initials',
+  };
+  const initials = team.name
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => Array.from(word)[0]?.toUpperCase() ?? '')
+    .join('');
+  const score = scoreOf(crest);
+  const tier = scoreTiers.find((item) => score >= item.from) ?? scoreTiers[scoreTiers.length - 1];
+  const subtitle = [
+    cityLabel,
+    team.format ? `${team.format}v${team.format}` : null,
+    team.openToPlayers === null ? null : team.openToPlayers ? copy.teamOpenTag : copy.teamClosedTag,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const shareTeam = async () => {
+    try {
+      await Share.share({ message: copy.teamShareMessage.replace('{name}', team.name) });
+    } catch {
+      // The share sheet being dismissed or unavailable is not an error worth a message.
+    }
+  };
+  const goToInvite = () =>
+    scrollRef.current?.scrollTo({ y: Math.max(inviteY - 12, 0), animated: true });
+
   return (
-    <AppPage
-      title={team.name}
-      description={`${locale === 'el' ? team.cityNameEl : team.cityNameEn}${team.description ? ` · ${team.description}` : ''}`}
+    <ScrollView
+      ref={scrollRef}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={styles.page}
+      showsVerticalScrollIndicator={false}
     >
-      <AppCard>
-        <Text accessibilityRole="header" style={styles.sectionTitle}>
-          {copy.teamMembers} · {team.members.length}
-        </Text>
-        {team.members.map((member) => (
-          <View key={member.id} style={styles.memberRow}>
-            <View style={{ flex: 1, gap: 3 }}>
-              <Text style={styles.memberName}>{member.displayName}</Text>
-              <Text style={styles.meta}>
-                {member.role === 'captain' ? copy.teamCaptain : copy.teamMember}
+      <View style={styles.content}>
+        <View accessibilityLabel={team.name} style={styles.hero}>
+          <Crest
+            {...crest}
+            initials={initials}
+            size={112}
+            label={`${copy.teamWizardCrestLabel}: ${team.name}`}
+          />
+          <Text accessibilityRole="header" style={styles.heroName}>
+            {team.name}
+          </Text>
+          <Text style={styles.meta}>{subtitle}</Text>
+          {team.description ? <Text style={styles.heroDescription}>{team.description}</Text> : null}
+          <View style={styles.heroChips}>
+            {isCaptain || isMember ? (
+              <Text style={[styles.chip, isCaptain && styles.chipHot]}>
+                {isCaptain ? copy.teamYouCaptain : copy.teamYouMember}
               </Text>
-            </View>
-            {isCaptain && member.role !== 'captain' ? (
-              <View style={styles.actions}>
-                <Action
-                  label={copy.teamTransferCaptain}
-                  disabled={working || !member.userId}
-                  onPress={() =>
-                    member.userId &&
-                    void action(
-                      () => transferTeamCaptain(id, member.userId as string),
-                      copy.teamCaptainTransferred,
-                    )
-                  }
-                  colors={colors}
-                  secondary
-                />
-                <Action
-                  label={copy.teamRemove}
-                  onPress={() =>
-                    void action(() => removeTeamMember(id, member.id), copy.teamRemovedMember)
-                  }
-                  colors={colors}
-                  secondary
-                />
-              </View>
+            ) : null}
+            <Text style={styles.chip}>
+              {team.members.length === 1
+                ? copy.teamPlayerOne
+                : copy.teamPlayersCount.replace('{count}', String(team.members.length))}
+            </Text>
+            {team.crest ? (
+              <Text style={styles.chip}>{`${copy[tier.label]} · ${score}`}</Text>
             ) : null}
           </View>
-        ))}
+        </View>
+
+        <View style={styles.quickActions}>
+          {isCaptain ? (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                onPress={goToInvite}
+                style={[styles.quick, styles.quickPrimary]}
+              >
+                <Text style={styles.quickPrimaryText}>{`+  ${copy.teamInviteHero}`}</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/challenges' as Href)}
+                style={[styles.quick, styles.quickFight]}
+              >
+                <Text style={styles.quickFightText}>{`⚔  ${copy.teamChallengeHero}`}</Text>
+              </Pressable>
+            </>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={copy.teamShareHero}
+            onPress={() => void shareTeam()}
+            style={[styles.quick, styles.quickShare, !isCaptain && { flex: 1 }]}
+          >
+            <Text style={styles.quickShareText}>
+              {isCaptain ? '⇪' : `⇪  ${copy.teamShareHero}`}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              {copy.teamMembers}
+            </Text>
+            <Text style={styles.count}>{team.members.length}</Text>
+          </View>
+          <View style={styles.listCard}>
+            {team.members.map((member, index) => (
+              <View key={member.id} style={[styles.memberRow, index > 0 && styles.rowDivider]}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {Array.from(member.displayName)[0]?.toUpperCase() ?? '?'}
+                  </Text>
+                </View>
+                <View style={styles.memberCopy}>
+                  <Text style={styles.memberName}>{member.displayName}</Text>
+                  {isCaptain && member.role !== 'captain' ? (
+                    <View style={styles.actions}>
+                      <Action
+                        label={copy.teamTransferCaptain}
+                        disabled={working || !member.userId}
+                        onPress={() =>
+                          member.userId &&
+                          void action(
+                            () => transferTeamCaptain(id, member.userId as string),
+                            copy.teamCaptainTransferred,
+                          )
+                        }
+                        colors={colors}
+                        secondary
+                        small
+                      />
+                      <Action
+                        label={copy.teamRemove}
+                        onPress={() =>
+                          void action(() => removeTeamMember(id, member.id), copy.teamRemovedMember)
+                        }
+                        colors={colors}
+                        secondary
+                        small
+                      />
+                    </View>
+                  ) : null}
+                </View>
+                <Text style={[styles.badge, member.role === 'captain' && styles.badgeHot]}>
+                  {member.role === 'captain' ? copy.teamCaptain : copy.teamMember}
+                </Text>
+              </View>
+            ))}
+          </View>
+          {isCaptain && team.members.length === 1 ? (
+            <View style={styles.emptyRow}>
+              <Text style={styles.meta}>{copy.teamSquadHint}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {isCaptain ? (
+          <>
+            <View
+              style={styles.section}
+              onLayout={(event) => setInviteY(event.nativeEvent.layout.y)}
+            >
+              <View style={styles.sectionHead}>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>
+                  {copy.teamSearchPlayers}
+                </Text>
+              </View>
+              <View style={styles.searchRow}>
+                <TextInput
+                  accessibilityLabel={copy.teamSearchPlayers}
+                  placeholder={copy.teamSearchPlaceholder}
+                  placeholderTextColor={colors.textSecondary}
+                  value={query}
+                  onChangeText={setQuery}
+                  returnKeyType="search"
+                  onSubmitEditing={() => void doSearch()}
+                  style={styles.searchInput}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={copy.teamSearch}
+                  disabled={working || query.trim().length < 3}
+                  onPress={() => void doSearch()}
+                  style={[
+                    styles.searchButton,
+                    (working || query.trim().length < 3) && { opacity: 0.55 },
+                  ]}
+                >
+                  <Text style={styles.searchButtonText}>{copy.teamSearch}</Text>
+                </Pressable>
+              </View>
+              {candidates.length ? (
+                <View style={[styles.listCard, { marginTop: 10 }]}>
+                  {candidates.map((candidate, index) => (
+                    <View
+                      key={candidate.userId}
+                      style={[styles.memberRow, index > 0 && styles.rowDivider]}
+                    >
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                          {Array.from(candidate.displayName)[0]?.toUpperCase() ?? '?'}
+                        </Text>
+                      </View>
+                      <Text style={[styles.memberName, styles.memberCopy]}>
+                        {candidate.displayName}
+                      </Text>
+                      <Action
+                        label={copy.teamInvitePlayer}
+                        disabled={working}
+                        onPress={() =>
+                          void action(
+                            () => inviteTeamMember(id, candidate.userId),
+                            copy.teamInviteSent,
+                          )
+                        }
+                        colors={colors}
+                        small
+                      />
+                    </View>
+                  ))}
+                </View>
+              ) : query.trim().length >= 3 ? (
+                <Text style={[styles.meta, { marginTop: 8 }]}>{copy.teamNoCandidates}</Text>
+              ) : null}
+            </View>
+
+            <View style={styles.section}>
+              <View style={styles.sectionHead}>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>
+                  {copy.teamPendingInvites}
+                </Text>
+                <Text style={styles.count}>{team.invites.length}</Text>
+              </View>
+              {team.invites.length ? (
+                <View style={styles.listCard}>
+                  {team.invites.map((invite, index) => (
+                    <View
+                      key={invite.id}
+                      style={[styles.memberRow, index > 0 && styles.rowDivider]}
+                    >
+                      <Text style={[styles.memberName, styles.memberCopy]}>
+                        {invite.displayName}
+                      </Text>
+                      <Action
+                        label={copy.teamRevokeInvite}
+                        disabled={working}
+                        onPress={() =>
+                          void action(() => revokeTeamInvite(id, invite.id), copy.teamInviteRevoked)
+                        }
+                        colors={colors}
+                        secondary
+                        small
+                      />
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyRow}>
+                  <Text style={styles.meta}>{copy.teamNoInvites}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: editing }}
+                onPress={() => setEditing((open) => !open)}
+                style={styles.editToggle}
+              >
+                <Text style={styles.editToggleText}>{`✎  ${copy.teamEditToggle}`}</Text>
+                <Text style={styles.editToggleText}>{editing ? '⌄' : '›'}</Text>
+              </Pressable>
+              {editing ? (
+                <View style={styles.form}>
+                  <Field
+                    label={copy.teamName}
+                    value={name}
+                    onChangeText={setName}
+                    colors={colors}
+                  />
+                  <Field
+                    label={copy.teamDescription}
+                    value={description}
+                    onChangeText={setDescription}
+                    colors={colors}
+                    multiline
+                  />
+                  <Text style={styles.meta}>{copy.teamCity}</Text>
+                  <View style={styles.chips}>
+                    {cities.map((item) => (
+                      <Choice
+                        key={item.id}
+                        label={city(item)}
+                        selected={cityId === item.id}
+                        onPress={() => setCityId(item.id)}
+                        colors={colors}
+                      />
+                    ))}
+                  </View>
+                  <Action
+                    label={copy.teamSave}
+                    disabled={working}
+                    onPress={saveDetails}
+                    colors={colors}
+                  />
+                </View>
+              ) : null}
+            </View>
+            <Text style={[styles.meta, styles.footNote]}>{copy.teamRoleChangeHint}</Text>
+          </>
+        ) : null}
+
         {isMember ? (
-          <Action
-            label={copy.teamLeave}
+          <Pressable
+            accessibilityRole="button"
+            disabled={working}
             onPress={() =>
               void action(async () => {
                 await leaveTeam(id);
                 router.replace('/teams' as Href);
               }, copy.teamLeft)
             }
-            colors={colors}
-            secondary
-            disabled={working}
-          />
+            style={styles.leave}
+          >
+            <Text style={styles.leaveText}>{copy.teamLeave}</Text>
+          </Pressable>
         ) : null}
-        {isCaptain ? <Text style={styles.meta}>{copy.teamRoleChangeHint}</Text> : null}
-      </AppCard>
-
-      {isCaptain ? (
-        <>
-          <AppCard>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              {copy.teamEdit}
-            </Text>
-            <Field label={copy.teamName} value={name} onChangeText={setName} colors={colors} />
-            <Field
-              label={copy.teamDescription}
-              value={description}
-              onChangeText={setDescription}
-              colors={colors}
-              multiline
-            />
-            <Text style={styles.meta}>{copy.teamCity}</Text>
-            <View style={styles.chips}>
-              {cities.map((item) => (
-                <Choice
-                  key={item.id}
-                  label={city(item)}
-                  selected={cityId === item.id}
-                  onPress={() => setCityId(item.id)}
-                  colors={colors}
-                />
-              ))}
-            </View>
-            <Action
-              label={copy.teamSave}
-              disabled={working}
-              onPress={saveDetails}
-              colors={colors}
-            />
-          </AppCard>
-          <AppCard>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              {copy.teamSearchPlayers}
-            </Text>
-            <Field
-              label={copy.teamSearchPlayers}
-              placeholder={copy.teamSearchPlaceholder}
-              value={query}
-              onChangeText={setQuery}
-              colors={colors}
-            />
-            <Action
-              label={copy.teamSearch}
-              disabled={working || query.trim().length < 3}
-              onPress={() => void doSearch()}
-              colors={colors}
-              secondary
-            />
-            {candidates.length ? (
-              candidates.map((candidate) => (
-                <View key={candidate.userId} style={styles.memberRow}>
-                  <Text style={styles.memberName}>{candidate.displayName}</Text>
-                  <Action
-                    label={copy.teamInvitePlayer}
-                    disabled={working}
-                    onPress={() =>
-                      void action(() => inviteTeamMember(id, candidate.userId), copy.teamInviteSent)
-                    }
-                    colors={colors}
-                  />
-                </View>
-              ))
-            ) : query.trim().length >= 3 ? (
-              <Text style={styles.meta}>{copy.teamNoCandidates}</Text>
-            ) : null}
-          </AppCard>
-          <AppCard>
-            <Text accessibilityRole="header" style={styles.sectionTitle}>
-              {copy.teamPendingInvites}
-            </Text>
-            {team.invites.length ? (
-              team.invites.map((invite) => (
-                <View key={invite.id} style={styles.memberRow}>
-                  <Text style={styles.memberName}>{invite.displayName}</Text>
-                  <Action
-                    label={copy.teamRevokeInvite}
-                    disabled={working}
-                    onPress={() =>
-                      void action(() => revokeTeamInvite(id, invite.id), copy.teamInviteRevoked)
-                    }
-                    colors={colors}
-                    secondary
-                  />
-                </View>
-              ))
-            ) : (
-              <Text style={styles.meta}>{copy.teamNoInvites}</Text>
-            )}
-          </AppCard>
-        </>
-      ) : null}
-      <Action
-        label={copy.appGoTeams}
-        onPress={() => router.replace('/teams' as Href)}
-        colors={colors}
-        secondary
-      />
-    </AppPage>
+        <Action
+          label={copy.appGoTeams}
+          onPress={() => router.replace('/teams' as Href)}
+          colors={colors}
+          secondary
+        />
+      </View>
+    </ScrollView>
   );
 }
 
@@ -341,12 +530,14 @@ function Action({
   colors,
   secondary = false,
   disabled = false,
+  small = false,
 }: {
   label: string;
   onPress: () => void;
   colors: ReturnType<typeof useAppPreferences>['colors'];
   secondary?: boolean;
   disabled?: boolean;
+  small?: boolean;
 }) {
   return (
     <Pressable
@@ -357,10 +548,10 @@ function Action({
         backgroundColor: secondary ? colors.surfaceRaised : colors.primaryButton,
         borderColor: colors.border,
         borderWidth: secondary ? 1 : 0,
-        borderRadius: 10,
-        minHeight: 42,
+        borderRadius: small ? 10 : 12,
+        minHeight: small ? 36 : 46,
         justifyContent: 'center',
-        paddingHorizontal: 12,
+        paddingHorizontal: small ? 10 : 14,
         opacity: disabled ? 0.55 : 1,
       }}
     >
@@ -411,19 +602,161 @@ function Choice({
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
-    sectionTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
-    memberRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      flexWrap: 'wrap',
-      gap: 10,
-      paddingVertical: 8,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+    page: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 36, alignItems: 'center' },
+    content: { width: '100%', maxWidth: 720, gap: 4 },
+    hero: { alignItems: 'center', gap: 6, paddingTop: 12, paddingBottom: 16 },
+    heroName: {
+      color: colors.textPrimary,
+      fontSize: 34,
+      lineHeight: 38,
+      fontWeight: '800',
+      textAlign: 'center',
     },
-    memberName: { color: colors.textPrimary, fontSize: 16, fontWeight: '600' },
-    meta: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
+    heroDescription: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      lineHeight: 20,
+      textAlign: 'center',
+      maxWidth: 320,
+    },
+    heroChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      justifyContent: 'center',
+      marginTop: 6,
+    },
+    chip: {
+      color: colors.textPrimary,
+      backgroundColor: colors.surfaceRaised,
+      borderColor: colors.border,
+      borderWidth: 1,
+      overflow: 'hidden',
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    chipHot: {
+      color: colors.accentText,
+      backgroundColor: colors.cardTop,
+      borderColor: 'transparent',
+    },
+    quickActions: { flexDirection: 'row', gap: 10 },
+    quick: {
+      minHeight: 54,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+    },
+    quickPrimary: { flex: 1, backgroundColor: colors.primaryButton },
+    quickPrimaryText: { color: colors.primaryButtonText, fontSize: 15, fontWeight: '800' },
+    quickFight: { flex: 1, backgroundColor: '#ff6a3d' },
+    quickFightText: { color: '#ffffff', fontSize: 15, fontWeight: '800' },
+    quickShare: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    quickShareText: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
+    section: { marginTop: 18 },
+    sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+    sectionTitle: { color: colors.textPrimary, fontSize: 21, fontWeight: '800' },
+    count: {
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceRaised,
+      borderColor: colors.border,
+      borderWidth: 1,
+      overflow: 'hidden',
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    listCard: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 18,
+      paddingHorizontal: 12,
+    },
+    memberRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+    rowDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+    avatar: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { color: colors.primaryButtonText, fontSize: 17, fontWeight: '800' },
+    memberCopy: { flex: 1, gap: 6 },
+    memberName: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+    badge: {
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceRaised,
+      overflow: 'hidden',
+      borderRadius: 9,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    badgeHot: { color: colors.accentText, backgroundColor: colors.cardTop },
+    emptyRow: {
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      borderRadius: 16,
+      padding: 14,
+      marginTop: 10,
+    },
+    searchRow: { flexDirection: 'row', gap: 8 },
+    searchInput: {
+      flex: 1,
+      minWidth: 0,
+      minHeight: 48,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      color: colors.textPrimary,
+      paddingHorizontal: 14,
+      fontSize: 15,
+    },
+    searchButton: {
+      flexShrink: 0,
+      paddingHorizontal: 16,
+      borderRadius: 14,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    searchButtonText: { color: colors.primaryButtonText, fontWeight: '800' },
+    editToggle: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 18,
+      padding: 16,
+    },
+    editToggleText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+    form: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 18,
+      padding: 14,
+      marginTop: 8,
+      gap: 12,
+    },
+    footNote: { textAlign: 'center', marginTop: 12 },
+    leave: { alignSelf: 'center', minHeight: 44, justifyContent: 'center', marginTop: 16 },
+    leaveText: { color: colors.errorText, fontSize: 14, fontWeight: '700' },
+    meta: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center' },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   });
