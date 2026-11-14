@@ -1416,3 +1416,15 @@
 
 - **Summary:** Rebuilt the share card from the user's supplied mockup using only real profile data: stadium night scene (floodlights, light cones, stands), glowing jersey with surname and number, italic name, position pill, location, Foot / Level / Position panel, availability days, chosen formats, "Find me on ONE MORE" call to action and Player ID; glowing frame. Accent colour still follows level. The mockup's AI photo, goals/assists/rating, heatmap and "LVL" were not used (no such data/feature in V1).
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium). Exported 1080×1920 PNG inspected.
+
+### 2026-11-14 — Phase 17 merge of `claude/app-clone-9xhzm1` into `main`
+
+- **Phase:** 17 — Integrate the user's recent Explore, Create Team and Profile work.
+- **Status:** PARTIAL — code merged and all app checks passed; physical-device review remains pending.
+- **Summary:** Fast-forwarded `main` by six commits from `claude/app-clone-9xhzm1` (latest source commit `edae940`). Includes the latest Explore, Create Team, Profile and player-card UI, navigation fixes, motion/typography utilities, and an availability-days migration plus pgTAP test. Removed only trailing whitespace from the bundled Barlow font license.
+- **Changed files:** Branch changes across 42 files, including the screens, shared components, translations, font assets, tests, screenshots, migration, and pgTAP test; `assets/fonts/Barlow-OFL.txt` whitespace cleanup; this log.
+- **Checks:** `git merge --ff-only origin/claude/app-clone-9xhzm1` — PASS; `npm run lint` — PASS; `npm run typecheck` — PASS; `npm run test:run` — PASS (11 files / 38 tests); `npm run build:web` — PASS; `npx playwright test e2e/phase-17-create-team.spec.ts e2e/phase-17-profile-reference.spec.ts --project=mobile-chromium --project=desktop-chromium --workers=1` — PASS (8/8); `git diff --check` — PASS after license whitespace cleanup.
+- **Browser verification:** Playwright verified Create Team's three-step flow, retryable save failure, guest navigation, and Profile rendering/editing at mobile and desktop Chromium. Physical iPhone was not inspected.
+- **Security verification:** Migration only widens the accepted values for `user_preferences.availability_slots`; it does not change RLS or grants. The migration and pgTAP tests were not applied/run because there is no connected Supabase test database. No Expo publish or database deployment was performed.
+- **Remaining issues:** Apply and test the migration separately in an approved Supabase environment. Publish the merged app to Expo preview when requested; physical-device review remains open.
+- **Next phase:** Continue Phase 17 after device review; Phase 18 not started.
