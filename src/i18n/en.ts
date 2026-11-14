@@ -601,6 +601,8 @@ export const en = {
   teamNoInvites: 'You have no pending team invitations.',
   teamNoMine: 'You are not a member of a team yet.',
   teamNoDirectory: 'No teams are listed yet. Create one to get started.',
+  teamSeeAll: 'See all',
+  teamChallengeHint: 'Post one and other captains can request the game.',
   teamNoMineShort: 'No team yet',
   teamNoMineHint: 'Create one or ask a captain to invite you.',
   teamNoInvitesShort: 'No invitations',

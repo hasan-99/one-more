@@ -1646,3 +1646,8 @@
 - Only the page content changed; the top bar (logo, language) and bottom navigation are untouched.
 - Added en/el keys for the empty rows, filter and player count.
 - Checks: tsc, eslint (0 warnings), vitest, Playwright teams/nav/create-team; browser screenshots at 393 px (empty and with data).
+
+## Phase 17 — Open challenges on the Teams page (captains only)
+
+- Teams page shows an "Open challenges" section only when the signed-in user captains a team: up to three open challenges from other teams (team, city, first time window, format/level/area tags) linking to the challenge details, "See all" to /challenges and a "Post a challenge" button. Own teams' challenges are hidden; a challenge load failure does not hide the teams.
+- Added en/el keys `teamSeeAll`, `teamChallengeHint`. Checked in the browser at 393 px with mocked data (tsc, eslint, vitest pass).

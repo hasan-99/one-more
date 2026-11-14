@@ -5,6 +5,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/toast/ToastProvider';
 import { AppPage } from '@/components/layout/AppPage';
+import { listTeamChallenges, type TeamChallenge } from '@/features/teams/challenge-service';
+import { isSkillLevel, levelLabel } from '@/features/profile/PlayerProfile';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import {
   listMyTeamInvites,
@@ -26,6 +28,7 @@ export default function TeamsScreen() {
   const [directory, setDirectory] = useState<TeamDirectoryItem[]>([]);
   const [teams, setTeams] = useState<MyTeam[]>([]);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
+  const [challenges, setChallenges] = useState<TeamChallenge[]>([]);
   const [profileComplete, setProfileComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -44,10 +47,17 @@ export default function TeamsScreen() {
         ]);
         setTeams(myTeams);
         setInvites(myInvites);
+        // Challenges are a bonus on this page: a failure here must not hide the teams.
+        setChallenges(
+          myTeams.some((team) => team.role === 'captain')
+            ? await listTeamChallenges().catch(() => [])
+            : [],
+        );
         setProfileComplete(complete);
       } else {
         setTeams([]);
         setInvites([]);
+        setChallenges([]);
         setProfileComplete(false);
       }
     } catch {
@@ -84,6 +94,11 @@ export default function TeamsScreen() {
   const [cityFilter, setCityFilter] = useState<string | null>(null);
   const cityName = (team: TeamDirectoryItem | MyTeam) =>
     locale === 'el' ? team.cityNameEl : team.cityNameEn;
+  const isCaptain = teams.some((team) => team.role === 'captain');
+  const myTeamIds = new Set(teams.map((team) => team.teamId));
+  const openChallenges = challenges.filter(
+    (challenge) => challenge.status === 'open' && !myTeamIds.has(challenge.homeTeamId),
+  );
   const players = (count: number) => copy.teamPlayersCount.replace('{count}', String(count));
   const cityOptions = Array.from(
     new Map(directory.map((team) => [team.cityId, cityName(team)])).entries(),
@@ -173,6 +188,64 @@ export default function TeamsScreen() {
                   styles={styles}
                 />
               )}
+              {isCaptain ? (
+                <>
+                  <View style={styles.sectionHead}>
+                    <Text accessibilityRole="header" style={styles.sectionTitle}>
+                      {copy.challengeDirectory}
+                    </Text>
+                    <Text style={styles.count}>{openChallenges.length}</Text>
+                    <Pressable
+                      accessibilityRole="link"
+                      onPress={() => router.push('/challenges' as Href)}
+                      style={styles.seeAll}
+                    >
+                      <Text style={styles.seeAllText}>{`${copy.teamSeeAll} ›`}</Text>
+                    </Pressable>
+                  </View>
+                  {openChallenges.slice(0, 3).map((challenge) => (
+                    <Pressable
+                      key={challenge.id}
+                      accessibilityRole="link"
+                      onPress={() => router.push(`/challenges/${challenge.id}` as Href)}
+                      style={styles.teamCard}
+                    >
+                      <View style={styles.cardRow}>
+                        <Crest name={challenge.homeTeamName} styles={styles} />
+                        <View style={styles.cardCopy}>
+                          <Text style={styles.cardTitle}>{challenge.homeTeamName}</Text>
+                          <Text style={styles.meta}>
+                            {`${locale === 'el' ? challenge.cityNameEl : challenge.cityNameEn} · ${formatWindow(challenge, locale)}`}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.tags}>
+                        <Text style={styles.tag}>{`${challenge.format}v${challenge.format}`}</Text>
+                        {isSkillLevel(challenge.skillLevel) ? (
+                          <Text style={styles.tag}>{levelLabel(challenge.skillLevel, copy)}</Text>
+                        ) : null}
+                        <Text style={styles.tag}>
+                          {locale === 'el' ? challenge.areaNameEl : challenge.areaNameEn}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                  {openChallenges.length === 0 ? (
+                    <EmptyRow
+                      title={copy.challengeNoOpen}
+                      hint={copy.teamChallengeHint}
+                      styles={styles}
+                    />
+                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push('/challenges' as Href)}
+                    style={({ pressed }) => [styles.createButton, pressed && { opacity: 0.85 }]}
+                  >
+                    <Text style={styles.createText}>{`+  ${copy.challengeCreate}`}</Text>
+                  </Pressable>
+                </>
+              ) : null}
             </>
           ) : (
             <Text style={styles.meta}>{copy.teamCreateSignIn}</Text>
@@ -227,6 +300,26 @@ export default function TeamsScreen() {
 }
 
 type Styles = ReturnType<typeof makeStyles>;
+
+function formatWindow(challenge: TeamChallenge, locale: string) {
+  const first = challenge.windows[0];
+  if (!first) return '';
+  const start = new Date(first.startsAt);
+  const end = new Date(first.endsAt);
+  const day = start.toLocaleDateString(locale === 'el' ? 'el-GR' : 'en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Asia/Nicosia',
+  });
+  const time = (date: Date) =>
+    date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Nicosia',
+    });
+  return `${day} ${time(start)}–${time(end)}`;
+}
 const crestColors = ['#cfff4a', '#3db8ff', '#ffb347', '#c79bff', '#3ff0c0'];
 
 function Crest({ name, styles }: { name: string; styles: Styles }) {
@@ -433,6 +526,21 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     badgeHot: { color: colors.accentText, backgroundColor: colors.cardTop },
     actions: { flexDirection: 'row', gap: 8 },
     actionHalf: { flex: 1 },
+    seeAll: { marginLeft: 'auto', minHeight: 36, justifyContent: 'center' },
+    seeAllText: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
+    tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+    tag: {
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceRaised,
+      borderColor: colors.border,
+      borderWidth: 1,
+      overflow: 'hidden',
+      borderRadius: 9,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      fontSize: 11,
+      fontWeight: '700',
+    },
     chips: { gap: 8, paddingVertical: 2 },
     chip: {
       borderWidth: 1,
