@@ -1449,3 +1449,10 @@
 - **Summary:** Merged `origin/main` (`652cc52`, the user's earlier integration plus OFL whitespace fix) into `claude/app-clone-9xhzm1`, resolving the log conflict by keeping both entries, then fast-forwarded `main` to the branch. Brings the template-based player card, jersey creases, Casual/Regular/Competitive colourways, Share/Save outside the card, and the `.gitignore` fix that tracks card images.
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile + create-team PASS (8/8, mobile + desktop Chromium).
 - **Remaining issues:** Migration `20261114160000_profile_availability_days.sql` still to be applied to Supabase; Expo preview not published (hosts blocked here); physical-device review pending.
+
+### 2026-11-14 — Phase 17 Protected-tab navigation hardening
+
+- **Phase:** 17; Phase 18 not started. **Status:** PARTIAL (device not inspected; Expo preview not republished).
+- **Summary:** User reported Profile and the centre + doing nothing. Current `main` navigated correctly in Chromium, but when Supabase was slow or unreachable the protected-route gate replaced the whole shell, hid the tab bar and waited forever. The gate now renders inside `AppShell` (tab bar stays usable, route `<Slot />` stays mounted), the profile-completion check runs once per user (and again after onboarding) instead of on every protected tap, and it times out after 12 s with a retry. The user's device most likely runs the earlier Expo preview, which predates the first navigation fix; a new preview publish is needed for the phone to receive these fixes.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 create-team + profile and phase-02 private-routes/appearance PASS (11/11). Navigation script on mobile/desktop: guest → sign-in redirect; signed in → `/profile` and `/teams/create`; Supabase hanging/failing → tab bar remains usable and gate shows loading then retry.
+- **Branches:** every commit from this session is on `main`; `claude/app-clone-9xhzm1` and `main` point to the same commit.

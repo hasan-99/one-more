@@ -30,15 +30,19 @@ export default function AppLayout() {
     pathname.startsWith('/challenges/') ||
     pathname === '/onboarding';
 
+  // One completion check per user (and again after leaving onboarding), not one per
+  // protected route: re-checking on every tap showed a loading gate each time.
   const profileRequestKey =
-    session && protectedRoute ? `${session.user.id}:${pathname}:${retryAttempt}` : null;
+    session && protectedRoute
+      ? `${session.user.id}:${pathname === '/onboarding' ? 'onboarding' : 'app'}:${retryAttempt}`
+      : null;
   const currentProfileStatus =
     profileRequestKey && profileStatus?.key === profileRequestKey ? profileStatus : null;
 
   useEffect(() => {
     if (!profileRequestKey || !session) return;
     let active = true;
-    void getProfileCompletion(session.user.id)
+    void withTimeout(getProfileCompletion(session.user.id), profileCheckTimeoutMs)
       .then((complete) => {
         if (active) setProfileStatus({ key: profileRequestKey, complete, error: false });
       })
@@ -110,20 +114,38 @@ export default function AppLayout() {
       </AuthPage>
     );
   }
+  // The gate renders inside the shell so the navigation bar stays usable while
+  // the session or profile is checked.
   return (
-    <>
-      {gate ? <View style={styles.gate}>{gate}</View> : null}
+    <AppShell>
+      {gate ? <View style={styles.fill}>{gate}</View> : null}
       <View style={gate ? styles.hidden : styles.fill}>
-        <AppShell>
-          <Slot />
-        </AppShell>
+        <Slot />
       </View>
-    </>
+    </AppShell>
   );
 }
 
+const profileCheckTimeoutMs = 12_000;
+
+/** Rejects if the promise has not settled in time, so a stalled request shows a retry. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error(String(error)));
+      },
+    );
+  });
+}
+
 const styles = StyleSheet.create({
-  gate: { flex: 1 },
   fill: { flex: 1 },
   hidden: { display: 'none' },
 });
