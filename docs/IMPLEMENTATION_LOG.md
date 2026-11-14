@@ -1404,3 +1404,10 @@
 - **Summary:** Redesigned the shareable player card (original artwork): dark floodlit pitch card with lime holo edge, ghost shirt number, jersey with surname and number, position badge, name and location, Foot / Level / Position tiles (foot glyph, level bars, mini pitch marker), weekday availability dots, format pills and a lime "Find me on ONE MORE" strip. The modal adds a stadium backdrop, a 3D reveal and a moving sheen (on screen only). Web export now inlines fonts and the logo and renders a sharp 1080×1920 PNG; native keeps `toDataURL` + Sharing/MediaLibrary.
 - **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile + create-team PASS (8/8).
 - **Browser verification:** 393×852 Chromium (2x): card modal opened and "Save image" downloaded a 1080×1920 PNG with correct fonts and logo. Native share/save not tested on a device.
+
+### 2026-11-14 — Phase 17 Player card v3 (poster style)
+
+- **Summary:** Replaced the card artwork with an original matchday-poster design meant to be shared: colourway by level (Casual mint, Regular lime, Competitive gold) with 1–3 star tier badge, giant double-printed shirt number, diagonal speed slashes, halftone dots and a per-player shard pattern seeded from name + number, vertical position strip, stacked first name / huge surname with auto-fit, and a perforated ticket stub with Foot, Position, a unique Player ID and a mini pitch heat spot. Formats and availability removed from the card per user request.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 profile PASS (mobile + desktop Chromium).
+- **Browser verification:** Exported 1080×1920 PNGs for all three level colourways in Chromium; fonts, logo and layout correct. Native share not device-tested.
+- **Blockers:** GitHub push still 403 (Claude GitHub App access); Supabase and Expo hosts denied by this environment's network policy.

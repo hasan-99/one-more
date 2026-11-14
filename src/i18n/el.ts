@@ -750,4 +750,6 @@ export const el = {
   profileCardAvailable: "ΔΙΑΘΕΣΙΜΟΣ",
   profileCardPosition: "ΘΕΣΗ",
   profileCardNoDays: "Χωρίς μέρες",
+  profileCardPlayerId: "ΚΩΔ. ΠΑΙΚΤΗ",
+  profileCardMatchday: "ΕΤΟΙΜΟΣ ΓΙΑ ΑΓΩΝΑ",
 } as const;

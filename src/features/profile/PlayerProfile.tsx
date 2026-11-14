@@ -554,9 +554,6 @@ export function PlayerProfile() {
         strongFootLabel={footLabel}
         skillLevel={form.skillLevel}
         levelLabel={level}
-        formats={form.preferredFormats}
-        days={availabilityDays.map((day) => days.includes(day))}
-        dayLetters={copy.profileDayLettersMonToSun.split(',')}
         copy={copy}
       />
     </View>

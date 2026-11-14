@@ -52,10 +52,6 @@ export type PlayerCardData = {
   strongFootLabel: string;
   skillLevel: SkillLevel | null;
   levelLabel: string;
-  formats: number[];
-  /** Seven flags, Monday first. */
-  days: boolean[];
-  dayLetters: string[];
 };
 
 type PlayerCardShareModalProps = PlayerCardData & {
@@ -68,9 +64,7 @@ const W = 360;
 const H = 640;
 const ink = '#0c1210';
 const lime = '#cfff4a';
-const paper = '#f2f5ec';
 const sage = '#b9c4b4';
-const line = '#2a3d31';
 const shortPositions: Record<Position, string> = {
   forward: 'ST',
   midfielder: 'MF',
@@ -86,8 +80,6 @@ const pitchSpots: Record<Position, { x: number; y: number }> = {
   goalkeeper: { x: 0.5, y: 0.9 },
   any: { x: 0.5, y: 0.5 },
 };
-const jerseyPath =
-  'M70 14 C82 26 118 26 130 14 L170 30 L194 70 L166 86 L154 66 L154 176 C154 181 150 184 146 184 L54 184 C50 184 46 181 46 176 L46 66 L34 86 L6 70 L30 30 Z';
 
 export function PlayerCardShareModal({ visible, onClose, copy, ...card }: PlayerCardShareModalProps) {
   const { locale, colors } = useAppPreferences();
@@ -324,6 +316,27 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
   );
 }
 
+type Palette = { accent: string; glow: string; top: string; bottom: string; onAccent: string };
+/** Card colourway follows the player's level, so cards feel collectible. */
+const palettes: Record<SkillLevel | 'none', Palette> = {
+  beginner: { accent: '#7ef0c8', glow: '#2fd6a0', top: '#12322b', bottom: '#040d0b', onAccent: ink },
+  intermediate: { accent: lime, glow: '#a6ff00', top: '#1d3624', bottom: '#060a07', onAccent: ink },
+  advanced: { accent: '#ffd34d', glow: '#ffb000', top: '#3a2c0c', bottom: '#0a0803', onAccent: ink },
+  none: { accent: lime, glow: '#a6ff00', top: '#1d3624', bottom: '#060a07', onAccent: ink },
+};
+
+/** Small deterministic PRNG so every player gets their own pattern and ID. */
+function seeded(text: string) {
+  let hash = 2166136261;
+  for (const character of text) hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  let state = hash >>> 0;
+  const next = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  return { next, id: (hash >>> 0).toString(16).toUpperCase().padStart(8, '0').slice(0, 6) };
+}
+
 /** The exported artwork. Pure SVG so it can be rendered to a PNG for sharing. */
 function PlayerCardArt({
   name,
@@ -332,24 +345,32 @@ function PlayerCardArt({
   position,
   positionLabel,
   strongFoot,
-  strongFootLabel,
   skillLevel,
   levelLabel,
-  formats,
-  days,
-  dayLetters,
   copy,
 }: PlayerCardData & { copy: Copy }) {
-  const shownName = truncate(name, 20);
-  const nameSize = shownName.length > 16 ? 34 : shownName.length > 12 ? 40 : 46;
-  const surname = (name.trim().split(/\s+/u).pop() ?? '').toUpperCase().slice(0, 10);
+  const palette = palettes[skillLevel ?? 'none'];
+  const { accent, glow, onAccent } = palette;
+  const words = name.trim().split(/\s+/u).filter(Boolean);
+  const surname = (words.length > 1 ? words[words.length - 1] : words[0] ?? 'PLAYER').toUpperCase();
+  const firstName = words.length > 1 ? words.slice(0, -1).join(' ').toUpperCase() : '';
+  const surnameSize = Math.min(92, Math.floor(640 / Math.max(surname.length, 4)));
+  const random = seeded(`${name}|${number}`);
+  const playerId = `${random.id}-${String(number).padStart(2, '0')}`;
+  const shards = Array.from({ length: 7 }, () => {
+    const x = random.next() * W;
+    const y = 60 + random.next() * 360;
+    const size = 60 + random.next() * 140;
+    const angle = random.next() * Math.PI * 2;
+    const point = (offset: number, scale: number) =>
+      `${(x + Math.cos(angle + offset) * size * scale).toFixed(1)},${(y + Math.sin(angle + offset) * size * scale).toFixed(1)}`;
+    return { points: `${point(0, 1)} ${point(2.3, 0.55)} ${point(4.1, 0.8)}`, opacity: 0.04 + random.next() * 0.08 };
+  });
   const bars = skillLevel === 'advanced' ? 3 : skillLevel === 'intermediate' ? 2 : skillLevel === 'beginner' ? 1 : 0;
+  const numberText = String(number);
   const spot = pitchSpots[position];
-  const anyDay = days.some(Boolean);
-  const tileY = 368;
-  const tileW = 100;
-  const tileH = 82;
-  const tiles = [24, 130, 236];
+  const footShort = strongFoot === 'left' ? 'L' : strongFoot === 'right' ? 'R' : 'L+R';
+  const stubTop = 548;
 
   return (
     <>
@@ -357,185 +378,151 @@ function PlayerCardArt({
         <ClipPath id="pc-clip">
           <Rect width={W} height={H} rx="30" />
         </ClipPath>
-        <LinearGradient id="pc-bg" x1="0" y1="0" x2="0.35" y2="1">
-          <Stop offset="0" stopColor="#1b3123" />
-          <Stop offset="0.55" stopColor="#0f1b14" />
-          <Stop offset="1" stopColor="#070b09" />
+        <LinearGradient id="pc-bg" x1="0" y1="0" x2="0.4" y2="1">
+          <Stop offset="0" stopColor={palette.top} />
+          <Stop offset="1" stopColor={palette.bottom} />
         </LinearGradient>
-        <RadialGradient id="pc-glow" cx="50%" cy="28%" r="55%">
-          <Stop offset="0" stopColor={lime} stopOpacity="0.32" />
-          <Stop offset="0.6" stopColor={lime} stopOpacity="0.04" />
-          <Stop offset="1" stopColor={lime} stopOpacity="0" />
+        <RadialGradient id="pc-glow" cx="70%" cy="22%" r="60%">
+          <Stop offset="0" stopColor={glow} stopOpacity="0.5" />
+          <Stop offset="0.5" stopColor={glow} stopOpacity="0.08" />
+          <Stop offset="1" stopColor={glow} stopOpacity="0" />
         </RadialGradient>
-        <LinearGradient id="pc-beam" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#deff96" stopOpacity="0.28" />
-          <Stop offset="0.8" stopColor="#deff96" stopOpacity="0" />
+        <LinearGradient id="pc-number" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={accent} stopOpacity="1" />
+          <Stop offset="1" stopColor={accent} stopOpacity="0.15" />
         </LinearGradient>
         <LinearGradient id="pc-edge" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={lime} stopOpacity="1" />
-          <Stop offset="0.35" stopColor={lime} stopOpacity="0.15" />
-          <Stop offset="0.65" stopColor="#7ef0c8" stopOpacity="0.2" />
-          <Stop offset="1" stopColor={lime} stopOpacity="0.9" />
+          <Stop offset="0" stopColor={accent} />
+          <Stop offset="0.3" stopColor="#ffffff" stopOpacity="0.5" />
+          <Stop offset="0.5" stopColor={accent} stopOpacity="0.15" />
+          <Stop offset="0.75" stopColor="#ffffff" stopOpacity="0.45" />
+          <Stop offset="1" stopColor={accent} />
         </LinearGradient>
-        <LinearGradient id="pc-tile" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.07" />
-          <Stop offset="1" stopColor="#ffffff" stopOpacity="0.02" />
+        <LinearGradient id="pc-fade" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={palette.bottom} stopOpacity="0" />
+          <Stop offset="1" stopColor={palette.bottom} stopOpacity="0.95" />
         </LinearGradient>
-        <RadialGradient id="pc-floor" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#000000" stopOpacity="0.6" />
-          <Stop offset="1" stopColor="#000000" stopOpacity="0" />
+        <RadialGradient id="pc-heat" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor={accent} stopOpacity="0.9" />
+          <Stop offset="1" stopColor={accent} stopOpacity="0" />
         </RadialGradient>
       </Defs>
 
       <G clipPath="url(#pc-clip)">
         <Rect width={W} height={H} fill="url(#pc-bg)" />
-        {/* mown pitch stripes */}
-        {Array.from({ length: 10 }, (_, index) => (
-          <Rect key={index} x="0" y={index * 60} width={W} height="30" fill="#ffffff" opacity="0.018" />
+        {shards.map((shard, index) => (
+          <Polygon key={index} points={shard.points} fill={accent} opacity={shard.opacity} />
         ))}
-        <Polygon points="20,0 60,0 200,330 -120,330" fill="url(#pc-beam)" />
-        <Polygon points="300,0 340,0 480,330 160,330" fill="url(#pc-beam)" />
+        {/* halftone dots fading towards the bottom */}
+        {Array.from({ length: 14 }, (_, row) =>
+          Array.from({ length: 13 }, (_, column) => (
+            <Circle
+              key={`${row}-${column}`}
+              cx={12 + column * 28 + (row % 2) * 14}
+              cy={70 + row * 24}
+              r={Math.max(0.4, 2.4 - row * 0.16)}
+              fill={accent}
+              opacity={0.12}
+            />
+          )),
+        )}
         <Rect width={W} height={H} fill="url(#pc-glow)" />
-        {/* centre-circle watermark */}
-        <Circle cx="180" cy="170" r="118" fill="none" stroke={lime} strokeOpacity="0.08" strokeWidth="1.5" />
-        <Line x1="0" y1="170" x2={W} y2="170" stroke={lime} strokeOpacity="0.06" strokeWidth="1.5" />
-        {/* ghost number */}
+        {/* diagonal speed slashes */}
+        <Polygon points={`-40,330 ${W + 40},150 ${W + 40},178 -40,358`} fill={accent} opacity="0.9" />
+        <Polygon points={`-40,372 ${W + 40},192 ${W + 40},198 -40,378`} fill={accent} opacity="0.45" />
+
+        {/* giant double-printed number */}
         <SvgText
-          x="180"
-          y="262"
-          textAnchor="middle"
-          fontSize="250"
+          x={W - 14}
+          y="352"
+          textAnchor="end"
+          fontSize="330"
           fontWeight="800"
           fontFamily="BarlowCondensed_800ExtraBold"
           fill="none"
-          stroke={lime}
-          strokeOpacity="0.16"
-          strokeWidth="1.5"
+          stroke={accent}
+          strokeWidth="2"
+          opacity="0.55"
         >
-          {String(number)}
+          {numberText}
         </SvgText>
+        <SvgText
+          x={W - 26}
+          y="340"
+          textAnchor="end"
+          fontSize="330"
+          fontWeight="800"
+          fontFamily="BarlowCondensed_800ExtraBold"
+          fill="url(#pc-number)"
+        >
+          {numberText}
+        </SvgText>
+
+        {/* vertical position strip */}
+        <G transform={`translate(30 ${stubTop - 210}) rotate(-90)`}>
+          <SvgText x="0" y="0" fill={accent} fontSize="12" fontWeight="700" letterSpacing="5" fontFamily="Barlow_600SemiBold">
+            {`${positionLabel.toUpperCase()} · ${shortPositions[position]}`}
+          </SvgText>
+        </G>
 
         {/* header */}
-        <SvgImage href={require('@/assets/images/one-more-logo.png')} x="22" y="22" width="40" height="40" />
-        <SvgText x="72" y="39" fill={lime} fontSize="11" fontWeight="700" letterSpacing="2.4" fontFamily="Barlow_600SemiBold">
-          {copy.profileCardTag}
+        <SvgImage href={require('@/assets/images/one-more-logo.png')} x="22" y="22" width="44" height="44" />
+        <SvgText x="76" y="40" fill="#ffffff" fontSize="15" fontWeight="800" letterSpacing="1" fontFamily="BarlowCondensed_800ExtraBold">
+          ONE MORE
         </SvgText>
-        <SvgText x="72" y="56" fill={sage} fontSize="11" fontWeight="600" letterSpacing="1" fontFamily="Barlow_600SemiBold">
-          ONE MORE · NICOSIA
+        <SvgText x="76" y="57" fill={accent} fontSize="8.5" fontWeight="700" letterSpacing="1.4" fontFamily="Barlow_600SemiBold">
+          {copy.profileCardMatchday}
         </SvgText>
         <G>
-          <Rect x="270" y="22" width="68" height="40" rx="12" fill={lime} />
-          <SvgText x="304" y="49" textAnchor="middle" fill={ink} fontSize="22" fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-            {shortPositions[position]}
-          </SvgText>
-        </G>
-
-        {/* jersey */}
-        <Rect x="110" y="236" width="140" height="18" fill="url(#pc-floor)" />
-        <G transform="translate(95 76) scale(0.85)">
-          <Path d={jerseyPath} fill={lime} stroke={ink} strokeWidth="3" strokeLinejoin="round" />
-          <Path d="M100 24 L154 66 L154 176 C154 181 150 184 146 184 L100 184 Z" fill={ink} opacity="0.08" />
-          <Path d="M70 14 C82 32 118 32 130 14 L123 11 C113 24 87 24 77 11 Z" fill={ink} />
-          <Polygon points="6,70 34,86 38,79 10,63" fill={ink} />
-          <Polygon points="194,70 166,86 162,79 190,63" fill={ink} />
-          <Path d="M46 172 L154 172" stroke={ink} strokeWidth="2.5" opacity="0.5" />
-          {surname ? (
-            <SvgText x="100" y="70" textAnchor="middle" fill={ink} fontSize="16" fontWeight="600" letterSpacing="3" fontFamily="Barlow_600SemiBold">
-              {surname}
-            </SvgText>
-          ) : null}
-          <SvgText x="100" y="150" textAnchor="middle" fill={ink} fontSize={number > 9 ? 70 : 82} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-            {String(number)}
-          </SvgText>
-        </G>
-
-        {/* name */}
-        <SvgText x="180" y={300} textAnchor="middle" fill={paper} fontSize={nameSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
-          {shownName.toUpperCase()}
-        </SvgText>
-        <SvgText x="180" y="326" textAnchor="middle" fill={sage} fontSize="14" fontWeight="500" fontFamily="Barlow_500Medium">
-          {truncate([positionLabel, location].filter(Boolean).join(' · '), 44)}
-        </SvgText>
-        <Rect x="150" y="340" width="60" height="3" rx="1.5" fill={lime} />
-
-        {/* stat tiles */}
-        {tiles.map((x) => (
-          <Rect key={x} x={x} y={tileY} width={tileW} height={tileH} rx="16" fill="url(#pc-tile)" stroke={line} strokeWidth="1.5" />
-        ))}
-        {/* foot */}
-        <G transform={`translate(${tiles[0] + 38} ${tileY + 12})`}>
-          <FootMark foot={strongFoot} />
-        </G>
-        <TileLabel x={tiles[0] + tileW / 2} y={tileY + 54} label={copy.profileCardFoot} />
-        <TileValue x={tiles[0] + tileW / 2} y={tileY + 72} value={truncate(strongFootLabel, 13)} />
-        {/* level */}
-        <G transform={`translate(${tiles[1] + 37} ${tileY + 12})`}>
+          <Rect x={W - 22 - 146} y="24" width="146" height="40" rx="20" fill="#000000" opacity="0.35" stroke={accent} strokeWidth="1.5" />
           {[0, 1, 2].map((index) => (
-            <Rect
+            <Path
               key={index}
-              x={index * 10}
-              y={20 - index * 7}
-              width="6"
-              height={8 + index * 7}
-              rx="2"
-              fill={lime}
-              opacity={index < bars ? 1 : 0.22}
+              d="M0 -6 L1.8 -1.9 L6.2 -1.8 L2.8 1 L4 5.4 L0 2.9 L-4 5.4 L-2.8 1 L-6.2 -1.8 L-1.8 -1.9 Z"
+              transform={`translate(${W - 22 - 128 + index * 15} 44)`}
+              fill={index < bars ? accent : 'none'}
+              stroke={accent}
+              strokeWidth="1.2"
             />
           ))}
-        </G>
-        <TileLabel x={tiles[1] + tileW / 2} y={tileY + 54} label={copy.profileCardLevel} />
-        <TileValue x={tiles[1] + tileW / 2} y={tileY + 72} value={truncate(levelLabel, 13)} />
-        {/* position mini pitch */}
-        <G transform={`translate(${tiles[2] + 34} ${tileY + 8})`}>
-          <Rect x="0" y="0" width="32" height="38" rx="4" fill="#27432f" stroke="#9cc4a6" strokeOpacity="0.6" strokeWidth="1" />
-          <Line x1="0" y1="19" x2="32" y2="19" stroke="#9cc4a6" strokeOpacity="0.6" strokeWidth="1" />
-          <Circle cx="16" cy="19" r="5" fill="none" stroke="#9cc4a6" strokeOpacity="0.6" strokeWidth="1" />
-          <Rect x="9" y="0" width="14" height="6" fill="none" stroke="#9cc4a6" strokeOpacity="0.6" strokeWidth="1" />
-          <Rect x="9" y="32" width="14" height="6" fill="none" stroke="#9cc4a6" strokeOpacity="0.6" strokeWidth="1" />
-          <Circle cx={spot.x * 32} cy={spot.y * 38} r="5" fill={lime} stroke={ink} strokeWidth="1.5" />
-        </G>
-        <TileLabel x={tiles[2] + tileW / 2} y={tileY + 62} label={copy.profileCardPosition} />
-        <TileValue x={tiles[2] + tileW / 2} y={tileY + 76} value={shortPositions[position]} small />
-
-        {/* availability */}
-        <SvgText x="24" y="482" fill={sage} fontSize="11" fontWeight="700" letterSpacing="1.6" fontFamily="Barlow_600SemiBold">
-          {copy.profileCardAvailable}
-        </SvgText>
-        {anyDay ? null : (
-          <SvgText x="336" y="482" textAnchor="end" fill={sage} fontSize="11" fontFamily="Barlow_500Medium">
-            {copy.profileCardNoDays}
+          <SvgText x={W - 22 - 50} y="49" textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight="700" letterSpacing="1" fontFamily="Barlow_600SemiBold">
+            {truncate(levelLabel.toUpperCase(), 13)}
           </SvgText>
-        )}
-        {days.map((on, index) => {
-          const cx = 24 + 16 + index * 46.6;
-          return (
-            <G key={index}>
-              <Circle cx={cx} cy="510" r="16" fill={on ? lime : 'none'} stroke={on ? lime : line} strokeWidth="1.5" />
-              <SvgText x={cx} y="515" textAnchor="middle" fill={on ? ink : sage} fontSize="13" fontWeight="700" fontFamily="Barlow_600SemiBold">
-                {dayLetters[index] ?? ''}
-              </SvgText>
-            </G>
-          );
-        })}
+        </G>
 
-        {/* formats */}
-        <SvgText x="24" y="560" fill={sage} fontSize="11" fontWeight="700" letterSpacing="1.6" fontFamily="Barlow_600SemiBold">
-          {copy.profileCardFormats}
+        {/* name block */}
+        <Rect x="0" y="380" width={W} height={stubTop - 380} fill="url(#pc-fade)" />
+        {firstName ? (
+          <SvgText x="24" y="424" fill="#ffffff" fontSize="18" fontWeight="700" letterSpacing="5" fontFamily="Barlow_600SemiBold">
+            {truncate(firstName, 22)}
+          </SvgText>
+        ) : null}
+        <SvgText x="20" y={424 + surnameSize * 0.82} fill="#ffffff" fontSize={surnameSize} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
+          {surname}
         </SvgText>
-        {[5, 7, 8, 11].map((size, index) => {
-          const on = formats.includes(size);
-          const x = 24 + index * 80;
-          return (
-            <G key={size}>
-              <Rect x={x} y="570" width="72" height="28" rx="14" fill={on ? lime : 'none'} stroke={on ? lime : line} strokeWidth="1.5" />
-              <SvgText x={x + 36} y="589" textAnchor="middle" fill={on ? ink : sage} fontSize="13" fontWeight="700" fontFamily="Barlow_600SemiBold">
-                {`${size}v${size}`}
-              </SvgText>
-            </G>
-          );
-        })}
-        <Rect x="0" y="612" width={W} height="28" fill={lime} />
-        <SvgText x="180" y="631" textAnchor="middle" fill={ink} fontSize="11" fontWeight="700" letterSpacing="2.4" fontFamily="Barlow_600SemiBold">
+        <Rect x="24" y={436 + surnameSize * 0.82} width="56" height="5" fill={accent} />
+        <SvgText x="92" y={442 + surnameSize * 0.82} fill={sage} fontSize="13" fontWeight="500" fontFamily="Barlow_500Medium">
+          {truncate(location, 34)}
+        </SvgText>
+
+        {/* ticket stub */}
+        <Rect x="0" y={stubTop} width={W} height={H - stubTop} fill={accent} />
+        <Line x1="18" y1={stubTop} x2={W - 18} y2={stubTop} stroke={onAccent} strokeWidth="2" strokeDasharray="2 6" strokeLinecap="round" opacity="0.5" />
+        <Circle cx="0" cy={stubTop} r="12" fill={palette.bottom} />
+        <Circle cx={W} cy={stubTop} r="12" fill={palette.bottom} />
+        <StubStat x={24} label={copy.profileCardFoot} value={footShort} color={onAccent} top={stubTop} />
+        <StubStat x={92} label={copy.profileCardPosition} value={shortPositions[position]} color={onAccent} top={stubTop} />
+        <StubStat x={176} label={copy.profileCardPlayerId} value={playerId} color={onAccent} top={stubTop} small />
+        {/* mini pitch with heat */}
+        <G transform={`translate(${W - 68} ${stubTop + 14})`}>
+          <Rect x="0" y="0" width="46" height="62" rx="5" fill={onAccent} />
+          <Circle cx={spot.x * 46} cy={spot.y * 62} r="16" fill="url(#pc-heat)" />
+          <Rect x="3" y="3" width="40" height="56" rx="3" fill="none" stroke={accent} strokeOpacity="0.55" strokeWidth="1" />
+          <Line x1="3" y1="31" x2="43" y2="31" stroke={accent} strokeOpacity="0.55" strokeWidth="1" />
+          <Circle cx="23" cy="31" r="6" fill="none" stroke={accent} strokeOpacity="0.55" strokeWidth="1" />
+          <Circle cx={spot.x * 46} cy={spot.y * 62} r="4" fill={accent} />
+        </G>
+        <SvgText x="24" y={H - 16} fill={onAccent} fontSize="10" fontWeight="700" letterSpacing="2.6" fontFamily="Barlow_600SemiBold">
           {copy.profileCardBrandLine}
         </SvgText>
       </G>
@@ -544,56 +531,33 @@ function PlayerCardArt({
   );
 }
 
-function TileLabel({ x, y, label }: { x: number; y: number; label: string }) {
+function StubStat({
+  x,
+  label,
+  value,
+  color,
+  top,
+  small = false,
+}: {
+  x: number;
+  label: string;
+  value: string;
+  color: string;
+  top: number;
+  small?: boolean;
+}) {
   return (
-    <SvgText x={x} y={y} textAnchor="middle" fill={sage} fontSize="9.5" fontWeight="700" letterSpacing="1.4" fontFamily="Barlow_600SemiBold">
-      {label}
-    </SvgText>
-  );
-}
-
-function TileValue({ x, y, value, small = false }: { x: number; y: number; value: string; small?: boolean }) {
-  return (
-    <SvgText x={x} y={y} textAnchor="middle" fill={paper} fontSize={small ? 13 : 14} fontWeight="700" fontFamily="Barlow_600SemiBold">
-      {value}
-    </SvgText>
-  );
-}
-
-const footD =
-  'M9.5 22c-2.6 0-3.7-2.4-3.4-5.3.3-2.9 1.3-4.9 1.3-7.7C7.4 6.7 8.7 5.2 10.7 5.2s3.3 1.5 3.1 4.2c-.2 2.8-1.4 4.3-1.4 7.2 0 2.9-.9 5.4-2.9 5.4z';
-
-function FootShape({ fill }: { fill: string }) {
-  return (
-    <>
-      <Path d={footD} fill={fill} />
-      <Circle cx="9.2" cy="2.9" r="1.3" fill={fill} />
-      <Circle cx="12" cy="2.6" r="1.1" fill={fill} />
-      <Circle cx="14.3" cy="3.4" r="1" fill={fill} />
-    </>
-  );
-}
-
-function FootMark({ foot }: { foot: StrongFoot }) {
-  const dim = '#cfff4a';
-  if (foot === 'both') {
-    return (
-      <G transform="translate(-2 0) scale(1.2)">
-        <G transform="translate(17 1) scale(-0.85 0.85)">
-          <FootShape fill={dim} />
-        </G>
-        <G transform="translate(12 1) scale(0.85)">
-          <FootShape fill={dim} />
-        </G>
-      </G>
-    );
-  }
-  return (
-    <G transform={foot === 'left' ? 'translate(28.8 0) scale(-1.2 1.2)' : 'scale(1.2)'}>
-      <FootShape fill={dim} />
+    <G>
+      <SvgText x={x} y={top + 30} fill={color} opacity="0.65" fontSize="9" fontWeight="700" letterSpacing="1.6" fontFamily="Barlow_600SemiBold">
+        {label}
+      </SvgText>
+      <SvgText x={x} y={top + 60} fill={color} fontSize={small ? 22 : 30} fontWeight="800" fontFamily="BarlowCondensed_800ExtraBold">
+        {value}
+      </SvgText>
     </G>
   );
 }
+
 
 const exportScale = 3;
 const cardFonts = ['BarlowCondensed_800ExtraBold', 'Barlow_600SemiBold', 'Barlow_500Medium'];
