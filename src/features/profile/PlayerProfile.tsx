@@ -12,6 +12,7 @@ import {
   type DimensionValue,
   type LayoutChangeEvent,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
   Defs,
@@ -377,11 +378,15 @@ function PlayerHero({
 }) {
   const styles = makeStyles(colors, locale);
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { cardRef, busyAction, handleAction } = usePlayerCardActions(copy);
   const cardWidth = Math.min(width - 32, 420);
   const cardName = card.name.trim() || (locale === 'en' ? 'ONE MORE Player' : 'Παίκτης ONE MORE');
   return (
-    <View accessibilityLabel={cardName} style={styles.hero}>
+    <View
+      accessibilityLabel={cardName}
+      style={[styles.hero, { paddingTop: Math.max(insets.top, 12) + 10 }]}
+    >
       <StageBackdrop
         id="profile-stage"
         colors={colors}
@@ -393,7 +398,7 @@ function PlayerHero({
         variant={1}
         beamWidth={230}
       />
-      <View style={styles.heroHeader}>
+      <View style={[styles.heroHeader, { paddingHorizontal: 4 }]}>
         <BrandMark prominent />
         <View style={styles.heroSpacer} />
         <Pressable

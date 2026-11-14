@@ -99,7 +99,7 @@ export function AppShell({ children }: PropsWithChildren) {
             style={[
               styles.topBar,
               pathname.startsWith('/explore') && styles.exploreTopBar,
-              { paddingTop: Math.max(insets.top, 10) },
+              { paddingTop: Math.max(insets.top, 10) + 8 },
             ]}
           >
             <View style={styles.titleBlock}>{!showSide ? <BrandMark prominent /> : null}</View>
