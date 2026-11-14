@@ -60,8 +60,8 @@ type PlayerCardShareModalProps = PlayerCardData & {
 };
 
 /** Card artwork size: the template image's own pixel size. */
-const W = 1024;
-const H = 1469;
+export const W = 1024;
+export const H = 1469;
 const ink = '#0c1210';
 const paperWhite = '#f2f5ec';
 const lime = '#cfff4a';
@@ -248,7 +248,7 @@ export function PlayerCardShareModal({ visible, onClose, copy, ...card }: Player
 
 
 /** Level colourways: recoloured copies of the card template plus matching accents. */
-const cardThemes: Record<SkillLevel, { accent: string; light: string; deep: string; template: number }> = {
+export const cardThemes: Record<SkillLevel, { accent: string; light: string; deep: string; template: number }> = {
   beginner: {
     accent: '#3ff0c0',
     light: '#a6ffe6',
@@ -262,9 +262,9 @@ const cardThemes: Record<SkillLevel, { accent: string; light: string; deep: stri
     template: require('@/assets/images/player-card-regular.jpg'),
   },
   advanced: {
-    accent: '#ffd23a',
-    light: '#ffe68a',
-    deep: '#f2b51f',
+    accent: '#3db8ff',
+    light: '#8fd8ff',
+    deep: '#1f9be6',
     template: require('@/assets/images/player-card-competitive.jpg'),
   },
 };
@@ -279,7 +279,7 @@ function fitSize(text: string, maxWidth: number, maxSize: number, emPerChar: num
  * (stadium, jersey, frame and glow) with the player's own details drawn on top
  * in the same places. Pure SVG so it renders to a PNG for sharing.
  */
-function PlayerCardArt({
+export function PlayerCardArt({
   name,
   location,
   number,
@@ -293,7 +293,8 @@ function PlayerCardArt({
   days,
   dayLetters,
   copy,
-}: PlayerCardData & { copy: Copy }) {
+  hidePill = false,
+}: PlayerCardData & { copy: Copy; hidePill?: boolean }) {
   const { accent, light, deep, template } = cardThemes[skillLevel ?? 'intermediate'];
   const words = name.trim().split(/\s+/u).filter(Boolean);
   const surname = (words[words.length - 1] ?? '').toUpperCase().slice(0, 12);
@@ -347,6 +348,7 @@ function PlayerCardArt({
       </SvgText>
 
       {/* position pill */}
+      {hidePill ? null : (
       <G transform={`translate(${pillX} 736)`}>
         <Rect x="0" y="0" width={pillWidth} height="52" rx="26" fill="#0b1310" stroke={accent} strokeOpacity="0.45" strokeWidth="2" />
         <Path d="M26 0 H140 L126 52 H26 A26 26 0 0 1 26 0 Z" fill="url(#pc-pill)" />
@@ -357,6 +359,7 @@ function PlayerCardArt({
           {positionLabel}
         </SvgText>
       </G>
+      )}
 
       {/* location */}
       {place ? (
@@ -393,30 +396,48 @@ function PlayerCardArt({
       ))}
 
       {/* availability */}
-      {days.map((on, index) => {
-        const cx = 137 + index * 62.7;
-        return (
-          <G key={index}>
-            <Circle cx={cx} cy="1135" r="26" fill={on ? accent : '#0f1714'} stroke={on ? accent : '#3d4c42'} strokeWidth="2.5" />
-            <SvgText x={cx} y="1145" textAnchor="middle" fill={on ? ink : '#c3cabf'} fontSize="27" fontWeight="600" fontFamily="Barlow_600SemiBold">
-              {dayLetters[index] ?? ''}
-            </SvgText>
-          </G>
-        );
-      })}
+      {days.every(Boolean) ? (
+        <G>
+          <Rect x="111" y="1106" width="428" height="58" rx="29" fill="url(#pc-pill)" />
+          <SvgText x="325" y="1146" textAnchor="middle" fill={ink} fontSize="32" fontWeight="700" fontFamily="Barlow_600SemiBold">
+            {copy.profileCardEveryDay}
+          </SvgText>
+        </G>
+      ) : (
+        days.map((on, index) => {
+          const cx = 137 + index * 62.7;
+          return (
+            <G key={index}>
+              <Circle cx={cx} cy="1135" r="26" fill={on ? accent : '#0f1714'} stroke={on ? accent : '#3d4c42'} strokeWidth="2.5" />
+              <SvgText x={cx} y="1145" textAnchor="middle" fill={on ? ink : '#c3cabf'} fontSize="27" fontWeight="600" fontFamily="Barlow_600SemiBold">
+                {dayLetters[index] ?? ''}
+              </SvgText>
+            </G>
+          );
+        })
+      )}
 
       {/* formats */}
-      {chosen.map((size, index) => {
-        const x = 614 + index * (formatWidth + 10);
-        return (
-          <G key={size}>
-            <Rect x={x} y="1106" width={formatWidth} height="58" rx="29" fill="url(#pc-pill)" />
-            <SvgText x={x + formatWidth / 2} y="1146" textAnchor="middle" fill={ink} fontSize={chosen.length > 2 ? 26 : 32} fontWeight="700" fontFamily="Barlow_600SemiBold">
-              {`${size}v${size}`}
-            </SvgText>
-          </G>
-        );
-      })}
+      {chosen.length === 4 ? (
+        <G>
+          <Rect x="614" y="1106" width="305" height="58" rx="29" fill="url(#pc-pill)" />
+          <SvgText x="766" y="1146" textAnchor="middle" fill={ink} fontSize="32" fontWeight="700" fontFamily="Barlow_600SemiBold">
+            {copy.profileCardAnyFormat}
+          </SvgText>
+        </G>
+      ) : (
+        chosen.map((size, index) => {
+          const x = 614 + index * (formatWidth + 10);
+          return (
+            <G key={size}>
+              <Rect x={x} y="1106" width={formatWidth} height="58" rx="29" fill="url(#pc-pill)" />
+              <SvgText x={x + formatWidth / 2} y="1146" textAnchor="middle" fill={ink} fontSize={chosen.length > 2 ? 26 : 32} fontWeight="700" fontFamily="Barlow_600SemiBold">
+                {`${size}v${size}`}
+              </SvgText>
+            </G>
+          );
+        })
+      )}
 
     </>
   );

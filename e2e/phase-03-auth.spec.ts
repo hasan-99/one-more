@@ -286,19 +286,23 @@ test('a verified signup session saves profile onboarding with the signup name', 
   await page.getByLabel('Email verification code').fill('12345678');
   await page.getByRole('button', { name: 'Verify email' }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
-  await expect(page.getByRole('heading', { name: 'Build your player card' })).toBeVisible();
-  await expect(page.getByLabel('Player name (English)')).toHaveValue('Player Example');
-  // Home area is required and not preselected: the card cannot be created until one is chosen.
-  await expect(page.getByRole('button', { name: 'Add your name and home area' })).toBeVisible();
+  // Step 1 holds name, city and area; the signup name is prefilled and the card cannot continue
+  // until a city and home area are chosen.
+  await expect(page.getByRole('textbox', { name: 'Your name' })).toHaveValue('Player Example');
+  await expect(page.getByRole('button', { name: 'Add name, city and area' })).toBeDisabled();
+  await page.getByRole('radio', { name: 'Nicosia' }).click();
   await page.getByRole('radio', { name: 'Strovolos' }).click();
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  await page.getByRole('radio', { name: /Midfielder/ }).click();
+  await page.getByRole('button', { name: /^Continue/ }).click();
+  await page.getByRole('button', { name: 'Skip' }).click();
   await page.getByRole('button', { name: 'Create my card' }).click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Your profile was saved.' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Your card is ready/ })).toBeVisible();
   expect(savedProfile).toMatchObject({
     display_name: 'Player Example',
     city_id: cityId,
     area_id: areaId,
+    preferred_position: 'midfielder',
     onboarding_complete: true,
   });
   expect(savedPreferences).toMatchObject({ preferred_formats: [5, 7], max_radius_km: 25 });

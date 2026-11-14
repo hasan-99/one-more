@@ -58,7 +58,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const showSide = responsiveWidth >= 1024;
   const showRow = responsiveWidth >= 600 && responsiveWidth < 1024;
   const showBottom = responsiveWidth < 600;
-  const immersive = pathname === '/teams/create';
+  const immersive = pathname === '/teams/create' || pathname === '/onboarding';
   const profileFullBleed = pathname === '/profile';
 
   if (!fontsLoaded && !fontError) {
