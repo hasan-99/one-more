@@ -139,6 +139,7 @@ export default function CreateTeamScreen() {
   const [saving, setSaving] = useState(false);
   const [createdTeamId, setCreatedTeamId] = useState<string | null>(null);
   const [flips, setFlips] = useState(0);
+  const [spins, setSpins] = useState(0);
   const city = useMemo(
     () => cities.find((item) => item.slug === 'nicosia') ?? cities[0] ?? null,
     [cities],
@@ -210,13 +211,15 @@ export default function CreateTeamScreen() {
     setHistory((past) => [...past.slice(-19), look]);
     showLook({ ...look, ...patch });
   };
-  const surprise = () =>
+  const surprise = () => {
+    setSpins((count) => count + 1);
     changeLook({
       shape: pickRandom(['shield', 'round', 'hex'] as const),
       color: pickRandom(palette).color,
       pattern: pickRandom(['plain', 'stripes', 'half'] as const),
       emblem: pickRandom(emblems),
     });
+  };
   const undo = () => {
     const previous = history[history.length - 1];
     if (!previous) return;
@@ -307,7 +310,7 @@ export default function CreateTeamScreen() {
         <View accessibilityLabel={copy.teamWizardPreview} style={styles.stage}>
           <View style={styles.crestBox}>
             <CrestHalo color={crestColor} />
-            <FloatingCrest flips={flips}>
+            <FloatingCrest flips={flips} spins={spins}>
               <Crest {...crest} size={100} label={`${copy.teamWizardCrestLabel}: ${initials}`} />
             </FloatingCrest>
             <FloorShadow />
@@ -1185,20 +1188,44 @@ function Crest({
   );
 }
 
-/** Floats the crest (st-float) and gives it a small in-place pop when its design changes. */
-function FloatingCrest({ flips, children }: { flips: number; children: ReactNode }) {
+/**
+ * Floats the crest (st-float). A design change gives it a short in-place pop; the dice
+ * ("Surprise me") plays the full 3D flip.
+ */
+function FloatingCrest({
+  flips,
+  spins,
+  children,
+}: {
+  flips: number;
+  spins: number;
+  children: ReactNode;
+}) {
   const float = useLoop(1800, { alternate: true });
   const pop = useEntrance(260, 0, Easing.out(Easing.quad), flips);
-  const played = flips === 0;
+  const spin = useEntrance(700, 0, Easing.bezier(0.3, 0.9, 0.3, 1), spins);
+  const popped = flips === 0;
+  const spun = spins === 0;
   return (
     <Animated.View
       style={{
         transform: [
           { translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) },
+          { perspective: 500 },
           {
-            scale: played
+            rotateY: spun
+              ? '0deg'
+              : spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
+          },
+          {
+            scale: popped
               ? 1
               : pop.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.94, 1.07, 1] }),
+          },
+          {
+            scale: spun
+              ? 1
+              : spin.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.18, 1] }),
           },
         ],
       }}

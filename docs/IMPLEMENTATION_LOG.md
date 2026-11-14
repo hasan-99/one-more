@@ -1671,3 +1671,7 @@
 ## Phase 17 — Crest step: no full spin on every choice
 
 - The crest no longer does a 360° flip on each option; it gives a short in-place pop (scale only) so choosing an option never looks like a page refresh. Create-team Playwright specs pass.
+
+## Phase 17 — Crest step: the dice plays the full flip
+
+- "Surprise me" (dice) plays the original 360° crest flip; ordinary option taps only give the short in-place pop. Create-team Playwright specs pass (10).
