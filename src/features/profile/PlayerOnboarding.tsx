@@ -441,6 +441,7 @@ export function PlayerOnboarding() {
         disabled={disabled || saving}
         style={({ pressed }) => [
           own.cta,
+          own.ctaGrow,
           disabled && own.ctaOff,
           pressed && !disabled && own.pressed,
         ]}
@@ -1000,7 +1001,7 @@ function FitCard({
   const cardHeight = (cardWidth * crop) / 1024;
   return (
     <View
-      style={[fitStyles.box, fixedWidth !== undefined && fitStyles.boxTop]}
+      style={fixedWidth !== undefined ? fitStyles.boxFixed : fitStyles.box}
       onLayout={(event) =>
         setBox({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })
       }
@@ -1031,7 +1032,9 @@ function FitCard({
 
 const fitStyles = StyleSheet.create({
   box: { flex: 1, minHeight: 0, width: '100%', alignItems: 'center', justifyContent: 'center' },
-  boxTop: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', justifyContent: 'flex-start' },
+  // No `flex` shorthand here: on iOS `flex: 1` resolves the flex basis to 0 even when a later
+  // `flexBasis: 'auto'` is given, which collapsed this box to no height.
+  boxFixed: { width: '100%', alignItems: 'center', justifyContent: 'flex-start' },
   artworkClip: { overflow: 'hidden', borderRadius: 12 },
   svg: { overflow: 'hidden' },
 });
@@ -1435,7 +1438,6 @@ function makeStyles(
     },
     skipText: { color: colors.textPrimary, fontFamily: semibold, fontSize: 16 },
     cta: {
-      flex: 1,
       height: 48,
       borderRadius: 17,
       backgroundColor: accent,
@@ -1446,7 +1448,8 @@ function makeStyles(
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 0 },
     },
-    ctaBlock: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', alignSelf: 'stretch' },
+    ctaGrow: { flex: 1 },
+    ctaBlock: { alignSelf: 'stretch' },
     ctaOff: {
       backgroundColor: 'transparent',
       borderWidth: 1.5,
