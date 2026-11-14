@@ -127,9 +127,6 @@ export default function TeamsScreen() {
                 onPress={() => router.push('/teams/create' as Href)}
                 style={({ pressed }) => [styles.headCreate, pressed && { opacity: 0.88 }]}
               >
-                <View style={styles.headCreatePlus}>
-                  <Text style={styles.headCreatePlusText}>+</Text>
-                </View>
                 <Text style={styles.createText}>{copy.teamCreateShort}</Text>
               </Pressable>
             ) : null}
@@ -511,28 +508,12 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 30, lineHeight: 38 },
     headCreate: {
       flexShrink: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
       minHeight: 48,
-      paddingLeft: 6,
-      paddingRight: 16,
-      borderRadius: 24,
+      paddingHorizontal: 18,
+      borderRadius: 14,
       backgroundColor: colors.primaryButton,
-    },
-    headCreatePlus: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.primaryButtonText,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    headCreatePlusText: {
-      color: colors.primaryButton,
-      fontSize: 22,
-      lineHeight: 24,
-      fontWeight: '800',
     },
     createButton: {
       alignSelf: 'flex-start',
