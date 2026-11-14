@@ -79,43 +79,32 @@ const emblemPaths: Record<Exclude<TeamCrestEmblem, 'initials'>, string> = {
   crown: 'M2.5 8l4.8 4.2L12 4.5l4.7 7.7L21.5 8l-2 12h-15Z',
 };
 const emblems: TeamCrestEmblem[] = ['initials', 'ball', 'bolt', 'star', 'crown'];
-const looks: { key: string; label: keyof typeof translations.en; design: CrestLook }[] = [
-  {
-    key: 'classic',
-    label: 'teamWizardLookClassic',
-    design: { shape: 'shield', color: '#cfff4a', pattern: 'plain', emblem: 'initials' },
-  },
-  {
-    key: 'thunder',
-    label: 'teamWizardLookThunder',
-    design: { shape: 'hex', color: '#5cc8ff', pattern: 'half', emblem: 'bolt' },
-  },
-  {
-    key: 'royal',
-    label: 'teamWizardLookRoyal',
-    design: { shape: 'shield', color: '#b79cff', pattern: 'stripes', emblem: 'crown' },
-  },
-  {
-    key: 'fire',
-    label: 'teamWizardLookFire',
-    design: { shape: 'round', color: '#ffa94d', pattern: 'half', emblem: 'ball' },
-  },
-  {
-    key: 'ice',
-    label: 'teamWizardLookIce',
-    design: { shape: 'hex', color: '#f2f5ec', pattern: 'stripes', emblem: 'star' },
-  },
-  {
-    key: 'striker',
-    label: 'teamWizardLookStriker',
-    design: { shape: 'round', color: '#ff8fc0', pattern: 'plain', emblem: 'ball' },
-  },
-];
-const pickRandom = <T,>(items: readonly T[]): T =>
-  items[Math.floor(Math.random() * items.length)] as T;
 /** Header height the preview stage extends underneath (reference: margin-top -68px). */
 const headerOverlap = 68;
 const stageHeight = 232;
+
+const defaultLook: CrestLook = {
+  shape: 'shield',
+  color: '#cfff4a',
+  pattern: 'plain',
+  emblem: 'initials',
+};
+/** Style score: every choice that moves away from the plain default adds points (40 to 100). */
+function scoreOf(look: CrestLook) {
+  return (
+    40 +
+    (look.shape !== defaultLook.shape ? 10 : 0) +
+    (look.color !== defaultLook.color ? 10 : 0) +
+    (look.pattern !== defaultLook.pattern ? 20 : 0) +
+    (look.emblem !== defaultLook.emblem ? 20 : 0)
+  );
+}
+const scoreTiers = [
+  { from: 100, label: 'teamWizardTierLegend' },
+  { from: 80, label: 'teamWizardTierPro' },
+  { from: 60, label: 'teamWizardTierClub' },
+  { from: 0, label: 'teamWizardTierRookie' },
+] as const;
 
 export default function CreateTeamScreen() {
   const { colors, locale } = useAppPreferences();
@@ -139,7 +128,6 @@ export default function CreateTeamScreen() {
   const [saving, setSaving] = useState(false);
   const [createdTeamId, setCreatedTeamId] = useState<string | null>(null);
   const [flips, setFlips] = useState(0);
-  const [spins, setSpins] = useState(0);
   const city = useMemo(
     () => cities.find((item) => item.slug === 'nicosia') ?? cities[0] ?? null,
     [cities],
@@ -211,15 +199,7 @@ export default function CreateTeamScreen() {
     setHistory((past) => [...past.slice(-19), look]);
     showLook({ ...look, ...patch });
   };
-  const surprise = () => {
-    setSpins((count) => count + 1);
-    changeLook({
-      shape: pickRandom(['shield', 'round', 'hex'] as const),
-      color: pickRandom(palette).color,
-      pattern: pickRandom(['plain', 'stripes', 'half'] as const),
-      emblem: pickRandom(emblems),
-    });
-  };
+  const styleScore = scoreOf(look);
   const undo = () => {
     const previous = history[history.length - 1];
     if (!previous) return;
@@ -310,20 +290,13 @@ export default function CreateTeamScreen() {
         <View accessibilityLabel={copy.teamWizardPreview} style={styles.stage}>
           <View style={styles.crestBox}>
             <CrestHalo color={crestColor} />
-            <FloatingCrest flips={flips} spins={spins}>
+            <FloatingCrest flips={flips}>
               <Crest {...crest} size={100} label={`${copy.teamWizardCrestLabel}: ${initials}`} />
             </FloatingCrest>
             <FloorShadow />
           </View>
+          <ScoreChip score={styleScore} colors={colors} copy={copy} styles={styles} />
           <View style={styles.crestTools}>
-            <ToolButton
-              label={copy.teamWizardSurprise}
-              onPress={surprise}
-              primary
-              colors={colors}
-              styles={styles}
-              glyph="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4ZM8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"
-            />
             <ToolButton
               label={copy.teamWizardUndo}
               onPress={undo}
@@ -391,9 +364,7 @@ export default function CreateTeamScreen() {
                 colors={colors}
                 copy={copy}
                 emblem={crestEmblem}
-                look={look}
                 onEmblem={(value) => changeLook({ emblem: value })}
-                onLook={(next) => changeLook(next)}
                 onPattern={(value) => changeLook({ pattern: value })}
                 onShape={(value) => changeLook({ shape: value })}
                 onColor={(value) => changeLook({ color: value })}
@@ -547,9 +518,7 @@ function StepCrest({
   colors,
   copy,
   emblem,
-  look,
   onEmblem,
-  onLook,
   onPattern,
   onShape,
   onColor,
@@ -561,9 +530,7 @@ function StepCrest({
   colors: ThemeColors;
   copy: Copy;
   emblem: TeamCrestEmblem;
-  look: CrestLook;
   onEmblem: (value: TeamCrestEmblem) => void;
-  onLook: (value: CrestLook) => void;
   onPattern: (value: TeamCrestPattern) => void;
   onShape: (value: TeamCrestShape) => void;
   onColor: (value: TeamCrestColor) => void;
@@ -590,36 +557,6 @@ function StepCrest({
   };
   return (
     <>
-      <View style={styles.fieldBlock}>
-        <Text style={styles.fieldLabel}>{copy.teamWizardLooks}</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.looksRow}
-          keyboardShouldPersistTaps="handled"
-        >
-          {looks.map((item) => {
-            const on =
-              item.design.shape === look.shape &&
-              item.design.color === look.color &&
-              item.design.pattern === look.pattern &&
-              item.design.emblem === look.emblem;
-            return (
-              <Pressable
-                key={item.key}
-                accessibilityRole="button"
-                accessibilityLabel={copy[item.label]}
-                accessibilityState={{ selected: on }}
-                onPress={() => onLook(item.design)}
-                style={[styles.lookCard, on && styles.lookCardOn]}
-              >
-                <Crest {...item.design} initials="FC" size={42} />
-                <Text style={styles.lookText}>{copy[item.label]}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
       <View style={styles.fieldBlock}>
         <Text style={styles.fieldLabel}>{copy.teamWizardShape}</Text>
         <View
@@ -814,6 +751,90 @@ function OptionButton({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+/** Small style score: the number counts up, a +N floats away and the bar fills. */
+function ScoreChip({
+  score,
+  colors,
+  copy,
+  styles,
+}: {
+  score: number;
+  colors: ThemeColors;
+  copy: Copy;
+  styles: Styles;
+}) {
+  const [value] = useState(() => new Animated.Value(score));
+  const [shown, setShown] = useState(score);
+  const [gain] = useState(() => new Animated.Value(0));
+  const [delta, setDelta] = useState(0);
+  const [previous, setPrevious] = useState(score);
+  if (previous !== score) {
+    setDelta(score - previous);
+    setPrevious(score);
+  }
+  useEffect(() => {
+    const id = value.addListener(({ value: next }) => setShown(Math.round(next)));
+    return () => value.removeListener(id);
+  }, [value]);
+  useEffect(() => {
+    const count = Animated.timing(value, { toValue: score, duration: 380, useNativeDriver: false });
+    gain.setValue(0);
+    const float = Animated.timing(gain, { toValue: 1, duration: 900, useNativeDriver: true });
+    count.start();
+    if (delta !== 0) float.start();
+    return () => {
+      count.stop();
+      float.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [score]);
+  const tier = scoreTiers.find((item) => score >= item.from) ?? scoreTiers[scoreTiers.length - 1];
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${copy.teamWizardStyleScore}: ${score}, ${copy[tier.label]}`}
+      style={styles.scoreChip}
+    >
+      <View style={styles.scoreTop}>
+        <Text style={styles.scoreNumber}>{shown}</Text>
+        <Text style={styles.scoreTier}>{copy[tier.label]}</Text>
+      </View>
+      <Text style={styles.scoreLabel}>{copy.teamWizardStyleScore}</Text>
+      <View style={styles.scoreTrack}>
+        <Animated.View
+          style={[
+            styles.scoreFill,
+            {
+              width: value.interpolate({
+                inputRange: [0, 100],
+                outputRange: ['0%', '100%'],
+                extrapolate: 'clamp',
+              }),
+            },
+          ]}
+        />
+      </View>
+      {delta !== 0 ? (
+        <Animated.Text
+          pointerEvents="none"
+          style={[
+            styles.scoreGain,
+            {
+              color: delta > 0 ? colors.accentText : colors.errorText,
+              opacity: gain.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0] }),
+              transform: [
+                { translateY: gain.interpolate({ inputRange: [0, 1], outputRange: [8, -22] }) },
+              ],
+            },
+          ]}
+        >
+          {`${delta > 0 ? '+' : ''}${delta}`}
+        </Animated.Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -1188,44 +1209,20 @@ function Crest({
   );
 }
 
-/**
- * Floats the crest (st-float). A design change gives it a short in-place pop; the dice
- * ("Surprise me") plays the full 3D flip.
- */
-function FloatingCrest({
-  flips,
-  spins,
-  children,
-}: {
-  flips: number;
-  spins: number;
-  children: ReactNode;
-}) {
+/** Floats the crest (st-float) and gives it a short in-place pop when its design changes. */
+function FloatingCrest({ flips, children }: { flips: number; children: ReactNode }) {
   const float = useLoop(1800, { alternate: true });
   const pop = useEntrance(260, 0, Easing.out(Easing.quad), flips);
-  const spin = useEntrance(700, 0, Easing.bezier(0.3, 0.9, 0.3, 1), spins);
   const popped = flips === 0;
-  const spun = spins === 0;
   return (
     <Animated.View
       style={{
         transform: [
           { translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) },
-          { perspective: 500 },
-          {
-            rotateY: spun
-              ? '0deg'
-              : spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
-          },
           {
             scale: popped
               ? 1
               : pop.interpolate({ inputRange: [0, 0.4, 1], outputRange: [0.94, 1.07, 1] }),
-          },
-          {
-            scale: spun
-              ? 1
-              : spin.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.18, 1] }),
           },
         ],
       }}
@@ -1537,6 +1534,31 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
     },
     crestBox: { width: 112, height: 128, alignItems: 'center', justifyContent: 'center' },
     crestTools: { position: 'absolute', right: 16, top: 14, gap: 8 },
+    scoreChip: {
+      position: 'absolute',
+      left: 16,
+      top: 14,
+      width: 104,
+      paddingVertical: 7,
+      paddingHorizontal: 10,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.14)',
+      backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    scoreTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+    scoreNumber: { color: colors.accentText, fontSize: 22, lineHeight: 24, fontWeight: '800' },
+    scoreTier: {
+      color: colors.textPrimary,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    scoreLabel: { color: colors.textSecondary, fontSize: 10, marginBottom: 5 },
+    scoreTrack: { height: 5, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },
+    scoreFill: { height: 5, borderRadius: 3, backgroundColor: colors.primaryButton },
+    scoreGain: { position: 'absolute', right: 8, top: -6, fontSize: 15, fontWeight: '800' },
     toolButton: {
       width: 46,
       height: 46,
@@ -1548,23 +1570,10 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       justifyContent: 'center',
     },
     toolButtonPrimary: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
-    looksRow: { gap: 10, paddingVertical: 2 },
-    lookCard: {
-      width: 88,
-      paddingVertical: 8,
-      alignItems: 'center',
-      gap: 4,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    lookCardOn: { borderColor: colors.primaryButton },
-    lookText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
     emblemRow: { flexDirection: 'row', gap: 8 },
     emblemButton: {
       flex: 1,
-      height: 48,
+      height: 42,
       borderRadius: 14,
       borderWidth: 1,
       borderColor: colors.border,
@@ -1591,7 +1600,7 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
     },
     bars: { flexDirection: 'row', gap: 6, paddingHorizontal: 18 },
     body: { flex: 1, minHeight: 0 },
-    bodyContent: { paddingHorizontal: 18, paddingTop: 16, paddingBottom: 18 },
+    bodyContent: { paddingHorizontal: 18, paddingTop: 12, paddingBottom: 14 },
     stepTitle: {
       color: colors.textPrimary,
       fontFamily: display,
@@ -1600,7 +1609,7 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       fontWeight: '800',
     },
     helperText: { color: colors.textSecondary, fontFamily: body, fontSize: 14, lineHeight: 20 },
-    fieldBlock: { gap: 8 },
+    fieldBlock: { gap: 6 },
     fieldLabelRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
@@ -1638,7 +1647,7 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
     third: { flexBasis: '28%' },
     option: {
       flexGrow: 1,
-      minHeight: 48,
+      minHeight: 44,
       paddingHorizontal: 10,
       borderRadius: 14,
       borderWidth: 1.5,
@@ -1647,7 +1656,7 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    optionTall: { minHeight: 78, gap: 6 },
+    optionTall: { minHeight: 46, gap: 8, flexDirection: 'row' },
     optionRow: { flexDirection: 'row', gap: 8 },
     optionSelected: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
     optionText: { fontFamily: semibold, fontSize: 15, fontWeight: '600' },
@@ -1794,16 +1803,16 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
 }
 
 const swatchStyles = StyleSheet.create({
-  hit: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
+  hit: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   ring: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  swatch: { width: 38, height: 38, borderRadius: 19 },
+  swatch: { width: 32, height: 32, borderRadius: 16 },
 });
 const haloStyles = StyleSheet.create({
   halo: { position: 'absolute', top: -8, left: -14, right: -14, bottom: -8 },

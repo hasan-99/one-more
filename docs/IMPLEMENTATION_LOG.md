@@ -1675,3 +1675,10 @@
 ## Phase 17 — Crest step: the dice plays the full flip
 
 - "Surprise me" (dice) plays the original 360° crest flip; ordinary option taps only give the short in-place pop. Create-team Playwright specs pass (10).
+
+## Phase 17 — Crest step: no random roll, small style score, compact options
+
+- Removed the dice ("Surprise me") and the Quick looks row from the crest step. Kept Undo, the emblem row, and the stage background (beams, dots), the floating crest and halo.
+- Added a small animated Style score chip (top-left of the stage): 40 base, +10 shape, +10 color, +20 pattern, +20 emblem; count-up, floating +N, filling bar, tiers Rookie/Club/Pro/Legend (en/el).
+- Options are smaller (shape/pattern rows 44-46 px, 42 px swatches and emblems) so the whole step fits a 393x852 screen without scrolling. The crest only gets a short pop on a change (the full flip is gone with the dice).
+- Checks: tsc, eslint, vitest 39, Playwright create-team 10 passed (new test for score, undo, no dice/looks, no scroll, emblem saved).

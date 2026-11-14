@@ -209,7 +209,7 @@ test('choosing an option does not replay the step animation', async ({ page }) =
   }
 });
 
-test('the crest step offers surprise, undo, quick looks and emblems and saves the emblem', async ({
+test('the crest step shows a style score, undo and emblems, and saves the emblem', async ({
   page,
 }) => {
   await seedSession(page);
@@ -229,22 +229,30 @@ test('the crest step offers surprise, undo, quick looks and emblems and saves th
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByRole('heading', { name: 'Design your crest' })).toBeVisible();
   await page.waitForTimeout(700);
+  // No random roll and no ready-made looks any more.
+  await expect(page.getByRole('button', { name: 'Surprise me' })).toHaveCount(0);
+  await expect(page.getByText('Quick looks')).toHaveCount(0);
+  const score = page.getByLabel(/^Style score: /);
+  await expect(score).toHaveAttribute('aria-label', 'Style score: 40, Rookie');
   await page.screenshot({
     path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'create-team-crest-mobile.png'),
   });
 
   const undo = page.getByRole('button', { name: 'Undo' });
   await expect(undo).toBeDisabled();
-  await page.getByRole('button', { name: 'Thunder' }).click();
-  await expect(page.getByRole('radio', { name: 'Bolt' })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Hex', exact: true })).toBeChecked();
-  await expect(undo).toBeEnabled();
-  await undo.click();
-  await expect(page.getByRole('radio', { name: 'Shield', exact: true })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Initials' })).toBeChecked();
-  await page.getByRole('button', { name: 'Surprise me' }).click();
-  await expect(undo).toBeEnabled();
+  await page.getByRole('radio', { name: 'Hex', exact: true }).click();
+  await page.getByRole('radio', { name: 'Stripes' }).click();
+  await expect(score).toHaveAttribute('aria-label', 'Style score: 70, Club');
   await page.getByRole('radio', { name: 'Crown' }).click();
+  await expect(score).toHaveAttribute('aria-label', 'Style score: 90, Pro');
+  await undo.click();
+  await expect(score).toHaveAttribute('aria-label', 'Style score: 70, Club');
+  await page.getByRole('radio', { name: 'Crown' }).click();
+  // Everything fits without scrolling and the footer stays reachable.
+  const body = page.locator('#team-create-step');
+  expect(
+    await body.evaluate((element) => element.scrollHeight - element.clientHeight),
+  ).toBeLessThanOrEqual(1);
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create team' }).click();
   await expect.poll(() => saved?.p_crest_emblem).toBe('crown');
