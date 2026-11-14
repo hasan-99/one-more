@@ -87,7 +87,7 @@ const autosaveDelay = 600;
 
 export function PlayerProfile() {
   const { user } = useAuth();
-  const { colors, locale, setLocale } = useAppPreferences();
+  const { colors, locale, setLocale, theme, setThemePreference } = useAppPreferences();
   const copy = translations[locale];
   const { showToast } = useToast();
   const [form, setForm] = useState<ProfileInput>(() => emptyForm(locale));
@@ -485,6 +485,13 @@ export function PlayerProfile() {
               styles={styles}
             />
             <AccountRow
+              label={copy.themeLabel}
+              value={theme === 'dark' ? copy.themeDark : copy.themeLight}
+              onPress={() => setThemePreference(theme === 'dark' ? 'light' : 'dark')}
+              colors={colors}
+              styles={styles}
+            />
+            <AccountRow
               label={copy.appSettingsTitle}
               onPress={() => router.push('/settings' as Href)}
               colors={colors}
@@ -619,25 +626,7 @@ function PlayerHero({
 
       <View style={styles.heroHeader}>
         <BrandMark prominent />
-        <Text accessibilityRole="header" style={styles.heroTitle}>
-          {copy.appProfileTitle}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.profileShareCard}
-          onPress={onShare}
-          style={({ pressed }) => [styles.iconGhost, { transform: [{ scale: pressed ? 0.94 : 1 }] }]}
-        >
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"
-              stroke={colors.accentText}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </Pressable>
+        <View style={styles.heroSpacer} />
         <Pressable
           accessibilityRole="button"
           onPress={onEdit}
@@ -693,6 +682,24 @@ function PlayerHero({
         <View style={[styles.heroChip, { backgroundColor: colors.background === '#0C1210' ? 'rgba(242,245,236,0.1)' : colors.surfaceRaised }]}>
           <Text style={styles.heroChipText}>{foot}</Text>
         </View>
+      </Rise>
+      <Rise delay={740} distance={16} style={styles.shareWrap}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onShare}
+          style={({ pressed }) => [styles.shareButton, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+        >
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"
+              stroke={colors.primaryButtonText}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+          <Text style={styles.shareText}>{copy.profileShareCard}</Text>
+        </Pressable>
       </Rise>
     </View>
   );
@@ -1627,6 +1634,20 @@ function makeStyles(colors: ThemeColors, locale: Locale) {
     },
     ghost: { position: 'absolute', top: 34, left: 0, right: 0, alignItems: 'center' },
     heroHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 12 },
+    heroSpacer: { flex: 1 },
+    shareWrap: { width: '100%', alignItems: 'center', marginTop: 10 },
+    shareButton: {
+      width: '100%',
+      maxWidth: 340,
+      height: 50,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      borderRadius: 16,
+      backgroundColor: colors.primaryButton,
+    },
+    shareText: { color: colors.primaryButtonText, fontFamily: semibold, fontSize: 16, fontWeight: '600' },
     heroTitle: { flex: 1, color: colors.textPrimary, fontFamily: display, fontSize: 24, lineHeight: 26, fontWeight: '800' },
     editButton: {
       height: 44,

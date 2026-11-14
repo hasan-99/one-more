@@ -1,6 +1,6 @@
 import { router, Slot, usePathname, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
@@ -69,8 +69,11 @@ export default function AppLayout() {
     setRetryAttempt((attempt) => attempt + 1);
   };
 
+  // Keep <Slot /> mounted while a gate is shown: unmounting it mid-navigation
+  // makes Expo Router drop the pending route, so taps on protected tabs did nothing.
+  let gate: ReactNode = null;
   if (protectedRoute && (isLoading || !session || sessionError)) {
-    return (
+    gate = (
       <AuthPage
         title={
           sessionError
@@ -93,9 +96,8 @@ export default function AppLayout() {
         )}
       </AuthPage>
     );
-  }
-  if (protectedRoute && session && (!currentProfileStatus || currentProfileStatus.error)) {
-    return (
+  } else if (protectedRoute && session && (!currentProfileStatus || currentProfileStatus.error)) {
+    gate = (
       <AuthPage
         title={currentProfileStatus?.error ? copy.profileLoadError : copy.profileLoading}
         description={copy.profileOnboardingDescription}
@@ -109,8 +111,19 @@ export default function AppLayout() {
     );
   }
   return (
-    <AppShell>
-      <Slot />
-    </AppShell>
+    <>
+      {gate ? <View style={styles.gate}>{gate}</View> : null}
+      <View style={gate ? styles.hidden : styles.fill}>
+        <AppShell>
+          <Slot />
+        </AppShell>
+      </View>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  gate: { flex: 1 },
+  fill: { flex: 1 },
+  hidden: { display: 'none' },
+});

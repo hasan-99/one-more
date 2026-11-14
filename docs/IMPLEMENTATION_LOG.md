@@ -1391,3 +1391,10 @@
 - **Browser verification:** Design files and app rendered side by side in Chromium at 393×852: Explore (list, 7v7 filter, request sent, area sheet, more-filters sheet), Create Team (all 3 steps and success) and Profile (hero, pitch, play style, days, formats, teams, account, Edit sheet). No page errors. Physical iPhone not inspected.
 - **Security verification:** Join requests use existing RLS-protected RPCs; no new client secrets; migration only widens an allowed-values check.
 - **Next phase:** Apply the migration to the hosted project and run pgTAP; device review in Expo Go. Phase 18 not started.
+
+### 2026-11-14 — Phase 17 Navigation fix, compact header and profile card/theme
+
+- **Phase:** 17; Phase 18 not started. **Status:** PARTIAL (push to GitHub still refused, device not inspected).
+- **Summary:** Fixed tab-bar taps on protected routes (Create `+` → team wizard, Profile) doing nothing: `(app)/_layout.tsx` replaced `<Slot />` with the auth/profile gate while checking, which made Expo Router drop the pending navigation; the gate now overlays a still-mounted, hidden `<Slot />`. Header shows only the logo and a small `EN`/`ΕΛ` button on every page (no section name). Profile shows a prominent "Share my player card" button under the player chips (opens the card with Share / Save image) and an Appearance row in Account that switches Dark/Light.
+- **Checks:** lint PASS; typecheck PASS; unit tests PASS (38/38); build:web PASS; e2e phase-17 create-team + profile PASS (8/8, mobile + desktop Chromium).
+- **Browser verification:** 393×852 Chromium with mocked session: Home → `+` opens "Name your team"; Explore → Profile opens the profile; player card modal opened; Appearance row switched to Light. No page errors.

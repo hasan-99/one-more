@@ -31,23 +31,6 @@ function activeSection(pathname: string) {
   return 'home';
 }
 
-function sectionTitle(pathname: string, locale: 'en' | 'el') {
-  const copy = translations[locale];
-  if (pathname.startsWith('/explore')) return copy.appExploreTitle;
-  if (pathname.startsWith('/create')) return copy.appCreateTitle;
-  if (pathname === '/teams/create') return copy.appCreateTeamTitle;
-  if (pathname.startsWith('/teams/')) return copy.appTeamDetailsTitle;
-  if (pathname === '/teams') return copy.appTeamsTitle;
-  if (pathname.startsWith('/matches')) return copy.appMatchDetailsTitle;
-  if (pathname === '/challenges') return copy.appChallenges;
-  if (pathname.startsWith('/challenges/')) return copy.appChallengeDetailsTitle;
-  if (pathname.startsWith('/chat')) return copy.appChatTitle;
-  if (pathname.startsWith('/notifications')) return copy.appNotificationsTitle;
-  if (pathname.startsWith('/settings')) return copy.appSettingsTitle;
-  if (pathname.startsWith('/profile')) return copy.appProfileTitle;
-  return copy.appHomeTitle;
-}
-
 export function AppShell({ children }: PropsWithChildren) {
   const { colors, locale } = useAppPreferences();
   const [fontsLoaded, fontError] = useFonts({
@@ -65,7 +48,6 @@ export function AppShell({ children }: PropsWithChildren) {
   const insets = useSafeAreaInsets();
   const copy = translations[locale];
   const active = activeSection(pathname);
-  const title = sectionTitle(pathname, locale);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   useEffect(() => {
     const timer = setTimeout(() => setResponsiveLayoutReady(true), 0);
@@ -119,18 +101,9 @@ export function AppShell({ children }: PropsWithChildren) {
             ]}
           >
             <View style={styles.titleBlock}>
-              {!showSide ? <BrandMark prominent={pathname.startsWith('/explore')} /> : null}
-              <Text
-                accessibilityRole="header"
-                style={[
-                  styles.sectionTitle,
-                  pathname.startsWith('/explore') && styles.exploreSectionTitle,
-                ]}
-              >
-                {title}
-              </Text>
+              {!showSide ? <BrandMark prominent /> : null}
             </View>
-            <LanguageSwitcher compact={pathname.startsWith('/explore')} />
+            <LanguageSwitcher compact />
           </View>
         ) : null}
         {showRow ? (

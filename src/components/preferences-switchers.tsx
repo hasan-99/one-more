@@ -17,6 +17,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
           }`}
           disabled={!preferencesReady}
           onPress={() => setLocale(locale === 'en' ? 'el' : 'en')}
+          hitSlop={6}
           style={[styles.compactOption, { backgroundColor: colors.primaryButton }]}
         >
           <Text style={[styles.compactText, { color: colors.primaryButtonText }]}>
@@ -113,10 +114,10 @@ const styles = StyleSheet.create({
   group: { gap: 4 },
   compactGroup: { flexShrink: 0 },
   compactOption: {
-    minHeight: 44,
-    minWidth: 48,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    minHeight: 34,
+    minWidth: 40,
+    paddingHorizontal: 10,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -138,5 +139,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   optionText: { fontSize: 12, fontWeight: '600' },
-  compactText: { fontFamily: 'Barlow_600SemiBold', fontSize: 15, fontWeight: '600' },
+  compactText: { fontFamily: 'Barlow_600SemiBold', fontSize: 13, fontWeight: '600' },
 });

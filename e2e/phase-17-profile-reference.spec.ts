@@ -57,7 +57,7 @@ test('profile matches the animated player reference and saves editable details',
   const width = testInfo.project.name === 'mobile-chromium' ? 393 : 1440;
   await page.setViewportSize({ width, height: width < 600 ? 852 : 900 });
   await page.goto('/profile');
-  await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Share my player card' })).toBeVisible();
   await expect(page.getByText('Profile Player')).toBeVisible();
   await expect(page.getByText('Strovolos, Nicosia')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Where you play' })).toBeVisible();
@@ -109,7 +109,7 @@ test('profile matches the animated player reference and saves editable details',
   await page.addInitScript(() => localStorage.setItem('one-more.locale', 'el'));
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'el');
-  await expect(page.getByRole('heading', { name: 'Προφίλ', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Κοινοποίηση της κάρτας παίκτη μου' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Πού παίζεις' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   await page.getByRole('button', { name: 'Κοινοποίηση της κάρτας παίκτη μου' }).click();
