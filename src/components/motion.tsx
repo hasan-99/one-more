@@ -30,9 +30,17 @@ export function useLoop(
     delay = 0,
     easing = Easing.inOut(Easing.ease),
     enabled = true,
-  }: { alternate?: boolean; delay?: number; easing?: (value: number) => number; enabled?: boolean } = {},
+  }: {
+    alternate?: boolean;
+    delay?: number;
+    easing?: (value: number) => number;
+    enabled?: boolean;
+  } = {},
 ): Animated.Value {
   const [value] = useState(() => new Animated.Value(0));
+  // Callers pass a fresh easing function every render; keeping the first one stops the
+  // animation from restarting each time the parent re-renders.
+  const [stableEasing] = useState(() => easing);
   const reduced = useReducedMotion();
   useEffect(() => {
     if (reduced || !enabled) {
@@ -41,16 +49,23 @@ export function useLoop(
     }
     const steps: Animated.CompositeAnimation[] = [];
     if (delay) steps.push(Animated.delay(delay));
-    steps.push(Animated.timing(value, { toValue: 1, duration, easing, useNativeDriver: true }));
+    steps.push(
+      Animated.timing(value, { toValue: 1, duration, easing: stableEasing, useNativeDriver: true }),
+    );
     steps.push(
       alternate
-        ? Animated.timing(value, { toValue: 0, duration, easing, useNativeDriver: true })
+        ? Animated.timing(value, {
+            toValue: 0,
+            duration,
+            easing: stableEasing,
+            useNativeDriver: true,
+          })
         : Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: true }),
     );
     const animation = Animated.loop(Animated.sequence(steps));
     animation.start();
     return () => animation.stop();
-  }, [alternate, delay, duration, easing, enabled, reduced, value]);
+  }, [alternate, delay, duration, stableEasing, enabled, reduced, value]);
   return value;
 }
 
@@ -62,6 +77,7 @@ export function useEntrance(
   replayKey: unknown = null,
 ): Animated.Value {
   const [value] = useState(() => new Animated.Value(0));
+  const [stableEasing] = useState(() => easing);
   const reduced = useReducedMotion();
   useEffect(() => {
     if (reduced) {
@@ -73,12 +89,12 @@ export function useEntrance(
       toValue: 1,
       duration,
       delay,
-      easing,
+      easing: stableEasing,
       useNativeDriver: true,
     });
     animation.start();
     return () => animation.stop();
-  }, [delay, duration, easing, reduced, replayKey, value]);
+  }, [delay, duration, stableEasing, reduced, replayKey, value]);
   return value;
 }
 

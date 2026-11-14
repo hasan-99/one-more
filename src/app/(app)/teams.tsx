@@ -298,8 +298,8 @@ export default function TeamsScreen() {
             ))
           ) : (
             <EmptyRow
-              title={copy.teamNoDirectory}
-              hint={cityFilter ? copy.teamNoCityTeams : copy.appTeamsIntro}
+              title={copy.teamNoDirectoryShort}
+              hint={cityFilter ? copy.teamNoCityTeams : copy.teamNoDirectoryHint}
               styles={styles}
             />
           )}

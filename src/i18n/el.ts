@@ -605,6 +605,8 @@ export const el = {
   teamNoMine: 'Δεν είσαι ακόμη μέλος κάποιας ομάδας.',
   teamNoDirectory: 'Δεν υπάρχουν ακόμη ομάδες. Δημιούργησε μία για να ξεκινήσεις.',
   teamSeeAll: 'Δες όλα',
+  teamNoDirectoryShort: 'Δεν υπάρχουν ομάδες ακόμη',
+  teamNoDirectoryHint: 'Δημιούργησε μία για να ξεκινήσεις.',
   teamChallengeKicker: 'ΓΙΑ ΑΡΧΗΓΟΥΣ',
   teamChallengeHeroTitle: 'Ρίξε το γάντι',
   teamChallengeHeroCopy: 'Διάλεξε μέρα, format, επίπεδο. Οι αντίπαλοι έρχονται σε σένα.',

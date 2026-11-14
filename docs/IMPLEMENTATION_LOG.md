@@ -1655,3 +1655,9 @@
 ## Phase 17 — Captain challenge section made competitive
 
 - "Post a challenge" is now a large lime banner at the top of the captains' section ("Throw down a challenge"); each open challenge card has a VS badge and a bold orange "Challenge them" button (it still sends a request the other captain must approve). New en/el keys `teamChallengeKicker/HeroTitle/HeroCopy/Them`. Checked in the browser at 393 px; tsc and eslint pass.
+
+## Phase 17 — Fix: choices replayed the step animation; shorter empty text
+
+- Bug: in the create-team steps (and anywhere using `useEntrance`/`useLoop`), every state change replayed the slide-in because callers pass a new easing function each render and the hooks restarted on it. The hooks now keep the first easing (`components/motion.tsx`). Regression test: "choosing an option does not replay the step animation" (failed before with opacity 0.25 after a tap, passes now).
+- Teams page: empty directory text shortened to "No teams listed yet" + "Create one to get started."
+- Checks: tsc, eslint, vitest 39, Playwright create-team/onboarding/profile/auth 40 passed.

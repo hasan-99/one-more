@@ -143,3 +143,28 @@ test('the center Create button routes guests to sign in for the team wizard', as
   await page.getByRole('link', { name: 'Create' }).click();
   await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fteams%2Fcreate$/);
 });
+
+test('choosing an option does not replay the step animation', async ({ page }) => {
+  await seedSession(page);
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/teams/create');
+  await page.getByLabel('Team name').fill('Nicosia Rovers');
+  await page.getByRole('radio', { name: 'Aglantzia' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  const heading = page.getByRole('heading', { name: 'Design your crest' });
+  await expect(heading).toBeVisible();
+  await page.waitForTimeout(900);
+  const fadeOf = () =>
+    heading.evaluate((element) => {
+      for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+        const opacity = Number(getComputedStyle(node).opacity);
+        if (opacity < 1) return opacity;
+      }
+      return 1;
+    });
+  for (const name of ['Hex', 'Sky blue', 'Stripes']) {
+    await page.getByRole('radio', { name, exact: true }).click();
+    // A replayed slide-in would reset the step to transparent right after the tap.
+    expect(await fadeOf()).toBe(1);
+  }
+});

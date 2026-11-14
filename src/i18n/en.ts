@@ -602,6 +602,8 @@ export const en = {
   teamNoMine: 'You are not a member of a team yet.',
   teamNoDirectory: 'No teams are listed yet. Create one to get started.',
   teamSeeAll: 'See all',
+  teamNoDirectoryShort: 'No teams listed yet',
+  teamNoDirectoryHint: 'Create one to get started.',
   teamChallengeKicker: 'FOR CAPTAINS',
   teamChallengeHeroTitle: 'Throw down a challenge',
   teamChallengeHeroCopy: 'Pick a day, a format, a level. Rival teams come to you.',
