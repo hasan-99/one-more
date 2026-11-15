@@ -1752,3 +1752,4 @@
 
 - The team row on the profile lost its layout (crest above the name, no padding) because a style function was passed through `Link asChild`. It now uses a plain Pressable with `router.push`, shows the team's real crest (shield outline fallback until the team-list migration is applied), the real name, "City · N players", a captain badge for captains and a chevron. Profile spec asserts the row.
 - Game page: the empty heading slot no longer leaves a gap above the ticket.
+- Celebration: the "N players notified" pill is shown only when at least one player was notified; with 0 it is hidden and the text says the game is live in Explore (the count is real: players in the city, free that day, matching format).

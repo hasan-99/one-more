@@ -761,13 +761,15 @@ function Celebration({
         <Text accessibilityRole="header" style={styles.celebrationTitle}>
           {copy.gameWizDoneTitle}
         </Text>
-        <Text style={styles.celebrationBody}>{copy.gameWizDoneBody}</Text>
-        <View accessibilityLiveRegion="polite" style={styles.notifiedPill}>
-          <Text style={styles.notifiedNumber}>{notified ?? '–'}</Text>
-          <Text style={styles.notifiedLabel}>
-            {notified === 0 ? copy.gameWizNotifiedNone : copy.gameWizNotified}
-          </Text>
-        </View>
+        <Text style={styles.celebrationBody}>
+          {notified ? copy.gameWizDoneBody : copy.gameWizDoneBodyLive}
+        </Text>
+        {notified ? (
+          <View accessibilityLiveRegion="polite" style={styles.notifiedPill}>
+            <Text style={styles.notifiedNumber}>{notified}</Text>
+            <Text style={styles.notifiedLabel}>{copy.gameWizNotified}</Text>
+          </View>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           onPress={onView}

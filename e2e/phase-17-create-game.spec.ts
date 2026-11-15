@@ -163,6 +163,7 @@ test('creating a game takes five steps and saves what was chosen', async ({ page
   // The celebration shows how many players were told, then View game opens the match.
   await expect(page.getByRole('heading', { name: 'Game published!' })).toBeVisible();
   await expect(page.getByText('12', { exact: true })).toBeVisible();
+  await expect(page.getByText('players notified')).toBeVisible();
   await expect(page.getByText('PUBLISHED', { exact: true })).toBeVisible();
   await page.waitForTimeout(1600);
   await page.screenshot({ path: join(shots, 'create-game-6-celebration-mobile.png') });

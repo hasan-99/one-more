@@ -266,6 +266,8 @@ export const el = {
   notificationBadgeFree: 'Δωρεάν',
   gameWizDoneTitle: 'Ο αγώνας δημοσιεύτηκε!',
   gameWizDoneBody: 'Οι παίκτες της πόλης σου που είναι ελεύθεροι εκείνη τη μέρα ειδοποιούνται.',
+  gameWizDoneBodyLive:
+    'Ο αγώνας σου είναι ζωντανός. Οι παίκτες της πόλης σου που είναι ελεύθεροι εκείνη τη μέρα θα τον βρουν στο Explore.',
   gameWizNotified: 'παίκτες ειδοποιήθηκαν',
   gameWizNotifiedNone: 'Δεν βρέθηκαν ακόμη παίκτες',
   gameWizViewGame: 'Δες τον αγώνα',

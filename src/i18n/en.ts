@@ -264,6 +264,8 @@ export const en = {
   notificationBadgeFree: 'Free',
   gameWizDoneTitle: 'Game published!',
   gameWizDoneBody: 'Players in your city who are free that day get a notification.',
+  gameWizDoneBodyLive:
+    'Your game is live. Players in your city who are free that day will find it in Explore.',
   gameWizNotified: 'players notified',
   gameWizNotifiedNone: 'No players matched yet',
   gameWizViewGame: 'View game',
