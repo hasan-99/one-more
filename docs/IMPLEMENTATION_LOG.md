@@ -1769,3 +1769,11 @@
 - Checks: tsc, eslint, prettier clean; vitest 39/39; Playwright create-game (incl. new explore test), layout-audit pass. phase-17-home fails on a heading ("Find your next game.") that is not in the source: pre-existing, not touched.
 - Browser: mobile 393px screenshot `docs/screenshots/phase-17/explore-card-mobile.png` (mock data). Not verified against live backend or Greek on device.
 - Next: publish OTA.
+
+## Phase 17 — Challenges redesign
+- `/challenges`: title row with "+ Challenge", format chips (All, 5v5, 8v8, 11v11 — 7v7 removed), face-off cards (`ChallengeCard`: home crest vs dashed open spot, area, time slots, note, request count, stickers YOUR CHALLENGE / NEW), designed empty state.
+- `/challenges/create`: four steps (team, area + format, day + from/until slots up to 5, review with preview + note) and a success screen. No typed dates, no skill level (RPC called with null). Slot helpers in `challenge-slots.ts` (Cyprus dates, ≥90 min, tested).
+- Team page: new "Challenges" section listing the team's open challenges; captain's ⚔ button opens the new flow.
+- Formats stay 5/8/11 to match the existing DB check; no migration needed.
+- Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (list, filter, empty, 4-step create incl. payload, Greek 360 overflow), create-game, create-team, layout-audit: all pass (mocked Supabase).
+- Not verified: live backend, `/challenges/[id]` page (not redesigned), team-page block on device.

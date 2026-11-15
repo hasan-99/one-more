@@ -33,6 +33,8 @@ import {
   scoreOf,
   scoreTiers,
 } from '@/features/teams/TeamCrest';
+import { ChallengeCard } from '@/features/teams/ChallengeCard';
+import { listTeamChallenges, type TeamChallenge } from '@/features/teams/challenge-service';
 import { validateTeamInput } from '@/features/teams/team-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
@@ -54,6 +56,7 @@ export default function TeamDetailsScreen() {
   const [working, setWorking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [inviteY, setInviteY] = useState(0);
+  const [teamChallenges, setTeamChallenges] = useState<TeamChallenge[]>([]);
   const scrollRef = useRef<ScrollViewInstance>(null);
 
   const load = useCallback(async () => {
@@ -81,6 +84,22 @@ export default function TeamDetailsScreen() {
     const task = setTimeout(() => void load(), 0);
     return () => clearTimeout(task);
   }, [load]);
+
+  // The team's own open challenges load on their own, so a failure here never hides the team.
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    listTeamChallenges()
+      .then((all) => {
+        if (active) setTeamChallenges(all.filter((item) => item.homeTeamId === id));
+      })
+      .catch(() => {
+        if (active) setTeamChallenges([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   const action = async (operation: () => Promise<void>, success: string) => {
     setWorking(true);
@@ -225,7 +244,7 @@ export default function TeamDetailsScreen() {
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push('/challenges' as Href)}
+                onPress={() => router.push('/challenges/create' as Href)}
                 style={[styles.quick, styles.quickFight]}
               >
                 <Text style={styles.quickFightText}>{`⚔  ${copy.teamChallengeHero}`}</Text>
@@ -242,6 +261,29 @@ export default function TeamDetailsScreen() {
               {isCaptain ? '⇪' : `⇪  ${copy.teamShareHero}`}
             </Text>
           </Pressable>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              {copy.teamChallengesTitle}
+            </Text>
+            <Text style={styles.count}>{teamChallenges.length}</Text>
+          </View>
+          {teamChallenges.length ? (
+            <View style={{ gap: 14 }}>
+              {teamChallenges.map((challenge) => (
+                <ChallengeCard
+                  key={challenge.id}
+                  challenge={challenge}
+                  crest={team.crest}
+                  mine={isCaptain}
+                />
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.meta}>{copy.teamChallengesEmpty}</Text>
+          )}
         </View>
 
         <View style={styles.section}>

@@ -1,80 +1,58 @@
-import { router, type Href } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router, useFocusEffect, type Href } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
-import { AppCard, AppPage, EmptyState } from '@/components/layout/AppPage';
+import { AppPage } from '@/components/layout/AppPage';
 import { useToast } from '@/components/toast/ToastProvider';
-import {
-  createTeamChallenge,
-  listTeamChallenges,
-  type TeamChallenge,
-} from '@/features/teams/challenge-service';
-import {
-  toChallengeWindows,
-  type ChallengeWindowForm,
-} from '@/features/teams/challenge-validation';
-import { listMyTeams, type MyTeam } from '@/features/teams/team-service';
-import { loadMatchFilters, type MatchArea, type MatchCity } from '@/features/matches/match-service';
 import { getProfileCompletion } from '@/features/profile/profile-service';
+import { ChallengeCard, OpenSpotCrest } from '@/features/teams/ChallengeCard';
+import { listTeamChallenges, type TeamChallenge } from '@/features/teams/challenge-service';
+import {
+  listMyTeams,
+  listTeamDirectory,
+  type TeamCrestDesign,
+} from '@/features/teams/team-service';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { bodyFont } from '@/theme/typography';
 
-function defaultWindow(): ChallengeWindowForm {
-  const date = new Date(Date.now() + 24 * 60 * 60_000);
-  const dateValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  return { startDate: dateValue, startTime: '19:00', endDate: dateValue, endTime: '22:00' };
-}
+const formats = [5, 8, 11] as const;
 
 export default function ChallengesScreen() {
   const { locale, colors } = useAppPreferences();
   const { session } = useAuth();
   const { showToast } = useToast();
   const copy = translations[locale];
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [challenges, setChallenges] = useState<TeamChallenge[]>([]);
-  const [teams, setTeams] = useState<MyTeam[]>([]);
-  const [cities, setCities] = useState<MatchCity[]>([]);
-  const [areas, setAreas] = useState<MatchArea[]>([]);
-  const [teamId, setTeamId] = useState('');
-  const [areaId, setAreaId] = useState('');
-  const [format, setFormat] = useState(5);
-  const [skill, setSkill] = useState('intermediate');
-  const [note, setNote] = useState('');
-  const [windows, setWindows] = useState<ChallengeWindowForm[]>([defaultWindow()]);
-  const [profileComplete, setProfileComplete] = useState(false);
+  const [crests, setCrests] = useState<Record<string, TeamCrestDesign | null>>({});
+  const [captainOf, setCaptainOf] = useState<string[]>([]);
+  const [canPost, setCanPost] = useState(false);
+  const [format, setFormat] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [working, setWorking] = useState(false);
 
   const load = useCallback(async () => {
     setLoadError(false);
-    setLoading(true);
     try {
-      const [open, filters] = await Promise.all([listTeamChallenges(), loadMatchFilters()]);
+      const [open, directory] = await Promise.all([
+        listTeamChallenges(),
+        listTeamDirectory().catch(() => []),
+      ]);
       setChallenges(open);
-      setCities(filters.cities);
-      setAreas(filters.areas);
+      setCrests(Object.fromEntries(directory.map((team) => [team.teamId, team.crest ?? null])));
       if (session) {
-        const [myTeams, complete] = await Promise.all([
+        const [mine, complete] = await Promise.all([
           listMyTeams(),
           getProfileCompletion(session.user.id),
         ]);
-        const captained = myTeams.filter((team) => team.role === 'captain');
-        setTeams(captained);
-        setProfileComplete(complete);
-        setTeamId((previous) =>
-          captained.some((team) => team.teamId === previous)
-            ? previous
-            : (captained[0]?.teamId ?? ''),
-        );
-        const currentTeam = captained.find((team) => team.teamId === teamId) ?? captained[0];
-        const teamAreas = filters.areas.filter((area) => area.city_id === currentTeam?.cityId);
-        setAreaId((previous) =>
-          teamAreas.some((area) => area.id === previous) ? previous : (teamAreas[0]?.id ?? ''),
-        );
+        const captained = mine.filter((team) => team.role === 'captain');
+        setCaptainOf(captained.map((team) => team.teamId));
+        setCanPost(complete && captained.length > 0);
       } else {
-        setTeams([]);
-        setProfileComplete(false);
+        setCaptainOf([]);
+        setCanPost(false);
       }
     } catch {
       setLoadError(true);
@@ -82,382 +60,213 @@ export default function ChallengesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [copy.challengeLoadError, session, showToast, teamId]);
+  }, [copy.challengeLoadError, session, showToast]);
 
-  useEffect(() => {
-    const task = setTimeout(() => void load(), 0);
-    return () => clearTimeout(task);
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
-  const selectedTeam = teams.find((team) => team.teamId === teamId);
-  const teamAreas = areas.filter((area) => area.city_id === selectedTeam?.cityId);
-  const localeName = (item: { name_en: string; name_el: string }) =>
-    locale === 'el' ? item.name_el : item.name_en;
+  const visible = challenges.filter((item) => format === null || item.format === format);
+  const post = () => router.push('/challenges/create' as Href);
+  const count =
+    visible.length === 1
+      ? copy.challengeCountOne
+      : copy.challengeCountMany.replace('{count}', String(visible.length));
 
-  const submitChallenge = async () => {
-    const parsedWindows = toChallengeWindows(windows);
-    if (!teamId || !selectedTeam || !areaId)
-      return showToast(copy.challengeValidationFields, 'error');
-    if (!parsedWindows) return showToast(copy.challengeValidationWindows, 'error');
-    setWorking(true);
-    try {
-      const id = await createTeamChallenge({
-        homeTeamId: teamId,
-        format,
-        cityId: selectedTeam.cityId,
-        areaId,
-        skillLevel: skill,
-        note: note.trim(),
-        windows: parsedWindows,
-      });
-      showToast(copy.challengeCreateSuccess, 'success');
-      setNote('');
-      await load();
-      router.push(`/challenges/${id}` as Href);
-    } catch {
-      showToast(copy.challengeCreateError, 'error');
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  const styles = makeStyles(colors);
   return (
-    <AppPage title={copy.challengeDirectory} description={copy.challengeIntro}>
+    <AppPage
+      title={copy.challengeDirectory}
+      heading={
+        <View style={{ gap: 8 }}>
+          <View style={styles.headRow}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.headTitle, locale === 'el' && styles.headTitleGreek]}
+            >
+              {copy.challengeDirectory}
+            </Text>
+            {canPost ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={post}
+                style={({ pressed }) => [styles.add, pressed && { opacity: 0.88 }]}
+              >
+                <Text style={[styles.addText, { fontFamily: bodyFont(locale, 'semibold') }]}>
+                  {copy.challengeAddShort}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+          <Text style={[styles.sub, { fontFamily: bodyFont(locale) }]}>
+            {copy.challengeListSub}
+          </Text>
+        </View>
+      }
+    >
       {loading ? (
         <View accessibilityRole="progressbar" accessibilityLabel={copy.chatLoading} />
       ) : loadError ? (
-        <Action label={copy.challengeRetry} onPress={() => void load()} colors={colors} />
+        <Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}>
+          <Text style={styles.retryText}>{copy.challengeRetry}</Text>
+        </Pressable>
       ) : (
         <>
-          {challenges.length ? (
-            challenges.map((challenge) => (
-              <Pressable
-                key={challenge.id}
-                accessibilityRole="link"
-                onPress={() => router.push(`/challenges/${challenge.id}` as Href)}
-                style={styles.challengeCard}
-              >
-                <View style={styles.cardRow}>
-                  <Text style={styles.teamTitle}>{challenge.homeTeamName}</Text>
-                  <Text style={styles.format}>
-                    {challenge.format}v{challenge.format}
-                  </Text>
-                </View>
-                <Text style={styles.meta}>
-                  {locale === 'el' ? challenge.cityNameEl : challenge.cityNameEn} ·{' '}
-                  {locale === 'el' ? challenge.areaNameEl : challenge.areaNameEn}
-                </Text>
-                {challenge.note ? <Text style={styles.meta}>{challenge.note}</Text> : null}
-                <Text style={styles.meta}>
-                  {copy.challengeRequestsCount.replace('{count}', String(challenge.requestCount))}
-                </Text>
-              </Pressable>
-            ))
-          ) : (
-            <EmptyState title={copy.challengeNoOpen} description={copy.challengeIntro} />
-          )}
-          {session && profileComplete ? (
-            teams.length ? (
-              <AppCard>
-                <Text accessibilityRole="header" style={styles.cardHeading}>
-                  {copy.challengeCreate}
-                </Text>
-                <Text style={styles.meta}>{copy.challengeHomeTeam}</Text>
-                <View style={styles.chips}>
-                  {teams.map((team) => (
-                    <Choice
-                      key={team.teamId}
-                      label={team.name}
-                      selected={teamId === team.teamId}
-                      onPress={() => {
-                        setTeamId(team.teamId);
-                        const first = areas.find((area) => area.city_id === team.cityId);
-                        setAreaId(first?.id ?? '');
-                      }}
-                      colors={colors}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.meta}>{copy.challengeArea}</Text>
-                <View style={styles.chips}>
-                  {teamAreas.map((area) => (
-                    <Choice
-                      key={area.id}
-                      label={localeName(area)}
-                      selected={areaId === area.id}
-                      onPress={() => setAreaId(area.id)}
-                      colors={colors}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.meta}>{copy.challengeFormat}</Text>
-                <View style={styles.chips}>
-                  {[5, 7, 8, 11].map((size) => (
-                    <Choice
-                      key={size}
-                      label={`${size}v${size}`}
-                      selected={format === size}
-                      onPress={() => setFormat(size)}
-                      colors={colors}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.meta}>{copy.challengeSkill}</Text>
-                <View style={styles.chips}>
-                  {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
-                    <Choice
-                      key={level}
-                      label={
-                        copy[
-                          level === 'beginner'
-                            ? 'profileBeginner'
-                            : level === 'intermediate'
-                              ? 'profileIntermediate'
-                              : 'profileAdvanced'
-                        ]
-                      }
-                      selected={skill === level}
-                      onPress={() => setSkill(level)}
-                      colors={colors}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.meta}>{copy.challengeWindow}</Text>
-                {windows.map((window, index) => (
-                  <AppCard key={index}>
-                    <Text style={styles.meta}>
-                      {copy.challengeWindow} {index + 1}
+          {challenges.length > 0 ? (
+            <View accessibilityRole="radiogroup" style={styles.chips}>
+              {[null, ...formats].map((value) => {
+                const selected = format === value;
+                return (
+                  <Pressable
+                    key={String(value)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => setFormat(value)}
+                    style={[styles.chip, selected && styles.chipOn]}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        { fontFamily: bodyFont(locale, 'semibold') },
+                        selected && styles.chipTextOn,
+                      ]}
+                    >
+                      {value === null ? copy.challengeAllFormats : `${value}v${value}`}
                     </Text>
-                    <Field
-                      label={copy.challengeWindowStartDate}
-                      value={window.startDate}
-                      onChangeText={(value) => updateWindow(setWindows, index, 'startDate', value)}
-                      colors={colors}
-                      placeholder="YYYY-MM-DD"
-                    />
-                    <Field
-                      label={copy.challengeWindowStartTime}
-                      value={window.startTime}
-                      onChangeText={(value) => updateWindow(setWindows, index, 'startTime', value)}
-                      colors={colors}
-                      placeholder="HH:MM"
-                    />
-                    <Field
-                      label={copy.challengeWindowEndDate}
-                      value={window.endDate}
-                      onChangeText={(value) => updateWindow(setWindows, index, 'endDate', value)}
-                      colors={colors}
-                      placeholder="YYYY-MM-DD"
-                    />
-                    <Field
-                      label={copy.challengeWindowEndTime}
-                      value={window.endTime}
-                      onChangeText={(value) => updateWindow(setWindows, index, 'endTime', value)}
-                      colors={colors}
-                      placeholder="HH:MM"
-                    />
-                    {windows.length > 1 ? (
-                      <Action
-                        label={copy.challengeRemoveWindow}
-                        onPress={() =>
-                          setWindows((current) =>
-                            current.filter((_, itemIndex) => itemIndex !== index),
-                          )
-                        }
-                        colors={colors}
-                        secondary
-                      />
-                    ) : null}
-                  </AppCard>
-                ))}
-                {windows.length < 5 ? (
-                  <Action
-                    label={copy.challengeAddWindow}
-                    onPress={() => setWindows((current) => [...current, defaultWindow()])}
-                    colors={colors}
-                    secondary
-                  />
-                ) : null}
-                <Field
-                  label={copy.challengeNote}
-                  value={note}
-                  onChangeText={setNote}
-                  colors={colors}
-                  multiline
-                />
-                <Action
-                  label={working ? copy.matchSaving : copy.challengeSend}
-                  disabled={working}
-                  onPress={() => void submitChallenge()}
-                  colors={colors}
-                />
-              </AppCard>
-            ) : (
-              <Text style={styles.meta}>{copy.challengeNoCaptainTeams}</Text>
-            )
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {challenges.length === 0 ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyVs}>
+                <OpenSpotCrest size={52} color={colors.accentText} />
+                <Text style={[styles.emptyVsText, { fontFamily: 'BarlowCondensed_800ExtraBold' }]}>
+                  VS
+                </Text>
+                <OpenSpotCrest size={52} color={colors.accentText} />
+              </View>
+              <Text style={[styles.emptyTitle, { fontFamily: bodyFont(locale, 'semibold') }]}>
+                {copy.appNoChallengesTitle}
+              </Text>
+              <Text style={[styles.emptyCopy, { fontFamily: bodyFont(locale) }]}>
+                {copy.challengeEmptyCopy}
+              </Text>
+              {canPost ? (
+                <Pressable accessibilityRole="button" onPress={post} style={styles.emptyButton}>
+                  <Text style={[styles.addText, { fontFamily: bodyFont(locale, 'semibold') }]}>
+                    {copy.challengeCreate}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text style={[styles.emptyCopy, { fontFamily: bodyFont(locale) }]}>
+                  {session ? copy.challengeNoCaptainTeams : copy.challengeSignIn}
+                </Text>
+              )}
+            </View>
           ) : (
-            <Text style={styles.meta}>{copy.challengeCreateSignIn}</Text>
+            <>
+              <Text style={[styles.count, { fontFamily: bodyFont(locale) }]}>{count}</Text>
+              <View style={styles.list}>
+                {visible.map((challenge) => (
+                  <ChallengeCard
+                    key={challenge.id}
+                    challenge={challenge}
+                    crest={crests[challenge.homeTeamId] ?? null}
+                    mine={captainOf.includes(challenge.homeTeamId)}
+                  />
+                ))}
+              </View>
+            </>
           )}
-          {cities.length === 0 ? <Text style={styles.meta}>{copy.profileNoCities}</Text> : null}
         </>
       )}
     </AppPage>
   );
 }
 
-function updateWindow(
-  setWindows: (update: (current: ChallengeWindowForm[]) => ChallengeWindowForm[]) => void,
-  index: number,
-  field: keyof ChallengeWindowForm,
-  value: string,
-) {
-  setWindows((current) =>
-    current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChangeText,
-  colors,
-  multiline = false,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  colors: ReturnType<typeof useAppPreferences>['colors'];
-  multiline?: boolean;
-  placeholder?: string;
-}) {
-  return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ color: colors.textSecondary }}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textSecondary}
-        multiline={multiline}
-        style={{
-          color: colors.textPrimary,
-          backgroundColor: colors.surfaceRaised,
-          borderColor: colors.border,
-          borderWidth: 1,
-          borderRadius: 10,
-          padding: 12,
-          minHeight: multiline ? 78 : 46,
-          textAlignVertical: multiline ? 'top' : 'center',
-        }}
-      />
-    </View>
-  );
-}
-
-function Action({
-  label,
-  onPress,
-  colors,
-  secondary = false,
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  colors: ReturnType<typeof useAppPreferences>['colors'];
-  secondary?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled}
-      onPress={onPress}
-      style={{
-        backgroundColor: secondary ? colors.surfaceRaised : colors.primaryButton,
-        borderColor: colors.border,
-        borderWidth: secondary ? 1 : 0,
-        borderRadius: 10,
-        minHeight: 44,
-        justifyContent: 'center',
-        paddingHorizontal: 14,
-        opacity: disabled ? 0.55 : 1,
-      }}
-    >
-      <Text
-        style={{
-          textAlign: 'center',
-          fontWeight: '700',
-          color: secondary ? colors.textPrimary : colors.primaryButtonText,
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function Choice({
-  label,
-  selected,
-  onPress,
-  colors,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  colors: ReturnType<typeof useAppPreferences>['colors'];
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={{
-        backgroundColor: selected ? colors.primaryButton : colors.surfaceRaised,
-        borderColor: colors.border,
-        borderWidth: 1,
-        borderRadius: 18,
-        paddingHorizontal: 12,
-        paddingVertical: 9,
-      }}
-    >
-      <Text style={{ color: selected ? colors.primaryButtonText : colors.textPrimary }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
-    challengeCard: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      padding: 18,
-      gap: 8,
-    },
-    cardRow: {
+    headRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: 12,
     },
-    teamTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: '800', flexShrink: 1 },
-    format: {
-      color: colors.primaryButtonText,
-      backgroundColor: colors.primaryButton,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 10,
+    headTitle: {
+      color: colors.textPrimary,
+      fontFamily: 'BarlowCondensed_700Bold',
+      fontSize: 40,
+      lineHeight: 44,
       fontWeight: '700',
+      flexShrink: 1,
     },
-    cardHeading: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
-    meta: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
+    headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 28, lineHeight: 36 },
+    add: {
+      flexShrink: 0,
+      minHeight: 44,
+      paddingHorizontal: 16,
+      borderRadius: 14,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    addText: { color: colors.primaryButtonText, fontSize: 15, fontWeight: '700' },
+    sub: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    chipOn: { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton },
+    chipText: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
+    chipTextOn: { color: colors.primaryButtonText },
+    count: { color: colors.textSecondary, fontSize: 14, marginTop: 4 },
+    list: { gap: 14 },
+    empty: {
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: 'rgba(207,255,74,0.35)',
+      borderRadius: 22,
+      padding: 20,
+    },
+    emptyVs: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 18,
+      alignSelf: 'stretch',
+      backgroundColor: '#070b09',
+      borderRadius: 18,
+      paddingVertical: 16,
+    },
+    emptyVsText: { color: colors.accentText, fontSize: 30 },
+    emptyTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700', textAlign: 'center' },
+    emptyCopy: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center' },
+    emptyButton: {
+      minHeight: 48,
+      paddingHorizontal: 24,
+      borderRadius: 14,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    retry: {
+      minHeight: 44,
+      borderRadius: 12,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    retryText: { color: colors.primaryButtonText, fontWeight: '700' },
   });
 }

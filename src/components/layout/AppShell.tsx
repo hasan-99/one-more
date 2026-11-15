@@ -61,6 +61,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const creatingGame = pathname === '/create';
   const immersive =
     pathname === '/teams/create' ||
+    pathname === '/challenges/create' ||
     pathname === '/onboarding' ||
     pathname === '/profile-edit' ||
     creatingGame;

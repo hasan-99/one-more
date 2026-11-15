@@ -174,7 +174,8 @@ export async function createTeamChallenge(input: {
   format: number;
   cityId: string;
   areaId: string;
-  skillLevel: string;
+  /** Skill level is no longer asked; the RPC accepts null. */
+  skillLevel: string | null;
   note: string;
   windows: ChallengeWindowValue[];
 }): Promise<string> {
@@ -187,7 +188,8 @@ export async function createTeamChallenge(input: {
     p_format: input.format,
     p_city_id: input.cityId,
     p_area_id: input.areaId,
-    p_skill_level: input.skillLevel,
+    // Generated types mark this as a required string, but the function allows null.
+    p_skill_level: input.skillLevel as string,
     p_note: input.note,
     p_windows,
   });
