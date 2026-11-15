@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/toast/ToastProvider';
-import { loadMatchFilters, type MatchArea } from '@/features/matches/match-service';
+import { loadMatchFilters, type MatchArea, type MatchCity } from '@/features/matches/match-service';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import { defaultCrest, OpenSpotCrest } from '@/features/teams/ChallengeCard';
 import {
@@ -48,11 +48,13 @@ export default function CreateChallengeScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [step, setStep] = useState(0);
   const [teams, setTeams] = useState<MyTeam[]>([]);
+  const [cities, setCities] = useState<MatchCity[]>([]);
   const [areas, setAreas] = useState<MatchArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [allowed, setAllowed] = useState(true);
   const [teamId, setTeamId] = useState('');
+  const [cityId, setCityId] = useState('');
   const [areaId, setAreaId] = useState('');
   const [format, setFormat] = useState<number>(5);
   const [slots, setSlots] = useState<ChallengeSlot[]>([{ dayOffset: 2, from: 19, to: 22 }]);
@@ -76,12 +78,14 @@ export default function CreateChallengeScreen() {
       ]);
       const captained = mine.filter((team) => team.role === 'captain');
       setTeams(captained);
+      setCities(filters.cities);
       setAreas(filters.areas);
       setAllowed(complete && captained.length > 0);
       const first = captained[0];
       if (first) {
         setTeamId(first.teamId);
-        setAreaId(filters.areas.find((area) => area.city_id === first.cityId)?.id ?? '');
+        setCityId(first.cityId);
+        setAreaId('');
       }
     } catch {
       setFailed(true);
@@ -96,10 +100,12 @@ export default function CreateChallengeScreen() {
   }, [load]);
 
   const team = teams.find((item) => item.teamId === teamId);
-  const teamAreas = areas.filter((area) => area.city_id === team?.cityId);
+  const cityAreas = areas.filter((area) => area.city_id === cityId);
   const area = areas.find((item) => item.id === areaId);
   const areaName = (item: MatchArea) => (locale === 'el' ? item.name_el : item.name_en);
-  const cityName = team ? (locale === 'el' ? team.cityNameEl : team.cityNameEn) : '';
+  const chosenCity = cities.find((item) => item.id === cityId);
+  const cityLabel = (item: MatchCity) => (locale === 'el' ? item.name_el : item.name_en);
+  const cityName = chosenCity ? cityLabel(chosenCity) : '';
   const canNext = step === 0 ? Boolean(team && area) : step === 1 ? slots.length > 0 : true;
 
   const close = () => {
@@ -119,7 +125,7 @@ export default function CreateChallengeScreen() {
       const id = await createTeamChallenge({
         homeTeamId: team.teamId,
         format,
-        cityId: team.cityId,
+        cityId,
         areaId: area.id,
         skillLevel: null,
         note: note.trim(),
@@ -229,7 +235,8 @@ export default function CreateChallengeScreen() {
                     accessibilityState={{ checked: selected }}
                     onPress={() => {
                       setTeamId(item.teamId);
-                      setAreaId(areas.find((a) => a.city_id === item.cityId)?.id ?? '');
+                      setCityId(item.cityId);
+                      setAreaId('');
                     }}
                     style={[styles.option, selected && styles.optionOn]}
                   >
@@ -255,9 +262,28 @@ export default function CreateChallengeScreen() {
                   </Pressable>
                 );
               })}
-              <Text style={styles.label}>{copy.challengeArea.toUpperCase()}</Text>
+              <Text style={styles.label}>{copy.challengeCityLabel}</Text>
               <View style={styles.chips}>
-                {teamAreas.map((item) => (
+                {cities.map((item) => (
+                  <Chip
+                    key={item.id}
+                    label={cityLabel(item)}
+                    selected={cityId === item.id}
+                    onPress={() => {
+                      if (cityId !== item.id) {
+                        setCityId(item.id);
+                        setAreaId('');
+                      }
+                    }}
+                    styles={styles}
+                  />
+                ))}
+              </View>
+              <Text style={styles.label}>
+                {`${copy.challengeArea.toUpperCase()}  ${copy.challengeAreaIn.replace('{city}', cityName)}`}
+              </Text>
+              <View style={styles.chips}>
+                {cityAreas.map((item) => (
                   <Chip
                     key={item.id}
                     label={areaName(item)}
@@ -445,9 +471,11 @@ export default function CreateChallengeScreen() {
                   ? saving
                     ? copy.matchSaving
                     : copy.challengePublish
-                  : step === 1 && slots.length === 0
-                    ? copy.challengeNeedSlot
-                    : `${copy.challengeNext}  →`}
+                  : step === 0 && !area
+                    ? copy.gameWizPickArea
+                    : step === 1 && slots.length === 0
+                      ? copy.challengeNeedSlot
+                      : `${copy.challengeNext}  →`}
             </Text>
           </Pressable>
         </View>

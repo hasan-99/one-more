@@ -197,6 +197,8 @@ test('a captain posts a challenge in three steps without a skill level', async (
   await expect(page.getByRole('heading', { name: 'Team, area and format' })).toBeVisible();
   await expect(page.getByText('Tigers FC')).toBeVisible();
   await expect(page.getByRole('radio', { name: '7v7' })).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'Nicosia' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /Choose an area/ })).toBeDisabled();
   await page.getByRole('radio', { name: 'Aglantzia' }).click();
   await page.getByRole('radio', { name: '8v8' }).click();
   await page.getByRole('button', { name: /Next/ }).click();
@@ -215,6 +217,7 @@ test('a captain posts a challenge in three steps without a skill level', async (
   expect(posted).toMatchObject({
     p_home_team_id: teamId,
     p_format: 8,
+    p_city_id: cityId,
     p_skill_level: null,
   });
   expect((posted as unknown as { p_windows: unknown[] }).p_windows).toHaveLength(2);
@@ -372,6 +375,7 @@ test('challenge creation step one holds team, area and format', async ({ page })
   await page.goto('/challenges/create');
   await expect(page.getByRole('heading', { name: 'Team, area and format' })).toBeVisible();
   await expect(page.getByText('1/3')).toBeVisible();
+  await expect(page.getByText('CITY', { exact: true })).toBeVisible();
   await page.waitForTimeout(400);
   await page.screenshot({
     path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'challenge-step-one-mobile.png'),

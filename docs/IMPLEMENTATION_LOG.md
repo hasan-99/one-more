@@ -1800,3 +1800,8 @@
 ## Phase 17 — Teams page post-a-challenge banner
 - The lime "FOR CAPTAINS / Throw down a challenge" banner is back on the Teams page (captains), above the challenges section; its button opens `/challenges/create`. Copy now says "a day, a format, an area" (no level).
 - Checks: tsc, eslint, prettier clean; Playwright challenges + layout-audit 22/22 (mocked Supabase).
+
+## Phase 17 — Challenge creation: city then area
+- Step one is now team, then city, then the areas of that city (area clears when the city changes; Next stays off until an area is chosen), then format. The chosen city is sent as `p_city_id`.
+- New migration `20261116090000_challenge_any_city.sql` (not applied from the sandbox): `create_team_challenge` no longer requires the challenge city to equal the team's city (area must still belong to the city), and `request_team_challenge` no longer requires the asking team to be in the challenge's city. Until it is applied, posting in a city other than the team's own fails with the generic error toast; the team's own city keeps working.
+- Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges + layout-audit 22/22 (mocked Supabase; only one city in the fixture, so switching city was not exercised in e2e).
