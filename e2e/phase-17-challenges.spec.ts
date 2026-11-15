@@ -274,3 +274,94 @@ test('teams page shows one challenge and a create button, and the list has a bac
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page).toHaveURL(/\/teams$/);
 });
+
+function detailsPayload(overrides: Record<string, unknown>) {
+  const start = new Date(Date.now() + 3 * 86_400_000);
+  start.setUTCHours(17, 0, 0, 0);
+  const end = new Date(start.getTime() + 3 * 3_600_000);
+  return {
+    id: 'a1111111-4d3b-4f73-9d5f-1d0c9c3a7b11',
+    home_team_id: teamId,
+    home_team_name: 'Tigers FC',
+    format: 5,
+    city_id: cityId,
+    area_id: areaId,
+    city_name_en: 'Nicosia',
+    city_name_el: 'Λευκωσία',
+    area_name_en: 'Aglantzia',
+    area_name_el: 'Αγλαντζιά',
+    skill_level: null,
+    note: 'Friendly, bring two shirts.',
+    status: 'open',
+    windows: [{ starts_at: start.toISOString(), ends_at: end.toISOString() }],
+    requests: [],
+    viewer_home_role: null,
+    ...overrides,
+  };
+}
+
+test('challenge details: the home captain answers a request', async ({ page }) => {
+  await seedSession(page);
+  await mockRpc(page, 'get_my_teams', [myTeam]);
+  await mockRpc(page, 'list_team_directory', []);
+  await mockRpc(
+    page,
+    'get_team_challenge_details',
+    detailsPayload({
+      viewer_home_role: 'captain',
+      requests: [{ id: 'r1', team_name: 'Blue Hawks', status: 'pending' }],
+    }),
+  );
+  let answered: Record<string, unknown> | null = null;
+  await page.route('**/rest/v1/rpc/respond_to_challenge_request', async (route) => {
+    answered = route.request().postDataJSON() as Record<string, unknown>;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: 'null' });
+  });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/challenges/a1111111-4d3b-4f73-9d5f-1d0c9c3a7b11');
+  await expect(page.getByText('YOUR CHALLENGE')).toBeVisible();
+  await expect(page.getByText('REQUESTS · 1')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Back' })).toBeVisible();
+  await page.getByRole('button', { name: /Accept opponent: Blue Hawks/ }).click();
+  await expect.poll(() => answered !== null).toBe(true);
+  await page.waitForTimeout(500);
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'challenge-details-mobile.png'),
+  });
+});
+
+test('challenge details: another captain asks to play, then confirms a proposal', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await mockRpc(page, 'get_my_teams', [
+    { ...myTeam, team_id: 'c0000000-7f28-4eaa-9b95-0cd871741b56', name: 'Blue Hawks' },
+  ]);
+  await mockRpc(page, 'list_team_directory', []);
+  await mockRpc(page, 'get_team_challenge_details', detailsPayload({}));
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/challenges/a1111111-4d3b-4f73-9d5f-1d0c9c3a7b11');
+  await expect(page.getByText('PLAY AS')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Request this game' })).toBeVisible();
+
+  await page.unroute('**/rest/v1/rpc/get_team_challenge_details');
+  const proposed = new Date(Date.now() + 3 * 86_400_000).toISOString();
+  await mockRpc(
+    page,
+    'get_team_challenge_details',
+    detailsPayload({
+      status: 'negotiating',
+      my_team_name: 'Blue Hawks',
+      my_request_id: 'r1',
+      my_request_status: 'accepted',
+      proposed_starts_at: proposed,
+      proposed_area_id: areaId,
+      proposed_venue_name: 'Novo Arena',
+      proposed_venue_address: 'Strovolos, Nicosia',
+    }),
+  );
+  await page.goto('/challenges/a1111111-4d3b-4f73-9d5f-1d0c9c3a7b11');
+  await expect(page.getByText('PROPOSAL')).toBeVisible();
+  await expect(page.getByText(/Novo Arena/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirm exact time and field' })).toBeVisible();
+});

@@ -5,44 +5,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { matchTicketParts } from '@/i18n/format';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
-import { bodyFont, displayFont } from '@/theme/typography';
+import { bodyFont } from '@/theme/typography';
 
 import type { TeamChallenge } from './challenge-service';
-import { Crest, crestInitials } from './TeamCrest';
+import { defaultCrest, FaceOff } from './FaceOff';
 import type { TeamCrestDesign } from './team-service';
+
+export { defaultCrest, OpenSpotCrest } from './FaceOff';
 
 const amber = '#ffb84a';
 const ink = '#10170f';
 const dayMs = 24 * 60 * 60_000;
-
-export const defaultCrest: TeamCrestDesign = {
-  shape: 'shield',
-  color: '#cfff4a',
-  pattern: 'plain',
-  emblem: 'initials',
-};
-
-/** The empty shield where the opponent will go. */
-export function OpenSpotCrest({ size, color }: { size: number; color: string }) {
-  return (
-    <View
-      style={{
-        width: size,
-        height: size * 1.1,
-        borderRadius: size * 0.28,
-        borderBottomLeftRadius: size * 0.5,
-        borderBottomRightRadius: size * 0.5,
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        borderColor: color,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={{ color, fontSize: size * 0.5, fontWeight: '800' }}>?</Text>
-    </View>
-  );
-}
 
 /** One open challenge as a face-off: the home team against an empty spot, with its time slots. */
 export function ChallengeCard({
@@ -86,42 +59,13 @@ export function ChallengeCard({
           },
         ]}
       >
-        <View style={styles.vs}>
-          <View style={styles.side}>
-            <Crest {...look} initials={crestInitials(challenge.homeTeamName)} size={52} />
-            <Text
-              numberOfLines={2}
-              style={[styles.sideName, { fontFamily: bodyFont(locale, 'semibold') }]}
-            >
-              {challenge.homeTeamName}
-            </Text>
-            <Text style={[styles.sideTag, { fontFamily: bodyFont(locale, 'semibold') }]}>
-              {copy.challengeHomeLabel}
-            </Text>
-          </View>
-          <View style={styles.mid}>
-            <Text style={[styles.vsText, { color: accent, fontFamily: displayFont(locale) }]}>
-              VS
-            </Text>
-            <View style={styles.formatPill}>
-              <Text style={[styles.formatText, { fontFamily: bodyFont(locale, 'semibold') }]}>
-                {challenge.format}v{challenge.format}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.side}>
-            <OpenSpotCrest size={52} color={accent} />
-            <Text
-              numberOfLines={2}
-              style={[styles.sideName, { fontFamily: bodyFont(locale, 'semibold') }]}
-            >
-              {mine ? copy.challengeSlotWaiting : copy.challengeSlotQuestion}
-            </Text>
-            <Text style={[styles.sideTag, { fontFamily: bodyFont(locale, 'semibold') }]}>
-              {copy.challengeOpenSpot}
-            </Text>
-          </View>
-        </View>
+        <FaceOff
+          home={{ name: challenge.homeTeamName, crest: look }}
+          away={null}
+          awayLabel={mine ? copy.challengeSlotWaiting : copy.challengeSlotQuestion}
+          format={challenge.format}
+          accent={accent}
+        />
 
         <Text numberOfLines={1} style={[styles.where, { fontFamily: bodyFont(locale) }]}>
           📍 <Text style={{ color: colors.textPrimary }}>{`${area}, ${city}`}</Text>
@@ -202,31 +146,6 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       transform: [{ rotate: '3deg' }],
     },
     stickerText: { color: ink, fontSize: 11, letterSpacing: 1.4, fontWeight: '800' },
-    vs: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: '#070b09',
-      borderColor: 'rgba(255,255,255,0.08)',
-      borderWidth: 1,
-      borderRadius: 18,
-      paddingVertical: 14,
-      paddingHorizontal: 8,
-    },
-    side: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5 },
-    sideName: { color: colors.textPrimary, fontSize: 14, maxWidth: '100%', textAlign: 'center' },
-    sideTag: { color: colors.textSecondary, fontSize: 10, letterSpacing: 1, fontWeight: '700' },
-    mid: { alignItems: 'center', gap: 4 },
-    vsText: { fontSize: 26, lineHeight: 28, fontWeight: '800' },
-    formatPill: {
-      backgroundColor: colors.surfaceRaised,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: 8,
-      paddingHorizontal: 7,
-      paddingVertical: 2,
-    },
-    formatText: { color: colors.textPrimary, fontSize: 11, fontWeight: '700' },
     where: { color: colors.textSecondary, fontSize: 13 },
     slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     slot: {

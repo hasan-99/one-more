@@ -1783,3 +1783,8 @@
 - Teams page: the captain banner and three small cards are replaced by one challenge card, "See all ›" and a "Post a challenge" button (opens `/challenges/create`).
 - Card team names wrap to two lines (fixes the Greek 360px cut-text audit).
 - Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (incl. teams page + back button), layout-audit, create-game pass (mocked Supabase). Not verified on device or live backend.
+
+## Phase 17 — Challenge details redesign
+- `/challenges/[id]` rebuilt: back button, face-off card (`FaceOff`, shared with the list card) with status sticker, four-stage progress (Posted, Opponent, Time & pitch, Match ready) and one panel per stage/viewer: requests with accept/decline and cancel (home captain); play-as + request (other captain); waiting + withdraw; propose exact kick-off (day chips from the slots, ±30 min stepper clamped to the slot, area chips, pitch name and address); confirm proposal; match ready with link; closed states.
+- All existing RPC calls unchanged; kick-off is sent as an instant inside the chosen slot. No "decline proposal" (no backend for it).
+- Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (details as home captain incl. accept payload, as other captain incl. confirm view), layout-audit, create-game pass (mocked Supabase). Not verified on device or live backend; propose/confirm submit paths not exercised in e2e.
