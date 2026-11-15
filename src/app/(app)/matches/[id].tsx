@@ -74,24 +74,30 @@ export default function MatchDetailsScreen() {
   useEffect(() => {
     if (!id || !match || !user) return;
     let active = true;
-    const ownPromise = loadOwnJoinRequest(id, user.id);
-    const waitlistPromise = loadOwnWaitlistState(id);
-    const requestsPromise = match.isOrganizer ? loadMatchJoinRequests(id) : Promise.resolve([]);
-    void Promise.all([ownPromise, requestsPromise, waitlistPromise])
-      .then(([own, requests, waitlist]) => {
-        if (active)
-          setJoinState({ key: `${id}:${user.id}`, own, waitlist, requests, error: false });
-      })
-      .catch(() => {
-        if (active)
-          setJoinState({
-            key: `${id}:${user.id}`,
-            own: null,
-            waitlist: null,
-            requests: [],
-            error: true,
-          });
+    // Each part fails on its own: the organizer's request list must not break because the
+    // player's own join state could not be read (or the other way round).
+    const key = `${id}:${user.id}`;
+    const attempt = <T,>(task: Promise<T>, fallback: T) =>
+      task
+        .then((value) => ({ value, failed: false }))
+        .catch(() => ({ value: fallback, failed: true }));
+    void Promise.all([
+      attempt(loadOwnJoinRequest(id, user.id), null as OwnJoinRequest | null),
+      attempt(
+        match.isOrganizer ? loadMatchJoinRequests(id) : Promise.resolve([] as MatchJoinRequest[]),
+        [] as MatchJoinRequest[],
+      ),
+      attempt(loadOwnWaitlistState(id), null as WaitlistState | null),
+    ]).then(([own, requests, waitlist]) => {
+      if (!active) return;
+      setJoinState({
+        key,
+        own: own.value,
+        waitlist: waitlist.value,
+        requests: requests.value,
+        error: match.isOrganizer ? requests.failed : own.failed || waitlist.failed,
       });
+    });
     return () => {
       active = false;
     };
