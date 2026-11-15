@@ -1747,3 +1747,7 @@
 - Edit page: hero on top, the existing sections below (not yet turned into tap-to-edit cards).
 - Create flow step 3 has a Pitch booking row (Not booked / Pending / Confirmed, default Not booked) saved as `booking_status`; step 3 uses the slim ticket so it fits one screen.
 - Checks: tsc, eslint, vitest 39; Playwright create-game (flow, notification badges, edit keeps published, game page), layout audit, chat and creation gate pass. `phase-05-discovery` fails in this sandbox with and without these changes (needs the real backend).
+
+## Phase 17 — Profile "Your teams" row fix
+
+- The team row on the profile lost its layout (crest above the name, no padding) because a style function was passed through `Link asChild`. It now uses a plain Pressable with `router.push`, shows the team's real crest (shield outline fallback until the team-list migration is applied), the real name, "City · N players", a captain badge for captains and a chevron. Profile spec asserts the row.

@@ -1,4 +1,4 @@
-import { Link, router, type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Animated,
@@ -43,6 +43,7 @@ import {
   type PlayerCardData,
 } from '@/features/profile/PlayerCardShareModal';
 import { listMyTeams, type MyTeam } from '@/features/teams/team-service';
+import { CaptainBadge, Crest as TeamCrestArt, crestInitials } from '@/features/teams/TeamCrest';
 import { translations, type Locale, type TranslationKey } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
@@ -252,25 +253,37 @@ export function PlayerProfile() {
           {teams.length ? (
             <View style={styles.listCard}>
               {teams.map((team, index) => (
-                <Link key={team.teamId} href={`/teams/${team.teamId}` as Href} asChild>
-                  <Pressable
-                    accessibilityRole="link"
-                    style={({ pressed }) => [
-                      styles.row,
-                      index < teams.length - 1 && styles.rowDivider,
-                      pressed && { backgroundColor: colors.cardTop },
-                    ]}
-                  >
+                <Pressable
+                  key={team.teamId}
+                  accessibilityRole="link"
+                  accessibilityLabel={team.name}
+                  onPress={() => router.push(`/teams/${team.teamId}` as Href)}
+                  style={({ pressed }) => [
+                    styles.row,
+                    index < teams.length - 1 && styles.rowDivider,
+                    pressed && { backgroundColor: colors.cardTop },
+                  ]}
+                >
+                  {team.crest ? (
+                    <TeamCrestArt {...team.crest} initials={crestInitials(team.name)} size={44} />
+                  ) : (
                     <ShieldOutline color={colors.accentText} dashed={false} />
-                    <View style={styles.rowCopy}>
-                      <Text style={styles.rowTitle}>{team.name}</Text>
-                      <Text style={styles.muted}>
-                        {`${team.memberCount} · ${locale === 'en' ? team.cityNameEn : team.cityNameEl}`}
-                      </Text>
-                    </View>
-                    <Chevron color={colors.textSecondary} />
-                  </Pressable>
-                </Link>
+                  )}
+                  <View style={styles.rowCopy}>
+                    <Text numberOfLines={1} style={styles.rowTitle}>
+                      {team.name}
+                    </Text>
+                    <Text style={styles.muted}>
+                      {`${locale === 'en' ? team.cityNameEn : team.cityNameEl} · ${
+                        team.memberCount === 1
+                          ? copy.teamPlayerOne
+                          : copy.teamPlayersCount.replace('{count}', String(team.memberCount))
+                      }`}
+                    </Text>
+                  </View>
+                  {team.role === 'captain' ? <CaptainBadge label={copy.teamCaptain} /> : null}
+                  <Chevron color={colors.textSecondary} />
+                </Pressable>
               ))}
             </View>
           ) : (
@@ -1634,11 +1647,12 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       overflow: 'hidden',
     },
     row: {
-      minHeight: 56,
+      minHeight: 64,
       paddingHorizontal: 14,
+      paddingVertical: 10,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 12,
     },
     rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.navBorder },
     email: { color: colors.textMuted, fontFamily: body, fontSize: 13 },

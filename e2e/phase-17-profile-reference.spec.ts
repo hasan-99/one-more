@@ -109,7 +109,22 @@ test('profile matches the animated player reference and saves editable details',
         created_at: new Date(now * 1000).toISOString(),
         updated_at: new Date(now * 1000).toISOString(),
       },
-      get_my_teams: [],
+      get_my_teams: [
+        {
+          team_id: 't1',
+          name: 'Tigers',
+          city_id: cityId,
+          city_name_en: 'Nicosia',
+          city_name_el: 'Λευκωσία',
+          description: null,
+          member_count: 1,
+          role: 'captain',
+          crest_shape: 'hex',
+          crest_color: '#ffa94d',
+          crest_pattern: 'half',
+          crest_emblem: 'star',
+        },
+      ],
     };
     await route.fulfill({
       status: 200,
@@ -123,6 +138,9 @@ test('profile matches the animated player reference and saves editable details',
   await page.goto('/profile');
   await expect(page.getByRole('button', { name: 'Share my player card' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'Your player card: Profile Player' })).toBeVisible();
+  // Teams are rows with the crest, the real name, city and player count.
+  await expect(page.getByRole('link', { name: 'Tigers' })).toBeVisible();
+  await expect(page.getByText('Nicosia · 1 player')).toBeVisible();
   // The profile only shows the card: nothing is edited in place any more.
   await expect(page.getByRole('heading', { name: 'Where you play' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Raise shirt number' })).toHaveCount(0);
