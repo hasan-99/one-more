@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -230,310 +230,386 @@ export default function MatchDetailsScreen() {
       setJoinBusy(false);
     }
   };
+  const joinSettled = Boolean(currentJoinState && !currentJoinState.error);
+  const waitlistStatus = currentJoinState?.waitlist?.status;
+  const canAskToJoin =
+    !match.isOrganizer &&
+    joinSettled &&
+    currentJoinState?.own?.status !== 'pending' &&
+    currentJoinState?.own?.status !== 'active' &&
+    waitlistStatus !== 'offered' &&
+    waitlistStatus !== 'waiting' &&
+    waitlistStatus !== 'accepted' &&
+    waitlistStatus !== 'left';
+  const canChat = Boolean(
+    user && (match.isOrganizer || currentJoinState?.own?.status === 'active'),
+  );
+  const barLabel = joinBusy
+    ? copy.matchSaving
+    : match.freeSpots > 0
+      ? copy.matchJoinRequest
+      : copy.matchWaitlistJoin;
+  const showBar = match.isOrganizer || canChat || canAskToJoin || !user;
   return (
-    // The ticket below already carries the title, so the page heading is left out.
-    <AppPage title={match.title} heading={<View style={{ height: 0, marginBottom: -14 }} />}>
-      <MatchHero
-        locale={locale}
-        data={{
-          title: match.title,
-          sideSize: match.sideSize,
-          startsAt: match.startsAt,
-          venueName: match.venueName,
-          areaLabel: area,
-          cityLabel: city,
-          durationMinutes: match.durationMinutes,
-          priceEur: match.priceEur,
-          taken: Math.max(0, match.capacity - match.freeSpots),
-          capacity: match.capacity,
-          bookingStatus: match.bookingStatus,
-          statusLabel: match.isOrganizer ? copy.heroStatusPublished : undefined,
-        }}
-      />
-      <View style={styles.infoCard}>
-        <Text style={styles.detail}>{`${match.venueName} · ${match.venueAddress}`}</Text>
-        {match.notes ? (
-          <Text style={styles.detail}>
-            {copy.matchNotesLabel}: {match.notes}
-          </Text>
-        ) : null}
-        <Text style={styles.disclosure}>{copy.matchBookingDisclosure}</Text>
-      </View>
-      {!match.isOrganizer ? (
-        <AppCard>
-          <Text style={styles.sectionTitle}>{copy.matchJoinRequest}</Text>
-          {!user ? (
-            <>
-              <Text style={styles.detail}>{copy.authProtectedDescription}</Text>
-              <AppAction
-                labelKey="authEntry"
-                href={`/sign-in?returnTo=${encodeURIComponent(`/matches/${match.id}`)}`}
-              />
-            </>
-          ) : currentJoinState?.error ? (
-            <View accessibilityRole="alert" style={styles.stateBox}>
-              <Text style={styles.error}>{copy.matchJoinActionError}</Text>
-              <Button label={copy.matchJoinRetry} onPress={refreshJoinState} colors={colors} />
-            </View>
-          ) : !currentJoinState ? (
-            <View
-              accessibilityRole="progressbar"
-              accessibilityLabel={copy.matchLoading}
-              style={styles.stateBox}
-            >
-              <Text style={styles.stateText}>{copy.matchLoading}</Text>
-            </View>
-          ) : (
-            <>
-              {currentJoinState.waitlist?.status === 'offered' &&
-              currentJoinState.waitlist.offer_id ? (
-                <>
-                  <Text accessibilityRole="status" style={styles.detail}>
-                    {copy.matchWaitlistOffer} ·{' '}
-                    {copy.matchWaitlistTimeLeft.replace(
-                      '{time}',
-                      formatCountdown(
-                        Math.max(0, Date.parse(currentJoinState.waitlist.expires_at ?? '') - now),
-                      ),
-                    )}
-                  </Text>
-                  {Date.parse(currentJoinState.waitlist.expires_at ?? '') <= now ? (
+    <View style={{ flex: 1 }}>
+      {/* The ticket below already carries the title, so the page heading is left out. */}
+      <AppPage title={match.title} heading={<View style={{ height: 0, marginBottom: -14 }} />}>
+        <MatchHero
+          locale={locale}
+          data={{
+            title: match.title,
+            sideSize: match.sideSize,
+            startsAt: match.startsAt,
+            venueName: match.venueName,
+            areaLabel: area,
+            cityLabel: city,
+            durationMinutes: match.durationMinutes,
+            priceEur: match.priceEur,
+            taken: Math.max(0, match.capacity - match.freeSpots),
+            capacity: match.capacity,
+            bookingStatus: match.bookingStatus,
+            statusLabel: match.isOrganizer ? copy.heroStatusPublished : undefined,
+          }}
+        />
+        <View style={styles.infoCard}>
+          <Text style={styles.detail}>{`${match.venueName} · ${match.venueAddress}`}</Text>
+          {match.notes ? (
+            <Text style={styles.detail}>
+              {copy.matchNotesLabel}: {match.notes}
+            </Text>
+          ) : null}
+          <Text style={styles.disclosure}>{copy.matchBookingDisclosure}</Text>
+        </View>
+        {!match.isOrganizer ? (
+          <AppCard>
+            <Text style={styles.sectionTitle}>{copy.matchJoinRequest}</Text>
+            {!user ? (
+              <>
+                <Text style={styles.detail}>{copy.authProtectedDescription}</Text>
+                <AppAction
+                  labelKey="authEntry"
+                  href={`/sign-in?returnTo=${encodeURIComponent(`/matches/${match.id}`)}`}
+                />
+              </>
+            ) : currentJoinState?.error ? (
+              <View accessibilityRole="alert" style={styles.stateBox}>
+                <Text style={styles.error}>{copy.matchJoinActionError}</Text>
+                <Button label={copy.matchJoinRetry} onPress={refreshJoinState} colors={colors} />
+              </View>
+            ) : !currentJoinState ? (
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel={copy.matchLoading}
+                style={styles.stateBox}
+              >
+                <Text style={styles.stateText}>{copy.matchLoading}</Text>
+              </View>
+            ) : (
+              <>
+                {currentJoinState.waitlist?.status === 'offered' &&
+                currentJoinState.waitlist.offer_id ? (
+                  <>
+                    <Text accessibilityRole="status" style={styles.detail}>
+                      {copy.matchWaitlistOffer} ·{' '}
+                      {copy.matchWaitlistTimeLeft.replace(
+                        '{time}',
+                        formatCountdown(
+                          Math.max(0, Date.parse(currentJoinState.waitlist.expires_at ?? '') - now),
+                        ),
+                      )}
+                    </Text>
+                    {Date.parse(currentJoinState.waitlist.expires_at ?? '') <= now ? (
+                      <Button
+                        label={copy.matchJoinRetry}
+                        onPress={refreshJoinState}
+                        colors={colors}
+                      />
+                    ) : null}
+                    <View style={styles.ownerActions}>
+                      <Button
+                        label={copy.matchWaitlistAccept}
+                        onPress={() => void waitlistAction('accept')}
+                        colors={colors}
+                        disabled={
+                          joinBusy || Date.parse(currentJoinState.waitlist.expires_at ?? '') <= now
+                        }
+                        primary
+                      />
+                      <Button
+                        label={copy.matchWaitlistDecline}
+                        onPress={() => void waitlistAction('decline')}
+                        colors={colors}
+                        disabled={
+                          joinBusy || Date.parse(currentJoinState.waitlist.expires_at ?? '') <= now
+                        }
+                      />
+                    </View>
+                  </>
+                ) : currentJoinState.waitlist?.status === 'waiting' ? (
+                  <>
+                    <Text accessibilityRole="status" style={styles.detail}>
+                      {copy.matchWaitlistPosition.replace(
+                        '{position}',
+                        String(currentJoinState.waitlist.queue_position ?? '—'),
+                      )}
+                    </Text>
                     <Button
-                      label={copy.matchJoinRetry}
-                      onPress={refreshJoinState}
+                      label={copy.matchWaitlistLeave}
+                      onPress={() => void waitlistAction('leave')}
                       colors={colors}
+                      disabled={joinBusy}
                     />
-                  ) : null}
-                  <View style={styles.ownerActions}>
+                  </>
+                ) : currentJoinState.own?.status === 'pending' ? (
+                  <>
+                    <Text accessibilityRole="status" style={styles.detail}>
+                      {copy.matchJoinPending}
+                    </Text>
                     <Button
-                      label={copy.matchWaitlistAccept}
-                      onPress={() => void waitlistAction('accept')}
+                      label={copy.matchJoinWithdraw}
+                      onPress={() => void withdrawJoinRequest()}
                       colors={colors}
-                      disabled={
-                        joinBusy || Date.parse(currentJoinState.waitlist.expires_at ?? '') <= now
-                      }
-                      primary
+                      disabled={joinBusy}
                     />
+                  </>
+                ) : currentJoinState.own?.status === 'active' ? (
+                  <>
+                    <Text accessibilityRole="status" style={styles.detail}>
+                      {copy.matchJoinAccepted}
+                    </Text>
                     <Button
-                      label={copy.matchWaitlistDecline}
-                      onPress={() => void waitlistAction('decline')}
+                      label={copy.matchLeaveActive}
+                      onPress={() => void waitlistAction('leave_match')}
                       colors={colors}
-                      disabled={
-                        joinBusy || Date.parse(currentJoinState.waitlist.expires_at ?? '') <= now
-                      }
+                      disabled={joinBusy}
                     />
-                  </View>
-                </>
-              ) : currentJoinState.waitlist?.status === 'waiting' ? (
-                <>
-                  <Text accessibilityRole="status" style={styles.detail}>
-                    {copy.matchWaitlistPosition.replace(
-                      '{position}',
-                      String(currentJoinState.waitlist.queue_position ?? '—'),
-                    )}
-                  </Text>
-                  <Button
-                    label={copy.matchWaitlistLeave}
-                    onPress={() => void waitlistAction('leave')}
-                    colors={colors}
-                    disabled={joinBusy}
-                  />
-                </>
-              ) : currentJoinState.own?.status === 'pending' ? (
-                <>
-                  <Text accessibilityRole="status" style={styles.detail}>
-                    {copy.matchJoinPending}
-                  </Text>
-                  <Button
-                    label={copy.matchJoinWithdraw}
-                    onPress={() => void withdrawJoinRequest()}
-                    colors={colors}
-                    disabled={joinBusy}
-                  />
-                </>
-              ) : currentJoinState.own?.status === 'active' ? (
-                <>
+                  </>
+                ) : currentJoinState.waitlist?.status === 'accepted' ? (
                   <Text accessibilityRole="status" style={styles.detail}>
                     {copy.matchJoinAccepted}
                   </Text>
-                  <Button
-                    label={copy.matchLeaveActive}
-                    onPress={() => void waitlistAction('leave_match')}
-                    colors={colors}
-                    disabled={joinBusy}
-                  />
-                </>
-              ) : currentJoinState.waitlist?.status === 'accepted' ? (
-                <Text accessibilityRole="status" style={styles.detail}>
-                  {copy.matchJoinAccepted}
-                </Text>
-              ) : (
-                <>
-                  {currentJoinState.own?.status === 'rejected' ? (
-                    <Text accessibilityRole="status" style={styles.detail}>
-                      {copy.matchJoinRejected}
-                    </Text>
-                  ) : currentJoinState.own?.status === 'cancelled' ? (
-                    <Text accessibilityRole="status" style={styles.detail}>
-                      {copy.matchJoinCancelled}
-                    </Text>
-                  ) : null}
-                  <Text style={styles.detail}>{copy.matchJoinPosition}</Text>
-                  <View style={styles.ownerActions}>
-                    <Choice
-                      label={copy.matchJoinNone}
-                      selected={selectedPositionSlotId === null}
-                      onPress={() => setSelectedPositionSlotId(null)}
-                      colors={colors}
-                    />
-                    {match.openPositions.slice(0, Math.max(0, match.freeSpots)).map((slot) => (
+                ) : (
+                  <>
+                    {currentJoinState.own?.status === 'rejected' ? (
+                      <Text accessibilityRole="status" style={styles.detail}>
+                        {copy.matchJoinRejected}
+                      </Text>
+                    ) : currentJoinState.own?.status === 'cancelled' ? (
+                      <Text accessibilityRole="status" style={styles.detail}>
+                        {copy.matchJoinCancelled}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.detail}>{copy.matchJoinPosition}</Text>
+                    <View style={styles.ownerActions}>
                       <Choice
-                        key={slot.id}
-                        label={positionCopy[slot.position]}
-                        selected={selectedPositionSlotId === slot.id}
-                        onPress={() => setSelectedPositionSlotId(slot.id)}
+                        label={copy.matchJoinNone}
+                        selected={selectedPositionSlotId === null}
+                        onPress={() => setSelectedPositionSlotId(null)}
                         colors={colors}
                       />
-                    ))}
-                  </View>
-                  {currentJoinState.waitlist?.status === 'expired' ||
-                  currentJoinState.waitlist?.status === 'declined' ? (
-                    <Text accessibilityRole="status" style={styles.detail}>
-                      {copy.matchWaitlistOfferEnded}
-                    </Text>
-                  ) : null}
-                  {match.freeSpots > 0 ? (
-                    <Button
-                      label={joinBusy ? copy.matchSaving : copy.matchJoinRequest}
-                      onPress={() => void sendJoinRequest()}
-                      colors={colors}
-                      disabled={joinBusy}
-                      primary
-                    />
-                  ) : (
-                    <Button
-                      label={joinBusy ? copy.matchSaving : copy.matchWaitlistJoin}
-                      onPress={() => void waitlistAction('join')}
-                      colors={colors}
-                      disabled={joinBusy || currentJoinState.waitlist?.status === 'left'}
-                      primary
-                    />
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </AppCard>
-      ) : null}
-      {match.isOrganizer ? (
-        <AppCard>
-          <Text style={styles.sectionTitle}>{copy.matchJoinRequestsTitle}</Text>
-          {currentJoinState?.error ? (
-            <View accessibilityRole="alert" style={styles.stateBox}>
-              <Text style={styles.error}>{copy.matchJoinListError}</Text>
-              <Button label={copy.matchJoinRetry} onPress={refreshJoinState} colors={colors} />
-            </View>
-          ) : !currentJoinState ? (
-            <View
-              accessibilityRole="progressbar"
-              accessibilityLabel={copy.matchLoading}
-              style={styles.stateBox}
-            >
-              <Text style={styles.stateText}>{copy.matchLoading}</Text>
-            </View>
-          ) : currentJoinState.requests.length === 0 ? (
-            <Text style={styles.detail}>{copy.matchJoinEmpty}</Text>
-          ) : (
-            currentJoinState.requests.map((request) => (
-              <View key={request.participant_id} style={styles.requestRow}>
-                <View style={styles.requestCopy}>
-                  <Text style={styles.sectionTitle}>{request.display_name}</Text>
-                  <Text style={styles.detail}>
-                    {request.status === 'pending' ? copy.matchJoinPending : copy.matchJoinAccepted}
-                    {request.position_label
-                      ? ` · ${positionCopy[request.position_label as keyof typeof positionCopy] ?? ''}`
-                      : ''}
-                  </Text>
-                </View>
-                {request.status === 'pending' ? (
-                  <View style={styles.ownerActions}>
-                    <Button
-                      label={copy.matchJoinApprove}
-                      onPress={() => void reviewRequest(request.participant_id, 'approve')}
-                      colors={colors}
-                      disabled={joinBusy}
-                      primary
-                    />
-                    <Button
-                      label={copy.matchJoinReject}
-                      onPress={() => void reviewRequest(request.participant_id, 'reject')}
-                      colors={colors}
-                      disabled={joinBusy}
-                    />
-                  </View>
-                ) : null}
+                      {match.openPositions.slice(0, Math.max(0, match.freeSpots)).map((slot) => (
+                        <Choice
+                          key={slot.id}
+                          label={positionCopy[slot.position]}
+                          selected={selectedPositionSlotId === slot.id}
+                          onPress={() => setSelectedPositionSlotId(slot.id)}
+                          colors={colors}
+                        />
+                      ))}
+                    </View>
+                    {currentJoinState.waitlist?.status === 'expired' ||
+                    currentJoinState.waitlist?.status === 'declined' ? (
+                      <Text accessibilityRole="status" style={styles.detail}>
+                        {copy.matchWaitlistOfferEnded}
+                      </Text>
+                    ) : null}
+                    {match.freeSpots > 0 ? (
+                      <Button
+                        label={joinBusy ? copy.matchSaving : copy.matchJoinRequest}
+                        onPress={() => void sendJoinRequest()}
+                        colors={colors}
+                        disabled={joinBusy}
+                        primary
+                      />
+                    ) : (
+                      <Button
+                        label={joinBusy ? copy.matchSaving : copy.matchWaitlistJoin}
+                        onPress={() => void waitlistAction('join')}
+                        colors={colors}
+                        disabled={joinBusy || currentJoinState.waitlist?.status === 'left'}
+                        primary
+                      />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </AppCard>
+        ) : null}
+        {match.isOrganizer ? (
+          <AppCard>
+            <Text style={styles.sectionTitle}>{copy.matchJoinRequestsTitle}</Text>
+            {currentJoinState?.error ? (
+              <View accessibilityRole="alert" style={styles.stateBox}>
+                <Text style={styles.error}>{copy.matchJoinListError}</Text>
+                <Button label={copy.matchJoinRetry} onPress={refreshJoinState} colors={colors} />
               </View>
-            ))
-          )}
-        </AppCard>
-      ) : null}
-      {user && (match.isOrganizer || currentJoinState?.own?.status === 'active') ? (
-        <AppCard>
-          <Text style={styles.sectionTitle}>{copy.appChatTitle}</Text>
-          <Text style={styles.detail}>{copy.chatDescription}</Text>
-          <AppAction labelKey="appChatTitle" href={`/chat/${match.id}`} />
-        </AppCard>
-      ) : null}
-      {match.isOrganizer ? (
-        <AppCard>
-          <Text style={styles.sectionTitle}>{copy.matchOrganizerActions}</Text>
-          <AppAction labelKey="matchEditTitle" href={`/create?matchId=${match.id}`} />
-          {!cancelPending ? (
+            ) : !currentJoinState ? (
+              <View
+                accessibilityRole="progressbar"
+                accessibilityLabel={copy.matchLoading}
+                style={styles.stateBox}
+              >
+                <Text style={styles.stateText}>{copy.matchLoading}</Text>
+              </View>
+            ) : currentJoinState.requests.length === 0 ? (
+              <Text style={styles.detail}>{copy.matchJoinEmpty}</Text>
+            ) : (
+              currentJoinState.requests.map((request) => (
+                <View key={request.participant_id} style={styles.requestRow}>
+                  <View style={styles.requestCopy}>
+                    <Text style={styles.sectionTitle}>{request.display_name}</Text>
+                    <Text style={styles.detail}>
+                      {request.status === 'pending'
+                        ? copy.matchJoinPending
+                        : copy.matchJoinAccepted}
+                      {request.position_label
+                        ? ` · ${positionCopy[request.position_label as keyof typeof positionCopy] ?? ''}`
+                        : ''}
+                    </Text>
+                  </View>
+                  {request.status === 'pending' ? (
+                    <View style={styles.ownerActions}>
+                      <Button
+                        label={copy.matchJoinApprove}
+                        onPress={() => void reviewRequest(request.participant_id, 'approve')}
+                        colors={colors}
+                        disabled={joinBusy}
+                        primary
+                      />
+                      <Button
+                        label={copy.matchJoinReject}
+                        onPress={() => void reviewRequest(request.participant_id, 'reject')}
+                        colors={colors}
+                        disabled={joinBusy}
+                      />
+                    </View>
+                  ) : null}
+                </View>
+              ))
+            )}
+          </AppCard>
+        ) : null}
+        {user && (match.isOrganizer || currentJoinState?.own?.status === 'active') ? (
+          <AppCard>
+            <Text style={styles.sectionTitle}>{copy.appChatTitle}</Text>
+            <Text style={styles.detail}>{copy.chatDescription}</Text>
+            <AppAction labelKey="appChatTitle" href={`/chat/${match.id}`} />
+          </AppCard>
+        ) : null}
+        {match.isOrganizer ? (
+          <AppCard>
+            <Text style={styles.sectionTitle}>{copy.matchOrganizerActions}</Text>
+            <AppAction labelKey="matchEditTitle" href={`/create?matchId=${match.id}`} />
+            {!cancelPending ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setCancelPending(true)}
+                style={styles.retry}
+              >
+                <Text style={styles.error}>{copy.matchCancel}</Text>
+              </Pressable>
+            ) : (
+              <>
+                <Text style={styles.error}>{copy.matchCancelConfirm}</Text>
+                <View style={styles.ownerActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={cancelling}
+                    onPress={() => setCancelPending(false)}
+                    style={styles.retry}
+                  >
+                    <Text style={styles.retryText}>{copy.matchCancelKeep}</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={cancelling}
+                    onPress={() => {
+                      setCancelling(true);
+                      void cancelMatch(match.id)
+                        .then(() => {
+                          showToast(copy.matchCancelSuccess, 'success');
+                          router.replace('/explore');
+                        })
+                        .catch(() => showToast(copy.matchCancelError, 'error'))
+                        .finally(() => setCancelling(false));
+                    }}
+                    style={[styles.retry, { backgroundColor: colors.surfaceRaised }]}
+                  >
+                    <Text style={styles.error}>
+                      {cancelling ? copy.matchSaving : copy.matchCancel}
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </AppCard>
+        ) : null}
+        <AppAction labelKey="matchBackToExplore" href="/explore" secondary />
+      </AppPage>
+      {showBar ? (
+        <View style={styles.bar}>
+          {match.isOrganizer ? (
             <Pressable
               accessibilityRole="button"
-              onPress={() => setCancelPending(true)}
-              style={styles.retry}
+              onPress={() => router.push(`/create?matchId=${match.id}` as Href)}
+              style={styles.barMain}
             >
-              <Text style={styles.error}>{copy.matchCancel}</Text>
+              <Text style={styles.barMainText}>{copy.matchEditTitle}</Text>
+            </Pressable>
+          ) : !user ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() =>
+                router.push(
+                  `/sign-in?returnTo=${encodeURIComponent(`/matches/${match.id}`)}` as Href,
+                )
+              }
+              style={styles.barMain}
+            >
+              <Text style={styles.barMainText}>{copy.authEntry}</Text>
+            </Pressable>
+          ) : canAskToJoin ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={joinBusy}
+              onPress={() =>
+                void (match.freeSpots > 0 ? sendJoinRequest() : waitlistAction('join'))
+              }
+              style={[styles.barMain, joinBusy && { opacity: 0.6 }]}
+            >
+              <Text style={styles.barMainText}>{barLabel}</Text>
             </Pressable>
           ) : (
-            <>
-              <Text style={styles.error}>{copy.matchCancelConfirm}</Text>
-              <View style={styles.ownerActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={cancelling}
-                  onPress={() => setCancelPending(false)}
-                  style={styles.retry}
-                >
-                  <Text style={styles.retryText}>{copy.matchCancelKeep}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={cancelling}
-                  onPress={() => {
-                    setCancelling(true);
-                    void cancelMatch(match.id)
-                      .then(() => {
-                        showToast(copy.matchCancelSuccess, 'success');
-                        router.replace('/explore');
-                      })
-                      .catch(() => showToast(copy.matchCancelError, 'error'))
-                      .finally(() => setCancelling(false));
-                  }}
-                  style={[styles.retry, { backgroundColor: colors.surfaceRaised }]}
-                >
-                  <Text style={styles.error}>
-                    {cancelling ? copy.matchSaving : copy.matchCancel}
-                  </Text>
-                </Pressable>
-              </View>
-            </>
+            <View style={{ flex: 1 }} />
           )}
-        </AppCard>
+          {canChat ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={copy.appChatTitle}
+              onPress={() => router.push(`/chat/${match.id}` as Href)}
+              style={canAskToJoin || match.isOrganizer ? styles.barChat : styles.barMain}
+            >
+              <Text
+                style={canAskToJoin || match.isOrganizer ? styles.barChatText : styles.barMainText}
+              >
+                {canAskToJoin || match.isOrganizer ? '💬' : `💬  ${copy.appChatTitle}`}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
-      <AppAction labelKey="matchBackToExplore" href="/explore" secondary />
-    </AppPage>
+    </View>
   );
 }
 
@@ -545,6 +621,40 @@ function formatCountdown(milliseconds: number) {
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
     detail: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
+    bar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: 'row',
+      gap: 10,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 14,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    barMain: {
+      flex: 1,
+      height: 54,
+      borderRadius: 16,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    barMainText: { color: colors.primaryButtonText, fontSize: 16, fontWeight: '800' },
+    barChat: {
+      width: 54,
+      height: 54,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    barChatText: { fontSize: 20 },
     infoCard: {
       gap: 8,
       borderRadius: 16,

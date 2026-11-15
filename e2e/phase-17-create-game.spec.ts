@@ -263,8 +263,19 @@ test('saving changes to a published game keeps it published', async ({ page }) =
   });
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto(`/create?matchId=${matchId}`);
+  await expect(page.getByRole('heading', { name: 'Edit game' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: '7v7' })).toHaveCount(0);
+  await expect(page.getByLabel('Game name')).toHaveValue('Last Whistle');
+  // The step bars jump straight to the last step while editing.
+  await page.getByRole('button', { name: 'Step 5 of 5' }).click();
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect.poll(() => sent?.p_match.event_status).toBe('published');
+  expect(sent?.p_match).toMatchObject({
+    title: 'Last Whistle',
+    price_eur: 10,
+    duration_minutes: 60,
+    side_size: 5,
+  });
 });
 
 test('the game page shows the ticket, facts and the players number with its bar', async ({

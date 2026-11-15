@@ -1754,3 +1754,10 @@
 - Game page: the empty heading slot no longer leaves a gap above the ticket.
 - Celebration: the "N players notified" pill is shown only when at least one player was notified; with 0 it is hidden and the text says the game is live in Explore (the count is real: players in the city, free that day, matching format).
 - Game page: the organizer's request list, the player's own join state and the waitlist state load independently, so a failure of the player-side lookups no longer shows "Player requests could not be loaded" for the organizer (only a failure of `get_match_join_requests` does).
+
+## Phase 17 — Edit game via wizard + fixed action bar
+- Edit game now opens the same step wizard (`/create?matchId=…`), preloaded; status, notes, booking, positions kept; step bars jump between steps; old MatchForm removed; 7v7/skill level not editable.
+- Game page: fixed bottom bar (Request to join / Edit game / Chat).
+- Checks: tsc, eslint, prettier, vitest 39/39, Playwright create-game + create-team + layout-audit 26/26 (mocked Supabase). Browser: desktop + mobile via Playwright.
+- Not verified: bar join button against live backend (mock lacks join-state route).
+- Next: publish OTA, apply migrations.

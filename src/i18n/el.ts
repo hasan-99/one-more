@@ -268,6 +268,9 @@ export const el = {
   gameWizDoneBody: 'Οι παίκτες της πόλης σου που είναι ελεύθεροι εκείνη τη μέρα ειδοποιούνται.',
   gameWizDoneBodyLive:
     'Ο αγώνας σου είναι ζωντανός. Οι παίκτες της πόλης σου που είναι ελεύθεροι εκείνη τη μέρα θα τον βρουν στο Explore.',
+  gameWizEditTitle: 'Επεξεργασία αγώνα',
+  gameWizSaveChanges: 'Αποθήκευση αλλαγών',
+  gameWizEditHint: 'Έλεγξε τον αγώνα και αποθήκευσε τις αλλαγές.',
   gameWizNotified: 'παίκτες ειδοποιήθηκαν',
   gameWizNotifiedNone: 'Δεν βρέθηκαν ακόμη παίκτες',
   gameWizViewGame: 'Δες τον αγώνα',

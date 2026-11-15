@@ -30,6 +30,7 @@ import type { ThemeColors } from '@/theme/tokens';
 import {
   countPublishedNotifications,
   loadMatchFilters,
+  loadMatchForEditor,
   saveMatch,
   type MatchArea,
   type MatchCity,
@@ -74,6 +75,28 @@ const names: Record<Locale, string[]> = {
   ],
 };
 
+/** Cyprus wall-clock parts of an instant: the calendar day, hour and minute. */
+function cyprusParts(iso: string) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Nicosia',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(new Date(iso))
+      .map(({ type, value }) => [type, value]),
+  );
+  return {
+    day: new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day)),
+    hour: Number(parts.hour),
+    minute: Number(parts.minute),
+  };
+}
+
 function pad(value: number) {
   return String(value).padStart(2, '0');
 }
@@ -114,7 +137,9 @@ function dayPartKey(
   return 'gameWizNight';
 }
 
-export function CreateGameWizard() {
+/** `matchId` opens the same steps filled with an existing game (editing). */
+export function CreateGameWizard({ matchId }: { matchId?: string }) {
+  const editing = Boolean(matchId);
   const { colors, locale } = useAppPreferences();
   const copy = translations[locale] as Copy;
   const { user } = useAuth();
@@ -122,8 +147,8 @@ export function CreateGameWizard() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [step, setStep] = useState(0);
-  const [title, setTitle] = useState(() => pickName(locale));
-  const [size, setSize] = useState<(typeof sizes)[number]>(5);
+  const [title, setTitle] = useState(() => (matchId ? '' : pickName(locale)));
+  const [size, setSize] = useState<number>(5);
   const [day, setDay] = useState(() => addDays(startOfDay(new Date()), 1));
   const [month, setMonth] = useState(() => {
     const tomorrow = addDays(startOfDay(new Date()), 1);
@@ -131,7 +156,7 @@ export function CreateGameWizard() {
   });
   const [hour, setHour] = useState(21);
   const [minute, setMinute] = useState(0);
-  const [duration, setDuration] = useState<(typeof durations)[number]>(90);
+  const [duration, setDuration] = useState<number>(90);
   const [sheet, setSheet] = useState<'hour' | 'minute' | null>(null);
   const [cityId, setCityId] = useState('');
   const [areaId, setAreaId] = useState('');
@@ -143,6 +168,16 @@ export function CreateGameWizard() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Kept from the loaded game so editing never drops what the steps do not show.
+  const [kept, setKept] = useState<{
+    skillLevel: string;
+    notes: string;
+    eventStatus: 'draft' | 'published';
+    waitlistOfferMinutes: number;
+    booking: { organizer_notes: string; reference: string };
+    positions: { position: string; x_pct: number; y_pct: number }[];
+    activePlayers: number;
+  } | null>(null);
   const [done, setDone] = useState<{ id: string; notified: number | null } | null>(null);
 
   const total = size * 2;
@@ -159,9 +194,42 @@ export function CreateGameWizard() {
     setLoading(true);
     setLoadFailed(false);
     try {
-      const filters = await loadMatchFilters();
+      const [filters, editor] = await Promise.all([
+        loadMatchFilters(),
+        matchId ? loadMatchForEditor(matchId) : Promise.resolve(null),
+      ]);
       setCatalog(filters);
-      if (user) {
+      if (editor) {
+        const values = editor.values;
+        const local = cyprusParts(values.startsAt);
+        const open = Math.max(
+          0,
+          values.sideSize * 2 - values.reservedGuestSlots - editor.activePlayers,
+        );
+        setTitle(values.title);
+        setSize(values.sideSize);
+        // Midnight belongs to the previous calendar day in the picker.
+        setDay(local.hour === 0 ? addDays(local.day, -1) : local.day);
+        setMonth(new Date(local.day.getFullYear(), local.day.getMonth(), 1));
+        setHour(local.hour);
+        setMinute(local.minute);
+        setDuration(values.durationMinutes);
+        setCityId(values.cityId);
+        setAreaId(values.areaId);
+        setVenue(values.venueName);
+        setBooking(values.bookingStatus);
+        setNeed(Math.max(1, open));
+        setPrice(values.priceEur);
+        setKept({
+          skillLevel: values.skillLevel,
+          notes: values.notes,
+          eventStatus: values.eventStatus,
+          waitlistOfferMinutes: values.waitlistOfferMinutes,
+          booking: values.booking,
+          positions: values.positions,
+          activePlayers: editor.activePlayers,
+        });
+      } else if (user) {
         // The player's own city and area are a sensible start; both stay editable. They arrive
         // in the background so the steps are never held up by the profile request.
         void getProfileBundle(user.id)
@@ -181,21 +249,23 @@ export function CreateGameWizard() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [matchId, user]);
 
   useEffect(() => {
     const task = setTimeout(() => void load(), 0);
     return () => clearTimeout(task);
   }, [load]);
 
-  const changeSize = (next: (typeof sizes)[number]) => {
+  const changeSize = (next: number) => {
     setSize(next);
     setNeed((current) => Math.min(current, next * 2));
   };
 
   const canNext = step === 0 ? title.trim().length >= 3 : step === 2 ? Boolean(area) : true;
 
-  const submit = async (status: 'draft' | 'published') => {
+  const submit = async (requested: 'draft' | 'published') => {
+    // Saving changes keeps the game's status; only creating chooses one.
+    const status = editing ? (kept?.eventStatus ?? 'published') : requested;
     const startsAt = cyprusDateTimeToIso(wallClock(day, hour, minute));
     if (title.trim().length < 3 || !city || !area) {
       showToast(copy.matchValidationFields, 'error');
@@ -208,32 +278,44 @@ export function CreateGameWizard() {
     }
     setSaving(true);
     try {
-      const open = Math.max(0, Math.min(need, total));
-      const id = await saveMatch({
-        title: title.trim(),
-        sideSize: size,
-        cityId: city.id,
-        areaId: area.id,
-        venueName: venue.trim().length >= 2 ? venue.trim() : areaName(area),
-        venueAddress: `${areaName(area)}, ${cityName(city)}`,
-        startsAt,
-        durationMinutes: duration,
-        skillLevel: '',
-        priceEur: price,
-        // Everyone who is not "needed" is already playing: they take reserved places.
-        reservedGuestSlots: total - open,
-        notes: '',
-        eventStatus: status,
-        bookingStatus: booking,
-        waitlistOfferMinutes: 15,
-        positions: Array.from({ length: open }, (_, index) => ({
-          position: 'any',
-          x_pct: 15 + Math.round((70 * (index + 0.5)) / Math.max(open, 1)),
-          y_pct: 50,
-        })),
-        booking: { organizer_notes: '', reference: '' },
-      });
-      if (status === 'published') {
+      const played = kept?.activePlayers ?? 0;
+      const open = Math.max(0, Math.min(need, total - played));
+      const positions =
+        kept && kept.positions.length === open
+          ? kept.positions
+          : Array.from({ length: open }, (_, index) => ({
+              position: 'any',
+              x_pct: 15 + Math.round((70 * (index + 0.5)) / Math.max(open, 1)),
+              y_pct: 50,
+            }));
+      const id = await saveMatch(
+        {
+          title: title.trim(),
+          sideSize: size,
+          cityId: city.id,
+          areaId: area.id,
+          venueName: venue.trim().length >= 2 ? venue.trim() : areaName(area),
+          venueAddress: `${areaName(area)}, ${cityName(city)}`,
+          startsAt,
+          durationMinutes: duration,
+          skillLevel: kept?.skillLevel ?? '',
+          priceEur: price,
+          // Everyone who is not "needed" is already playing: players who joined through the app
+          // take their own places, the rest are reserved places.
+          reservedGuestSlots: total - open - played,
+          notes: kept?.notes ?? '',
+          eventStatus: status,
+          bookingStatus: booking,
+          waitlistOfferMinutes: kept?.waitlistOfferMinutes ?? 15,
+          positions,
+          booking: kept?.booking ?? { organizer_notes: '', reference: '' },
+        },
+        matchId,
+      );
+      if (editing) {
+        showToast(copy.profileSaveSuccess, 'success');
+        router.replace(`/matches/${id}` as Href);
+      } else if (status === 'published') {
         // The count is a nice-to-have: a failure here must not hide the celebration.
         const notified = await countPublishedNotifications(id).catch(() => null);
         setDone({ id, notified });
@@ -295,13 +377,27 @@ export function CreateGameWizard() {
             <Text style={styles.closeText}>✕</Text>
           </Pressable>
           <Text accessibilityRole="header" numberOfLines={1} style={styles.headerTitle}>
-            {copy.appCreateTitle}
+            {editing ? copy.gameWizEditTitle : copy.appCreateTitle}
           </Text>
           <Text style={styles.stepLabel}>{stepLabel}</Text>
         </View>
-        <View accessibilityElementsHidden style={styles.bars}>
+        <View accessibilityElementsHidden={!editing} style={styles.bars}>
           {Array.from({ length: stepCount }, (_, index) => (
-            <View key={index} style={[styles.bar, index <= step && styles.barOn]} />
+            <Pressable
+              key={index}
+              accessibilityRole={editing ? 'button' : undefined}
+              accessibilityLabel={
+                editing
+                  ? copy.gameWizStep
+                      .replace('{step}', String(index + 1))
+                      .replace('{total}', String(stepCount))
+                  : undefined
+              }
+              disabled={!editing}
+              hitSlop={10}
+              onPress={() => setStep(index)}
+              style={[styles.bar, index <= step && styles.barOn]}
+            />
           ))}
         </View>
 
@@ -348,7 +444,10 @@ export function CreateGameWizard() {
               />
               <Text style={styles.fieldNote}>{copy.gameWizNameHint}</Text>
               <View accessibilityRole="radiogroup" style={styles.row}>
-                {sizes.map((value) => (
+                {(sizes.some((value) => value === size)
+                  ? sizes
+                  : [...sizes, size].sort((a, b) => a - b)
+                ).map((value) => (
                   <Choice
                     key={value}
                     label={`${value}v${value}`}
@@ -591,7 +690,9 @@ export function CreateGameWizard() {
               {step === stepCount - 1
                 ? saving
                   ? copy.matchSaving
-                  : copy.gameWizPublish
+                  : editing
+                    ? copy.gameWizSaveChanges
+                    : copy.gameWizPublish
                 : step === 2 && !area
                   ? copy.gameWizPickArea
                   : `${copy.teamWizardNext}  →`}
@@ -1047,7 +1148,10 @@ function TimeSheet({
           </View>
           <View accessibilityRole="radiogroup" style={styles.sheetGrid}>
             {kind === 'hour'
-              ? hours.map((value) => (
+              ? (hours.some((value) => value === hour)
+                  ? hours
+                  : [...hours, hour].sort((a, b) => a - b)
+                ).map((value) => (
                   <Pressable
                     key={value}
                     accessibilityRole="radio"
@@ -1069,7 +1173,10 @@ function TimeSheet({
                     </Text>
                   </Pressable>
                 ))
-              : minutes.map((value) => (
+              : (minutes.some((value) => value === minute)
+                  ? minutes
+                  : [...minutes, minute].sort((a, b) => a - b)
+                ).map((value) => (
                   <Pressable
                     key={value}
                     accessibilityRole="radio"

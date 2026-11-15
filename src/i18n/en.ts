@@ -266,6 +266,9 @@ export const en = {
   gameWizDoneBody: 'Players in your city who are free that day get a notification.',
   gameWizDoneBodyLive:
     'Your game is live. Players in your city who are free that day will find it in Explore.',
+  gameWizEditTitle: 'Edit game',
+  gameWizSaveChanges: 'Save changes',
+  gameWizEditHint: 'Review the game, then save your changes.',
   gameWizNotified: 'players notified',
   gameWizNotifiedNone: 'No players matched yet',
   gameWizViewGame: 'View game',
