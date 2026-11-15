@@ -23,9 +23,9 @@ export function AppNavigation({ active, variant }: { active: string; variant: Na
     },
     {
       key: 'create',
-      href: '/teams/create' as Href,
-      label: copy.appCreateTeamTitle,
-      shortLabel: copy.appCreateTeamShort,
+      href: '/create' as Href,
+      label: copy.appCreateTitle,
+      shortLabel: copy.appCreateShort,
     },
     {
       key: 'teams',

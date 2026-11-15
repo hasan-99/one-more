@@ -1710,3 +1710,8 @@
 - Teams header is one row again: "Teams" on the left and a pill "Create team" (round plus badge) on the right, shown when the signed-in player has a completed profile. The summary tiles were removed; the sections below (My teams, invitations, captain challenge banner, Teams near you) are unchanged. Layout audit and create-team specs pass.
 - The header button uses a short label (`teamCreateShort`: "Create team" / "Νέα ομάδα") so the Greek header fits at 360 px; the layout audit caught the long label and passes now (18 passed).
 - Teams header "Create team" button: no plus icon and the same rounded-rectangle corners (14 px) as the other buttons instead of a pill. Layout audit and create-team specs pass (18).
+
+## Phase 17 — Centre navigation button opens "Create a game"
+
+- The big centre button in the bottom navigation (and the Create item of the side/tablet navigation) now opens `/create` (create a game) instead of the team wizard; its label is "Create a game" / "Create" (el: "Δημιουργία αγώνα" / "Δημιουργία"). Team creation starts from the Teams page. The Teams tab no longer treats `/teams/create` as the Create tab: it highlights Teams. Updated the guest test (sign-in with returnTo `/create`).
+- Checks: tsc, eslint; Playwright create-team + layout audit pass. Pre-existing failures that need the real backend or old copy and are not caused by this change: phase-02 (main navigation / Greek screens) and phase-15 desktop (expects 'ONE MORE.' text on the landing page).

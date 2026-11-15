@@ -19,7 +19,6 @@ function activeSection(pathname: string) {
     return 'explore';
   }
   if (pathname.startsWith('/create')) return 'create';
-  if (pathname === '/teams/create') return 'create';
   if (pathname.startsWith('/teams') || pathname.startsWith('/challenges')) return 'teams';
   if (
     pathname.startsWith('/profile') ||

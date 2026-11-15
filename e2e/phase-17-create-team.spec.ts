@@ -177,11 +177,11 @@ test('Create a team reports a retryable save failure', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Create team' })).toBeEnabled();
 });
 
-test('the center Create button routes guests to sign in for the team wizard', async ({ page }) => {
+test('the center Create button opens the create-a-game page (guests go to sign in first)', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/teams');
   await page.getByRole('link', { name: 'Create' }).click();
-  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fteams%2Fcreate$/);
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fcreate$/);
 });
 
 test('choosing an option does not replay the step animation', async ({ page }) => {
