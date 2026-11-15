@@ -1792,3 +1792,7 @@
 ## Phase 17 — Game page cleanup
 - Removed the venue/booking-disclosure card, the Match chat card and the Organizer controls card from the game page. Edit and chat stay in the fixed bottom bar; notes show as a plain line when present; organizer "Cancel match" stays as a text button at the bottom with its confirm step.
 - Checks: tsc, eslint, prettier clean; Playwright create-game + layout-audit pass (mocked Supabase).
+
+## Phase 17 — Challenge creation: three steps
+- Steps "your team" and "where and what" merged into one ("Team, area and format"). Creation is now 3 steps: team + area + format, when, review and publish.
+- Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (3-step create with payload, step one screenshot, Greek 360), layout-audit pass (mocked Supabase).

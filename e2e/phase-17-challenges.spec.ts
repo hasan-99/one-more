@@ -180,7 +180,7 @@ test('challenges empty state offers to post one', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Post a challenge' })).toBeVisible();
 });
 
-test('a captain posts a challenge in four steps without a skill level', async ({ page }) => {
+test('a captain posts a challenge in three steps without a skill level', async ({ page }) => {
   await seedSession(page);
   await mockRpc(page, 'get_my_teams', [myTeam]);
   let posted: Record<string, unknown> | null = null;
@@ -194,10 +194,8 @@ test('a captain posts a challenge in four steps without a skill level', async ({
   });
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/challenges/create');
-  await expect(page.getByRole('heading', { name: 'Your team' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Team, area and format' })).toBeVisible();
   await expect(page.getByText('Tigers FC')).toBeVisible();
-  await page.getByRole('button', { name: /Next/ }).click();
-  await expect(page.getByRole('heading', { name: 'Where and what' })).toBeVisible();
   await expect(page.getByRole('radio', { name: '7v7' })).toHaveCount(0);
   await page.getByRole('radio', { name: 'Aglantzia' }).click();
   await page.getByRole('radio', { name: '8v8' }).click();
@@ -267,7 +265,7 @@ test('teams page shows one challenge and a create button, and the list has a bac
   await expect(page.getByText('Blue Hawks').first()).toBeVisible();
   await expect(page.getByText('Red Lions')).toHaveCount(0);
   await page.getByRole('button', { name: /Post a challenge/ }).click();
-  await expect(page.getByRole('heading', { name: 'Your team' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Team, area and format' })).toBeVisible();
   await page.goBack();
   await page.getByRole('link', { name: /See all/ }).click();
   await expect(page.getByText('2 open challenges')).toBeVisible();
@@ -364,4 +362,17 @@ test('challenge details: another captain asks to play, then confirms a proposal'
   await expect(page.getByText('PROPOSAL')).toBeVisible();
   await expect(page.getByText(/Novo Arena/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Confirm exact time and field' })).toBeVisible();
+});
+
+test('challenge creation step one holds team, area and format', async ({ page }) => {
+  await seedSession(page);
+  await mockRpc(page, 'get_my_teams', [myTeam]);
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/challenges/create');
+  await expect(page.getByRole('heading', { name: 'Team, area and format' })).toBeVisible();
+  await expect(page.getByText('1/3')).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'challenge-step-one-mobile.png'),
+  });
 });

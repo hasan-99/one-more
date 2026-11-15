@@ -776,6 +776,7 @@ export const en = {
   challengeCountMany: '{count} open challenges',
   challengeEmptyCopy: 'Be the first. Post a challenge and teams near you can ask to play.',
   challengeAddShort: '+ Challenge',
+  challengeStepSetup: 'Team, area and format',
   challengeStepTeam: 'Your team',
   challengeStepTeamHint: 'Which team is challenging? Only teams you captain are shown.',
   challengeStepWhere: 'Where and what',

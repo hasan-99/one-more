@@ -37,7 +37,7 @@ import { displayFont } from '@/theme/typography';
 const lime = '#cfff4a';
 const ink = '#10170f';
 const formats = [5, 8, 11] as const;
-const stepCount = 4;
+const stepCount = 3;
 
 export default function CreateChallengeScreen() {
   const { colors, locale } = useAppPreferences();
@@ -100,8 +100,7 @@ export default function CreateChallengeScreen() {
   const area = areas.find((item) => item.id === areaId);
   const areaName = (item: MatchArea) => (locale === 'el' ? item.name_el : item.name_en);
   const cityName = team ? (locale === 'el' ? team.cityNameEl : team.cityNameEn) : '';
-  const canNext =
-    step === 0 ? Boolean(team) : step === 1 ? Boolean(area) : step === 2 ? slots.length > 0 : true;
+  const canNext = step === 0 ? Boolean(team && area) : step === 1 ? slots.length > 0 : true;
 
   const close = () => {
     if (router.canGoBack()) router.back();
@@ -152,12 +151,7 @@ export default function CreateChallengeScreen() {
     return `${parts.weekday} ${parts.day} ${parts.month}`;
   };
   const look = team?.crest ?? defaultCrest;
-  const titles = [
-    copy.challengeStepTeam,
-    copy.challengeStepWhere,
-    copy.challengeStepWhen,
-    copy.challengeStepReview,
-  ];
+  const titles = [copy.challengeStepSetup, copy.challengeStepWhen, copy.challengeStepReview];
   const finished = step === stepCount && doneId;
 
   return (
@@ -261,9 +255,6 @@ export default function CreateChallengeScreen() {
                   </Pressable>
                 );
               })}
-            </View>
-          ) : step === 1 ? (
-            <View style={{ gap: 10 }}>
               <Text style={styles.label}>{copy.challengeArea.toUpperCase()}</Text>
               <View style={styles.chips}>
                 {teamAreas.map((item) => (
@@ -291,7 +282,7 @@ export default function CreateChallengeScreen() {
                 ))}
               </View>
             </View>
-          ) : step === 2 ? (
+          ) : step === 1 ? (
             <View style={{ gap: 10 }}>
               <Text style={styles.hint}>{copy.challengeWhenHint}</Text>
               <Text style={styles.label}>{copy.challengeDayLabel}</Text>
@@ -454,7 +445,7 @@ export default function CreateChallengeScreen() {
                   ? saving
                     ? copy.matchSaving
                     : copy.challengePublish
-                  : step === 2 && slots.length === 0
+                  : step === 1 && slots.length === 0
                     ? copy.challengeNeedSlot
                     : `${copy.challengeNext}  →`}
             </Text>

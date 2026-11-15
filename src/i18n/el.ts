@@ -780,6 +780,7 @@ export const el = {
   challengeEmptyCopy:
     'Γίνε ο πρώτος. Ανάρτησε μια πρόκληση και οι ομάδες κοντά σου μπορούν να ζητήσουν να παίξουν.',
   challengeAddShort: '+ Πρόκληση',
+  challengeStepSetup: 'Ομάδα, περιοχή και format',
   challengeStepTeam: 'Η ομάδα σου',
   challengeStepTeamHint: 'Ποια ομάδα προκαλεί; Εμφανίζονται μόνο οι ομάδες που αρχηγείς.',
   challengeStepWhere: 'Πού και τι',
