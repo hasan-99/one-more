@@ -1805,3 +1805,7 @@
 - Step one is now team, then city, then the areas of that city (area clears when the city changes; Next stays off until an area is chosen), then format. The chosen city is sent as `p_city_id`.
 - New migration `20261116090000_challenge_any_city.sql` (not applied from the sandbox): `create_team_challenge` no longer requires the challenge city to equal the team's city (area must still belong to the city), and `request_team_challenge` no longer requires the asking team to be in the challenge's city. Until it is applied, posting in a city other than the team's own fails with the generic error toast; the team's own city keeps working.
 - Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges + layout-audit 22/22 (mocked Supabase; only one city in the fixture, so switching city was not exercised in e2e).
+
+## Phase 17 — Challenges header: one row
+- `/challenges` header is one row: back button, title, square "+" button (aria-label "Post a challenge", captains only). Greek uses the short title "Προκλήσεις" (`challengeHeaderTitle`) so it never cuts at 360px.
+- Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (row alignment asserted) + layout-audit 22/22 (mocked Supabase).

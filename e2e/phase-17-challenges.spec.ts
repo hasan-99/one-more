@@ -155,6 +155,16 @@ test('challenges list shows face-off cards, stickers and a format filter', async
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/challenges');
   await expect(page.getByText('YOUR CHALLENGE')).toBeVisible();
+  const header = await page.getByRole('heading', { name: 'Open challenges' }).boundingBox();
+  const back = await page.getByRole('button', { name: 'Back' }).boundingBox();
+  const plus = await page.getByRole('button', { name: 'Post a challenge' }).boundingBox();
+  // Back, title and the plus button share one row.
+  expect(
+    Math.abs(
+      (header?.y ?? 0) + (header?.height ?? 0) / 2 - ((back?.y ?? 0) + (back?.height ?? 0) / 2),
+    ),
+  ).toBeLessThan(12);
+  expect(Math.abs((plus?.y ?? 0) - (back?.y ?? 0))).toBeLessThan(4);
   await expect(page.getByText('2 teams asked')).toBeVisible();
   await expect(page.getByText('Challenge them')).toBeVisible();
   await expect(page.getByText('2 open challenges')).toBeVisible();
@@ -177,7 +187,7 @@ test('challenges empty state offers to post one', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/challenges');
   await expect(page.getByText('No open challenges yet')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Post a challenge' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Post a challenge' })).toHaveCount(2);
 });
 
 test('a captain posts a challenge in three steps without a skill level', async ({ page }) => {

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { AppPage } from '@/components/layout/AppPage';
+import { BackButton } from '@/components/layout/BackButton';
 import { useToast } from '@/components/toast/ToastProvider';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import { ChallengeCard, OpenSpotCrest } from '@/features/teams/ChallengeCard';
@@ -77,26 +78,28 @@ export default function ChallengesScreen() {
 
   return (
     <AppPage
-      backHref="/teams"
       title={copy.challengeDirectory}
       heading={
         <View style={{ gap: 8 }}>
           <View style={styles.headRow}>
+            <BackButton fallback="/teams" />
             <Text
               accessibilityRole="header"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
               style={[styles.headTitle, locale === 'el' && styles.headTitleGreek]}
             >
-              {copy.challengeDirectory}
+              {copy.challengeHeaderTitle}
             </Text>
             {canPost ? (
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={copy.challengeCreate}
                 onPress={post}
-                style={({ pressed }) => [styles.add, pressed && { opacity: 0.88 }]}
+                style={({ pressed }) => [styles.plus, pressed && { opacity: 0.88 }]}
               >
-                <Text style={[styles.addText, { fontFamily: bodyFont(locale, 'semibold') }]}>
-                  {copy.challengeAddShort}
-                </Text>
+                <Text style={styles.plusText}>+</Text>
               </Pressable>
             ) : null}
           </View>
@@ -191,21 +194,17 @@ export default function ChallengesScreen() {
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
-    headRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
+    headRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     headTitle: {
+      flex: 1,
+      minWidth: 0,
       color: colors.textPrimary,
       fontFamily: 'BarlowCondensed_700Bold',
-      fontSize: 40,
-      lineHeight: 44,
+      fontSize: 32,
+      lineHeight: 38,
       fontWeight: '700',
-      flexShrink: 1,
     },
-    headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 28, lineHeight: 36 },
+    headTitleGreek: { fontFamily: 'Inter_600SemiBold', fontSize: 26, lineHeight: 34 },
     add: {
       flexShrink: 0,
       minHeight: 44,
@@ -214,6 +213,22 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       backgroundColor: colors.primaryButton,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    plus: {
+      flexShrink: 0,
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    plusText: {
+      color: colors.primaryButtonText,
+      fontSize: 28,
+      lineHeight: 32,
+      fontWeight: '700',
+      marginTop: -2,
     },
     addText: { color: colors.primaryButtonText, fontSize: 15, fontWeight: '700' },
     sub: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },

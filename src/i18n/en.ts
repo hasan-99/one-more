@@ -778,6 +778,7 @@ export const en = {
   challengeAddShort: '+ Challenge',
   challengeCityLabel: 'CITY',
   challengeAreaIn: 'in {city}',
+  challengeHeaderTitle: 'Open challenges',
   challengeStepSetup: 'Team, area and format',
   challengeStepTeam: 'Your team',
   challengeStepTeamHint: 'Which team is challenging? Only teams you captain are shown.',

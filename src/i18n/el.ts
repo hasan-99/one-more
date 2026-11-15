@@ -782,6 +782,7 @@ export const el = {
   challengeAddShort: '+ Πρόκληση',
   challengeCityLabel: 'ΠΟΛΗ',
   challengeAreaIn: '· {city}',
+  challengeHeaderTitle: 'Προκλήσεις',
   challengeStepSetup: 'Ομάδα, περιοχή και format',
   challengeStepTeam: 'Η ομάδα σου',
   challengeStepTeamHint: 'Ποια ομάδα προκαλεί; Εμφανίζονται μόνο οι ομάδες που αρχηγείς.',
