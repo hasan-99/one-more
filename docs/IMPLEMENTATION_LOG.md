@@ -1719,3 +1719,12 @@
 ## Phase 17 — Team page: clearer settings block
 
 - The bottom of the team page is now a "Team settings" section: one card with an "Edit team details" row (pencil tile, "Name, description and city", chevron) that opens the form inside the card with a "Save changes" button; the captaincy rule is a framed note with an info icon; "Back to teams" became a small "‹ All teams" link. New en/el keys (`teamSettingsTitle`, `teamEditHint`, `teamSaveChanges`, `teamCaptainTip`, `teamAllTeams`). Create-team and layout-audit specs pass (18); screenshots `team-settings-closed/open-mobile.png`.
+
+## Phase 17 — Create a game as five simple steps (ticket card)
+
+- The centre Create button opens `/create`; creating a game is now a full-screen five-step flow (`features/matches/CreateGameWizard.tsx`), editing an existing game (`/create?matchId=…`) keeps the full form. `AppShell` hides the top bar and bottom navigation while a game is being created.
+- Steps: 1 The game (random suggested name, editable; formats 5v5 / 8v8 / 11v11 — 7v7 is not offered), 2 When (month calendar with past days disabled, two time cards Hour/Minutes that open a bottom sheet — hours 6 PM to midnight, minutes 00/15/30/45 — and length 60/90/120), 3 Where (city, area, optional venue; the player's profile city/area are used as a start and Next asks for an area), 4 Players (how many players are needed, price chips Free/€5/€10/€15/€20, €10 by default; no positions and no player level), 5 Publish (the footer button becomes "Publish game" in the same place as Next; "Save as draft" below).
+- A live "match day" ticket card shows format, name, place, length, price, line-up dots with "Need N" and a tear-off stub with the date and kick-off time; it shrinks to a slim strip on the calendar step. Midnight (hour 00) is saved as 00:xx on the following date.
+- Saved values: `reserved_guest_slots = total places − needed`, `open positions = needed` (position "any"), `skill_level = null`, venue name defaults to the area name, notes/booking empty, waitlist offer 15 min.
+- Saved design alternatives (not built): ticket (built), live pitch card and matchday poster are kept as artifacts for later.
+- Checks: tsc, eslint (0 warnings), vitest 39, Playwright: new `phase-17-create-game.spec.ts` (all five steps, no scrolling, publish button in Next's place, saved payload), create-team, layout audit and the create gate spec pass (22).

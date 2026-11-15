@@ -1,5 +1,5 @@
 import { useFonts } from 'expo-font';
-import { Link, usePathname, type Href } from 'expo-router';
+import { Link, useGlobalSearchParams, usePathname, type Href } from 'expo-router';
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,6 +43,7 @@ export function AppShell({ children }: PropsWithChildren) {
     Inter_600SemiBold: require('@/assets/fonts/Inter-SemiBold.ttf'),
   });
   const pathname = usePathname();
+  const searchParams = useGlobalSearchParams<{ matchId?: string }>();
   const { width } = useWindowDimensions();
   const [responsiveLayoutReady, setResponsiveLayoutReady] = useState(false);
   const insets = useSafeAreaInsets();
@@ -57,8 +58,13 @@ export function AppShell({ children }: PropsWithChildren) {
   const showSide = responsiveWidth >= 1024;
   const showRow = responsiveWidth >= 600 && responsiveWidth < 1024;
   const showBottom = responsiveWidth < 600;
+  // Creating a game is a full-screen flow; editing one (with a matchId) keeps the regular shell.
+  const creatingGame = pathname === '/create' && !searchParams.matchId;
   const immersive =
-    pathname === '/teams/create' || pathname === '/onboarding' || pathname === '/profile-edit';
+    pathname === '/teams/create' ||
+    pathname === '/onboarding' ||
+    pathname === '/profile-edit' ||
+    creatingGame;
   const profileFullBleed = pathname === '/profile';
 
   if (!fontsLoaded && !fontError) {

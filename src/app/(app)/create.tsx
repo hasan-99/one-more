@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppCard, AppPage } from '@/components/layout/AppPage';
 import { useToast } from '@/components/toast/ToastProvider';
+import { CreateGameWizard } from '@/features/matches/CreateGameWizard';
 import { MatchPositionPicker } from '@/features/matches/MatchPositionPicker';
 import {
   loadMatchFilters,
@@ -46,9 +47,7 @@ const emptyForm: Form = {
   booking: { organizer_notes: '', reference: '' },
 };
 
-export default function CreateScreen() {
-  const params = useLocalSearchParams<{ matchId?: string | string[] }>();
-  const matchId = Array.isArray(params.matchId) ? params.matchId[0] : params.matchId;
+function MatchForm({ matchId }: { matchId: string | undefined }) {
   const { colors, locale } = useAppPreferences();
   const copy = translations[locale];
   const { showToast } = useToast();
@@ -442,6 +441,13 @@ export default function CreateScreen() {
       ) : null}
     </AppPage>
   );
+}
+
+export default function CreateScreen() {
+  const params = useLocalSearchParams<{ matchId?: string | string[] }>();
+  const matchId = Array.isArray(params.matchId) ? params.matchId[0] : params.matchId;
+  // New games use the step-by-step flow; editing an existing game keeps the full form.
+  return matchId ? <MatchForm matchId={matchId} /> : <CreateGameWizard />;
 }
 
 function formatCyprusInput(value: string) {
