@@ -226,7 +226,7 @@ export default function MatchDetailsScreen() {
   };
   return (
     // The ticket below already carries the title, so the page heading is left out.
-    <AppPage title={match.title} heading={<View />}>
+    <AppPage title={match.title} heading={<View style={{ height: 0, marginBottom: -14 }} />}>
       <MatchHero
         locale={locale}
         data={{
