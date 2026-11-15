@@ -412,52 +412,66 @@ export default function TeamDetailsScreen() {
             </View>
 
             <View style={styles.section}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ expanded: editing }}
-                onPress={() => setEditing((open) => !open)}
-                style={styles.editToggle}
-              >
-                <Text style={styles.editToggleText}>{`✎  ${copy.teamEditToggle}`}</Text>
-                <Text style={styles.editToggleText}>{editing ? '⌄' : '›'}</Text>
-              </Pressable>
-              {editing ? (
-                <View style={styles.form}>
-                  <Field
-                    label={copy.teamName}
-                    value={name}
-                    onChangeText={setName}
-                    colors={colors}
-                  />
-                  <Field
-                    label={copy.teamDescription}
-                    value={description}
-                    onChangeText={setDescription}
-                    colors={colors}
-                    multiline
-                  />
-                  <Text style={styles.meta}>{copy.teamCity}</Text>
-                  <View style={styles.chips}>
-                    {cities.map((item) => (
-                      <Choice
-                        key={item.id}
-                        label={city(item)}
-                        selected={cityId === item.id}
-                        onPress={() => setCityId(item.id)}
-                        colors={colors}
-                      />
-                    ))}
+              <Text accessibilityRole="header" style={styles.settingsLabel}>
+                {copy.teamSettingsTitle}
+              </Text>
+              <View style={styles.settingsCard}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: editing }}
+                  onPress={() => setEditing((open) => !open)}
+                  style={styles.settingsRow}
+                >
+                  <View style={styles.settingsIcon}>
+                    <Text style={styles.settingsIconText}>✎</Text>
                   </View>
-                  <Action
-                    label={copy.teamSave}
-                    disabled={working}
-                    onPress={saveDetails}
-                    colors={colors}
-                  />
-                </View>
-              ) : null}
+                  <View style={styles.settingsCopy}>
+                    <Text style={styles.settingsTitle}>{copy.teamEditToggle}</Text>
+                    <Text style={styles.settingsHint}>{copy.teamEditHint}</Text>
+                  </View>
+                  <Text style={styles.settingsChevron}>{editing ? '⌄' : '›'}</Text>
+                </Pressable>
+                {editing ? (
+                  <View style={styles.settingsForm}>
+                    <Field
+                      label={copy.teamName}
+                      value={name}
+                      onChangeText={setName}
+                      colors={colors}
+                    />
+                    <Field
+                      label={copy.teamDescription}
+                      value={description}
+                      onChangeText={setDescription}
+                      colors={colors}
+                      multiline
+                    />
+                    <Text style={styles.settingsHint}>{copy.teamCity}</Text>
+                    <View style={styles.chips}>
+                      {cities.map((item) => (
+                        <Choice
+                          key={item.id}
+                          label={city(item)}
+                          selected={cityId === item.id}
+                          onPress={() => setCityId(item.id)}
+                          colors={colors}
+                        />
+                      ))}
+                    </View>
+                    <Action
+                      label={copy.teamSaveChanges}
+                      disabled={working}
+                      onPress={saveDetails}
+                      colors={colors}
+                    />
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.tip}>
+                <Text style={styles.tipIcon}>ⓘ</Text>
+                <Text style={styles.tipText}>{copy.teamCaptainTip}</Text>
+              </View>
             </View>
-            <Text style={[styles.meta, styles.footNote]}>{copy.teamRoleChangeHint}</Text>
           </>
         ) : null}
 
@@ -476,12 +490,13 @@ export default function TeamDetailsScreen() {
             <Text style={styles.leaveText}>{copy.teamLeave}</Text>
           </Pressable>
         ) : null}
-        <Action
-          label={copy.appGoTeams}
+        <Pressable
+          accessibilityRole="link"
           onPress={() => router.replace('/teams' as Href)}
-          colors={colors}
-          secondary
-        />
+          style={styles.backLink}
+        >
+          <Text style={styles.backLinkText}>{`‹  ${copy.teamAllTeams}`}</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
@@ -736,27 +751,70 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       justifyContent: 'center',
     },
     searchButtonText: { color: colors.primaryButtonText, fontWeight: '800' },
-    editToggle: {
+    settingsLabel: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '800',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      marginBottom: 10,
+      marginLeft: 4,
+    },
+    settingsCard: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 20,
+      overflow: 'hidden',
+    },
+    settingsRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: 18,
-      padding: 16,
-    },
-    editToggleText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
-    form: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: 18,
+      gap: 14,
       padding: 14,
-      marginTop: 8,
-      gap: 12,
+      minHeight: 64,
     },
-    footNote: { textAlign: 'center', marginTop: 12 },
+    settingsIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: colors.cardTop,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    settingsIconText: { color: colors.accentText, fontSize: 18, fontWeight: '800' },
+    settingsCopy: { flex: 1, gap: 2 },
+    settingsTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+    settingsHint: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
+    settingsChevron: { color: colors.textSecondary, fontSize: 22 },
+    settingsForm: {
+      gap: 12,
+      padding: 14,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    tip: {
+      flexDirection: 'row',
+      gap: 12,
+      alignItems: 'flex-start',
+      marginTop: 12,
+      padding: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.cardTop,
+    },
+    tipIcon: { color: colors.accentText, fontSize: 16, lineHeight: 20 },
+    tipText: { flex: 1, color: colors.textSecondary, fontSize: 13, lineHeight: 19 },
+    backLink: {
+      alignSelf: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+      marginTop: 18,
+      paddingHorizontal: 14,
+    },
+    backLinkText: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
     leave: { alignSelf: 'center', minHeight: 44, justifyContent: 'center', marginTop: 16 },
     leaveText: { color: colors.errorText, fontSize: 14, fontWeight: '700' },
     meta: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center' },

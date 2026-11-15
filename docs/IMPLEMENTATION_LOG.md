@@ -1715,3 +1715,7 @@
 
 - The big centre button in the bottom navigation (and the Create item of the side/tablet navigation) now opens `/create` (create a game) instead of the team wizard; its label is "Create a game" / "Create" (el: "Δημιουργία αγώνα" / "Δημιουργία"). Team creation starts from the Teams page. The Teams tab no longer treats `/teams/create` as the Create tab: it highlights Teams. Updated the guest test (sign-in with returnTo `/create`).
 - Checks: tsc, eslint; Playwright create-team + layout audit pass. Pre-existing failures that need the real backend or old copy and are not caused by this change: phase-02 (main navigation / Greek screens) and phase-15 desktop (expects 'ONE MORE.' text on the landing page).
+
+## Phase 17 — Team page: clearer settings block
+
+- The bottom of the team page is now a "Team settings" section: one card with an "Edit team details" row (pencil tile, "Name, description and city", chevron) that opens the form inside the card with a "Save changes" button; the captaincy rule is a framed note with an info icon; "Back to teams" became a small "‹ All teams" link. New en/el keys (`teamSettingsTitle`, `teamEditHint`, `teamSaveChanges`, `teamCaptainTip`, `teamAllTeams`). Create-team and layout-audit specs pass (18); screenshots `team-settings-closed/open-mobile.png`.

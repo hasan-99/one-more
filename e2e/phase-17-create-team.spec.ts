@@ -177,7 +177,9 @@ test('Create a team reports a retryable save failure', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Create team' })).toBeEnabled();
 });
 
-test('the center Create button opens the create-a-game page (guests go to sign in first)', async ({ page }) => {
+test('the center Create button opens the create-a-game page (guests go to sign in first)', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/teams');
   await page.getByRole('link', { name: 'Create' }).click();
@@ -309,6 +311,19 @@ test('the team page shows the crest, quick actions and a collapsed edit section'
   await page.screenshot({
     path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'team-page-mobile.png'),
   });
+  await expect(page.getByText('Team settings')).toBeVisible();
+  await expect(page.getByText('Name, description and city')).toBeVisible();
+  await expect(
+    page.getByText('Transfer captaincy first if you want to leave the team or remove the captain.'),
+  ).toBeVisible();
+  await page.getByRole('link', { name: /All teams/ }).scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'team-settings-closed-mobile.png'),
+  });
   await page.getByRole('button', { name: /Edit team details/ }).click();
   await expect(page.getByLabel('Team name')).toHaveValue('Tigers');
+  await page.getByRole('button', { name: 'Save changes' }).scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'team-settings-open-mobile.png'),
+  });
 });
