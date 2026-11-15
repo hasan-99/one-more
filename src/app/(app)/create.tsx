@@ -425,17 +425,22 @@ function MatchForm({ matchId }: { matchId: string | undefined }) {
               label={
                 saving ? copy.matchSaving : matchId ? copy.matchSaveChanges : copy.matchSaveDraft
               }
-              onPress={() => void submit('draft')}
+              // Saving changes to a game keeps it as it is: a published game must stay published
+              // (it used to be switched back to a draft and vanished from Explore).
+              onPress={() => void submit(matchId ? form.eventStatus : 'draft')}
               colors={colors}
               disabled={saving}
+              primary={Boolean(matchId) && form.eventStatus === 'published'}
             />
-            <Action
-              label={saving ? copy.matchSaving : copy.matchPublish}
-              onPress={() => void submit('published')}
-              colors={colors}
-              disabled={saving}
-              primary
-            />
+            {!matchId || form.eventStatus === 'draft' ? (
+              <Action
+                label={saving ? copy.matchSaving : copy.matchPublish}
+                onPress={() => void submit('published')}
+                colors={colors}
+                disabled={saving}
+                primary
+              />
+            ) : null}
           </View>
         </>
       ) : null}

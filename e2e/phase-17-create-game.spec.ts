@@ -218,3 +218,50 @@ test('a published-game notification shows clear badges', async ({ page }) => {
     ),
   });
 });
+
+test('saving changes to a published game keeps it published', async ({ page }) => {
+  await seed(page);
+  const ok = (body: unknown) => ({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(body),
+  });
+  await page.route('**/rest/v1/matches**', (route) =>
+    route.fulfill(
+      ok({
+        id: matchId,
+        title: 'Last Whistle',
+        side_size: 5,
+        city_id: cityId,
+        area_id: strovolosId,
+        venue_display_name: 'Novo',
+        venue_address: 'Strovolos, Nicosia',
+        starts_at: '2030-11-18T20:00:00Z',
+        duration_minutes: 60,
+        skill_level: null,
+        price_eur: 10,
+        reserved_guest_slots: 9,
+        event_status: 'published',
+        notes: null,
+        booking_status: 'not_booked',
+        waitlist_offer_minutes: 15,
+      }),
+    ),
+  );
+  await page.route('**/rest/v1/match_position_slots**', (route) => route.fulfill(ok([])));
+  await page.route('**/rest/v1/match_booking_private_details**', (route) =>
+    route.fulfill(ok(null)),
+  );
+  await page.route('**/rest/v1/match_discovery**', (route) =>
+    route.fulfill(ok({ active_players: 0 })),
+  );
+  let sent: { p_match: Record<string, unknown> } | undefined;
+  await page.route('**/rest/v1/rpc/update_match_with_positions', async (route) => {
+    sent = route.request().postDataJSON();
+    await route.fulfill(ok(matchId));
+  });
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto(`/create?matchId=${matchId}`);
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect.poll(() => sent?.p_match.event_status).toBe('published');
+});
