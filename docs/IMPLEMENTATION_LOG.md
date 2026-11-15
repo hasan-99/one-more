@@ -1761,3 +1761,11 @@
 - Checks: tsc, eslint, prettier, vitest 39/39, Playwright create-game + create-team + layout-audit 26/26 (mocked Supabase). Browser: desktop + mobile via Playwright.
 - Not verified: bar join button against live backend (mock lacks join-state route).
 - Next: publish OTA, apply migrations.
+
+## Phase 17 — Explore game card (scoreboard design)
+- `MatchCard` redesigned: format + game name + price, venue/area + pitch status, scoreboard (day and kick-off time), places bar (joined / held by organizer / open), one button. Status stickers: YOUR GAME, LAST PLACE, FULL; card colour follows the sticker. Full games offer the waitlist (opens the game page).
+- Fixes the missing kick-off time ("Mon 16 Nov, :") by building the time with separate Intl formats (`matchTicketParts` in `src/i18n/format.ts`).
+- New EN/EL keys: matchSticker*, matchKickoff, matchJoinedOf, matchHeldByOrganizer, matchViewDetails, matchFullWaitlistOpen.
+- Checks: tsc, eslint, prettier clean; vitest 39/39; Playwright create-game (incl. new explore test), layout-audit pass. phase-17-home fails on a heading ("Find your next game.") that is not in the source: pre-existing, not touched.
+- Browser: mobile 393px screenshot `docs/screenshots/phase-17/explore-card-mobile.png` (mock data). Not verified against live backend or Greek on device.
+- Next: publish OTA.

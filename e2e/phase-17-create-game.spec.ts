@@ -325,3 +325,77 @@ test('the game page shows the ticket, facts and the players number with its bar'
     path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'game-page-mobile.png'),
   });
 });
+
+test('explore cards show stickers, the kick-off time and the places bar', async ({ page }) => {
+  await seed(page);
+  const base = {
+    title: 'Last Whistle',
+    side_size: 5,
+    city_id: cityId,
+    city_name_en: 'Nicosia',
+    city_name_el: 'Λευκωσία',
+    area_id: strovolosId,
+    area_name_en: 'Strovolos',
+    area_name_el: 'Στρόβολος',
+    venue_display_name: 'Novo',
+    venue_address: 'Strovolos, Nicosia',
+    starts_at: '2030-11-18T19:00:00Z',
+    duration_minutes: 60,
+    skill_level: null,
+    price_eur: 10,
+    capacity: 10,
+    active_players: 3,
+    free_spots: 7,
+    open_positions: [],
+    notes: null,
+    booking_status: 'confirmed',
+    event_status: 'published',
+    is_organizer: false,
+    created_at: '2026-11-14T00:00:00Z',
+  };
+  const rows = [
+    {
+      ...base,
+      id: `${matchId.slice(0, -1)}1`,
+      title: 'Mine',
+      is_organizer: true,
+      active_players: 0,
+      free_spots: 4,
+      booking_status: 'not_booked',
+    },
+    {
+      ...base,
+      id: `${matchId.slice(0, -1)}2`,
+      title: 'Friday Night',
+      side_size: 6,
+      capacity: 12,
+      active_players: 11,
+      free_spots: 1,
+      price_eur: 8,
+    },
+    { ...base, id: `${matchId.slice(0, -1)}3`, title: 'Saturday Run' },
+    {
+      ...base,
+      id: `${matchId.slice(0, -1)}4`,
+      title: 'Sunday Kickabout',
+      active_players: 10,
+      free_spots: 0,
+      price_eur: 0,
+    },
+  ];
+  await page.route('**/rest/v1/match_discovery**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(rows) }),
+  );
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/explore');
+  await expect(page.getByText('YOUR GAME')).toBeVisible();
+  await expect(page.getByText('LAST PLACE')).toBeVisible();
+  await expect(page.getByText('FULL', { exact: true })).toBeVisible();
+  await expect(page.getByText('21:00').first()).toBeVisible();
+  await expect(page.getByText('1 place open')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Join waitlist' })).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'explore-card-mobile.png'),
+  });
+});
