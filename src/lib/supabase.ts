@@ -8,7 +8,21 @@ import { updateAuthRefreshForAppState } from '@/auth/session-lifecycle';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const publishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && publishableKey);
+// Only talk to Supabase over HTTPS. Plain http is allowed for a local dev stack on this machine.
+function isSecureSupabaseUrl(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:') return true;
+    return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && publishableKey && isSecureSupabaseUrl(supabaseUrl),
+);
 
 export const supabase: SupabaseClient<Database> | null =
   isSupabaseConfigured && supabaseUrl && publishableKey

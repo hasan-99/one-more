@@ -14,6 +14,7 @@ export type AuthToastMessageKey =
   | 'authAccountExists'
   | 'authInvalidCode'
   | 'authResendWait'
+  | 'authTooManyRequests'
   | 'authEmailRequired'
   | 'authPasswordShort'
   | 'authGenericError';
@@ -45,6 +46,8 @@ export function authErrorMessageKey(error: unknown): AuthToastMessageKey {
       return 'authInvalidCode';
     case 'over_email_send_rate_limit':
       return 'authResendWait';
+    case 'over_request_rate_limit':
+      return 'authTooManyRequests';
     case 'email_address_invalid':
       return 'authEmailRequired';
     case 'weak_password':
@@ -70,7 +73,9 @@ export function validatePhone(phone: string): boolean {
 }
 
 export function validatePassword(password: string): boolean {
-  return password.length >= 8;
+  return (
+    password.length >= 8 && password.length <= 72 && /\p{L}/u.test(password) && /\d/.test(password)
+  );
 }
 
 export function validateSignup(

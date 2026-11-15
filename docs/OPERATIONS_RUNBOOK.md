@@ -65,6 +65,15 @@ During a controlled beta, inspect:
 - Repeated 401/403, 429, 5xx, queue age, duplicate reminders, match capacity discrepancies, and unauthorized chat/report attempts.
 - Storage/database growth, backup age/availability, signup spikes, bounced mail and provider quotas.
 
+Abuse limits: inserts that exceed a per-user limit (`private.enforce_insert_rate_limit`) fail with `rate_limited` (SQLSTATE `P0429`) and appear in Supabase Logs → Postgres. Review them with:
+
+```sql
+select timestamp, event_message from postgres_logs
+where event_message like '%rate_limited%' order by timestamp desc limit 100;
+```
+
+A user who appears repeatedly is a candidate for suspension in Supabase Auth. Failed sign-ins and password-reset floods appear in Logs → Auth (`over_request_rate_limit`, `over_email_send_rate_limit`).
+
 Do not log access tokens, full email bodies, private booking references, message text or unnecessary personal information. No external error-monitoring/SLA service is configured. Advisor findings (intentional checked SECURITY DEFINER RPCs, `pg_net` placement and unused-index information) are recorded in the implementation log; review after workload changes.
 
 ## Backup and restore expectation

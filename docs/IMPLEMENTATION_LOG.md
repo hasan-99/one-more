@@ -1809,3 +1809,7 @@
 ## Phase 17 — Challenges header: one row
 - `/challenges` header is one row: back button, title, square "+" button (aria-label "Post a challenge", captains only). Greek uses the short title "Προκλήσεις" (`challengeHeaderTitle`) so it never cuts at 360px.
 - Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (row alignment asserted) + layout-audit 22/22 (mocked Supabase).
+
+## Security hardening
+- Headers (HSTS, CSP, COOP, CORP) in `app.json`; HTTPS-only Supabase URL guard; password policy 8+ with letter and digit (client + `config.toml`); Auth rate limits and OTP expiry 30 min in `config.toml`; migration `20261117090000_security_hardening.sql` (per-user insert rate limits, match price 0-500; not applied from the sandbox); six unused packages removed; full report in `docs/reports/security-audit-2026-11.md`.
+- Checks: tsc, eslint, vitest 42/42; Playwright auth + security-headers (30/30 desktop+mobile) and challenges/create-game/layout-audit (mobile) pass; `npm audit` 0 vulnerabilities; web build OK; migration tested on scratch PostgreSQL 16 only; pgTAP not run.

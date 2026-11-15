@@ -14,7 +14,9 @@ describe('auth input validation', () => {
   it('validates email and minimum password length', () => {
     expect(validateEmail(' player@example.com ')).toBe(true);
     expect(validateEmail('invalid')).toBe(false);
-    expect(validatePassword('12345678')).toBe(true);
+    expect(validatePassword('abcd1234')).toBe(true);
+    expect(validatePassword('12345678')).toBe(false);
+    expect(validatePassword('onlyletters')).toBe(false);
     expect(validatePassword('short')).toBe(false);
   });
 
@@ -40,14 +42,14 @@ describe('auth input validation', () => {
     expect(validateSignup('Alex', '+357 99 123456', 'a@b.co', 'short', 'short', true)).toBe(
       'password',
     );
-    expect(validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass', 'different', true)).toBe(
+    expect(validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass1', 'different', true)).toBe(
       'passwordMismatch',
     );
     expect(
-      validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass', 'long-pass', false),
+      validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass1', 'long-pass1', false),
     ).toBe('terms');
     expect(
-      validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass', 'long-pass', true),
+      validateSignup('Alex', '+357 99 123456', 'a@b.co', 'long-pass1', 'long-pass1', true),
     ).toBeNull();
   });
 
