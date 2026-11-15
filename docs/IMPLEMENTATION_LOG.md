@@ -1739,3 +1739,11 @@
 ## Phase 17 — Fix: saving changes unpublished the game
 
 - Bug: on the edit form "Save changes" always saved with `event_status = 'draft'`, so editing a published game turned it into a draft and it disappeared from Explore. Now "Save changes" keeps the game's current status, and the separate Publish button only shows for new games and drafts. Regression test in `phase-17-create-game.spec.ts` (the update payload keeps `event_status: 'published'`). Games already unpublished by this bug stay drafts until republished by their organizer.
+
+## Phase 17 — Game page and edit page redesign, pitch booking in the create flow
+
+- New `features/matches/MatchHero.tsx`: the match ticket (format, name, venue, area, pitch-booking badge "Pitch confirmed / pending / not booked", tear-off stub with date and time), three fact cards (duration, open spots, price) and a Players card with a big number ("9 / 10 players"), a "N spots left" badge and a segment bar (no names, no avatars). Used on the game page (`/matches/[id]`) and, with a Published/Draft badge, at the top of the edit form (`/create?matchId=…`).
+- Game page: the old "Game details" and "Open positions" cards were replaced by the hero plus a short venue/notes card with the booking disclosure; the join, requests, chat and organizer cards below are unchanged. NOT done: the fixed bottom "Ask to join" bar and the separate chat button; the join card keeps its place in the page.
+- Edit page: hero on top, the existing sections below (not yet turned into tap-to-edit cards).
+- Create flow step 3 has a Pitch booking row (Not booked / Pending / Confirmed, default Not booked) saved as `booking_status`; step 3 uses the slim ticket so it fits one screen.
+- Checks: tsc, eslint, vitest 39; Playwright create-game (flow, notification badges, edit keeps published, game page), layout audit, chat and creation gate pass. `phase-05-discovery` fails in this sandbox with and without these changes (needs the real backend).

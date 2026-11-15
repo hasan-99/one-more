@@ -265,3 +265,51 @@ test('saving changes to a published game keeps it published', async ({ page }) =
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect.poll(() => sent?.p_match.event_status).toBe('published');
 });
+
+test('the game page shows the ticket, facts and the players number with its bar', async ({
+  page,
+}) => {
+  await seed(page);
+  const row = {
+    id: matchId,
+    title: 'Last Whistle',
+    side_size: 5,
+    city_id: cityId,
+    city_name_en: 'Nicosia',
+    city_name_el: 'Λευκωσία',
+    area_id: strovolosId,
+    area_name_en: 'Strovolos',
+    area_name_el: 'Στρόβολος',
+    venue_display_name: 'Novo',
+    venue_address: 'Strovolos, Nicosia',
+    starts_at: '2030-11-18T20:00:00Z',
+    duration_minutes: 60,
+    skill_level: null,
+    price_eur: 10,
+    capacity: 10,
+    active_players: 0,
+    free_spots: 1,
+    open_positions: [],
+    notes: null,
+    booking_status: 'confirmed',
+    event_status: 'published',
+    is_organizer: false,
+    created_at: '2026-11-14T00:00:00Z',
+  };
+  await page.route('**/rest/v1/match_discovery**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(row) }),
+  );
+  await page.route('**/rest/v1/match_participants**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }),
+  );
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto(`/matches/${matchId}`);
+  await expect(page.getByRole('img', { name: /5v5 · Last Whistle/ })).toBeVisible();
+  await expect(page.getByText('✓ Pitch confirmed')).toBeVisible();
+  await expect(page.getByText('1 spot left')).toBeVisible();
+  await expect(page.getByText('/ 10 players')).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.screenshot({
+    path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'game-page-mobile.png'),
+  });
+});

@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AppCard, AppPage } from '@/components/layout/AppPage';
 import { useToast } from '@/components/toast/ToastProvider';
 import { CreateGameWizard } from '@/features/matches/CreateGameWizard';
+import { MatchHero } from '@/features/matches/MatchHero';
 import { MatchPositionPicker } from '@/features/matches/MatchPositionPicker';
 import {
   loadMatchFilters,
@@ -196,6 +197,35 @@ function MatchForm({ matchId }: { matchId: string | undefined }) {
       ) : null}
       {!loading && !loadError && catalog ? (
         <>
+          {matchId ? (
+            <MatchHero
+              locale={locale}
+              data={{
+                title: form.title.trim() || copy.gameWizNamePlaceholder,
+                sideSize: form.sideSize,
+                startsAt: cyprusDateTimeToIso(form.startsAt) ?? new Date().toISOString(),
+                venueName: form.venueName.trim() || '—',
+                areaLabel: (() => {
+                  const row = areas.find((item) => item.id === form.areaId);
+                  return row ? (locale === 'el' ? row.name_el : row.name_en) : '—';
+                })(),
+                cityLabel: selectedCity
+                  ? locale === 'el'
+                    ? selectedCity.name_el
+                    : selectedCity.name_en
+                  : '',
+                durationMinutes: form.durationMinutes,
+                priceEur: Number.isFinite(Number(priceText)) ? Number(priceText) : 0,
+                taken: Math.min(capacity, form.reservedGuestSlots + activePlayers),
+                capacity,
+                bookingStatus: form.bookingStatus,
+                statusLabel:
+                  form.eventStatus === 'published'
+                    ? copy.heroStatusPublished
+                    : copy.heroStatusDraft,
+              }}
+            />
+          ) : null}
           <AppCard>
             <Text style={styles.heading}>{copy.matchSectionGame}</Text>
             <Field

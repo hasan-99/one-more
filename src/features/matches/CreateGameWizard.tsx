@@ -136,6 +136,7 @@ export function CreateGameWizard() {
   const [cityId, setCityId] = useState('');
   const [areaId, setAreaId] = useState('');
   const [venue, setVenue] = useState('');
+  const [booking, setBooking] = useState<'not_booked' | 'pending' | 'confirmed'>('not_booked');
   const [need, setNeed] = useState(4);
   const [price, setPrice] = useState<number>(10);
   const [catalog, setCatalog] = useState<{ cities: MatchCity[]; areas: MatchArea[] } | null>(null);
@@ -223,7 +224,7 @@ export function CreateGameWizard() {
         reservedGuestSlots: total - open,
         notes: '',
         eventStatus: status,
-        bookingStatus: 'not_booked',
+        bookingStatus: booking,
         waitlistOfferMinutes: 15,
         positions: Array.from({ length: open }, (_, index) => ({
           position: 'any',
@@ -304,7 +305,7 @@ export function CreateGameWizard() {
           ))}
         </View>
 
-        <MatchTicket {...ticketProps} mini={step === 1} />
+        <MatchTicket {...ticketProps} mini={step === 1 || step === 2} />
 
         <ScrollView
           nativeID="game-create-step"
@@ -456,6 +457,29 @@ export function CreateGameWizard() {
                 placeholderTextColor={colors.textSecondary}
                 style={styles.field}
               />
+              <Text style={styles.fieldLabel}>{copy.gameWizBooking}</Text>
+              <View
+                accessibilityRole="radiogroup"
+                accessibilityLabel={copy.gameWizBooking}
+                style={styles.row}
+              >
+                {(
+                  [
+                    ['not_booked', copy.matchBookingNotBooked],
+                    ['pending', copy.matchBookingPending],
+                    ['confirmed', copy.matchBookingConfirmed],
+                  ] as const
+                ).map(([value, label]) => (
+                  <Choice
+                    key={value}
+                    label={label}
+                    selected={booking === value}
+                    onPress={() => setBooking(value)}
+                    styles={styles}
+                    third
+                  />
+                ))}
+              </View>
             </>
           ) : step === 3 ? (
             <>

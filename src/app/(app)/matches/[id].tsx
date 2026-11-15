@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppAction, AppCard, AppPage, EmptyState } from '@/components/layout/AppPage';
 import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
-import { MatchPitchMap } from '@/features/matches/MatchPitchMap';
+import { MatchHero } from '@/features/matches/MatchHero';
 import {
   loadMatchJoinRequests,
   loadOwnJoinRequest,
@@ -22,7 +22,6 @@ import {
   type WaitlistState,
 } from '@/features/matches/match-join-service';
 import { cancelMatch, loadMatch, type MatchDiscoveryItem } from '@/features/matches/match-service';
-import { formatLocalDateTime } from '@/i18n/format';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -226,62 +225,34 @@ export default function MatchDetailsScreen() {
     }
   };
   return (
-    <AppPage title={match.title} description={`${match.sideSize}v${match.sideSize} · ${city}`}>
-      <AppCard>
-        <Text style={styles.sectionTitle}>{copy.matchDetails}</Text>
-        <Text style={styles.detail}>{formatLocalDateTime(match.startsAt, locale)}</Text>
-        <Text style={styles.detail}>
-          {match.venueName} · {match.venueAddress}
-        </Text>
-        <Text style={styles.detail}>
-          {city} · {area}
-        </Text>
-        <Text style={styles.detail}>
-          {match.activePlayers}/{match.capacity} {copy.matchPlayers} · {match.freeSpots}{' '}
-          {copy.matchFreeSpots}
-        </Text>
-        <Text style={styles.detail}>
-          {match.priceEur === 0 ? copy.matchFree : `€${match.priceEur.toFixed(2)}`} ·{' '}
-          {match.durationMinutes} {copy.matchMinutes}
-        </Text>
-        <Text style={styles.detail}>
-          {copy.matchBookingStatus}:{' '}
-          {
-            {
-              not_booked: copy.matchBookingNotBooked,
-              pending: copy.matchBookingPending,
-              confirmed: copy.matchBookingConfirmed,
-            }[match.bookingStatus]
-          }
-        </Text>
-        <Text style={styles.detail}>{copy.matchBookingDisclosure}</Text>
+    // The ticket below already carries the title, so the page heading is left out.
+    <AppPage title={match.title} heading={<View />}>
+      <MatchHero
+        locale={locale}
+        data={{
+          title: match.title,
+          sideSize: match.sideSize,
+          startsAt: match.startsAt,
+          venueName: match.venueName,
+          areaLabel: area,
+          cityLabel: city,
+          durationMinutes: match.durationMinutes,
+          priceEur: match.priceEur,
+          taken: Math.max(0, match.capacity - match.freeSpots),
+          capacity: match.capacity,
+          bookingStatus: match.bookingStatus,
+          statusLabel: match.isOrganizer ? copy.heroStatusPublished : undefined,
+        }}
+      />
+      <View style={styles.infoCard}>
+        <Text style={styles.detail}>{`${match.venueName} · ${match.venueAddress}`}</Text>
         {match.notes ? (
           <Text style={styles.detail}>
             {copy.matchNotesLabel}: {match.notes}
           </Text>
         ) : null}
-      </AppCard>
-      <AppCard>
-        <Text style={styles.sectionTitle}>{copy.matchOpenPositions}</Text>
-        <MatchPitchMap match={match} />
-        <Text accessibilityRole="text" style={styles.detail}>
-          {match.openPositions.slice(0, Math.max(0, match.freeSpots)).length
-            ? match.openPositions
-                .slice(0, Math.max(0, match.freeSpots))
-                .map((slot) => {
-                  const label = {
-                    goalkeeper: copy.matchGoalkeeper,
-                    defender: copy.matchDefender,
-                    midfielder: copy.matchMidfielder,
-                    forward: copy.matchForward,
-                    any: copy.matchAnyPosition,
-                  }[slot.position];
-                  return label;
-                })
-                .join(', ')
-            : copy.matchNoPositions}
-        </Text>
-      </AppCard>
+        <Text style={styles.disclosure}>{copy.matchBookingDisclosure}</Text>
+      </View>
       {!match.isOrganizer ? (
         <AppCard>
           <Text style={styles.sectionTitle}>{copy.matchJoinRequest}</Text>
@@ -568,6 +539,15 @@ function formatCountdown(milliseconds: number) {
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
     detail: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
+    infoCard: {
+      gap: 8,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.cardTop,
+      padding: 14,
+    },
+    disclosure: { color: colors.textSecondary, fontSize: 12.5, lineHeight: 18 },
     sectionTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '800' },
     stateBox: { minHeight: 130, justifyContent: 'center', alignItems: 'center', gap: 12 },
     stateText: { color: colors.textSecondary, fontSize: 14 },
