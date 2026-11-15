@@ -77,6 +77,7 @@ export default function ChallengesScreen() {
 
   return (
     <AppPage
+      backHref="/teams"
       title={copy.challengeDirectory}
       heading={
         <View style={{ gap: 8 }}>

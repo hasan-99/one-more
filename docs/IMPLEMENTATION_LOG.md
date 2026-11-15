@@ -1777,3 +1777,9 @@
 - Formats stay 5/8/11 to match the existing DB check; no migration needed.
 - Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (list, filter, empty, 4-step create incl. payload, Greek 360 overflow), create-game, create-team, layout-audit: all pass (mocked Supabase).
 - Not verified: live backend, `/challenges/[id]` page (not redesigned), team-page block on device.
+
+## Phase 17 — Challenges inside Teams
+- Challenge pages (`/challenges`, `/challenges/[id]`) now open with a back button (new `BackButton`, `AppPage backHref`) and keep the Teams tab highlighted.
+- Teams page: the captain banner and three small cards are replaced by one challenge card, "See all ›" and a "Post a challenge" button (opens `/challenges/create`).
+- Card team names wrap to two lines (fixes the Greek 360px cut-text audit).
+- Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (incl. teams page + back button), layout-audit, create-game pass (mocked Supabase). Not verified on device or live backend.

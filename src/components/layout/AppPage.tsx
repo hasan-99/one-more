@@ -3,6 +3,7 @@ import type { PropsWithChildren, ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { BackButton } from '@/components/layout/BackButton';
 import type { TranslationKey } from '@/i18n';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
@@ -11,12 +12,15 @@ export function AppPage({
   title,
   description,
   heading: customHeading,
+  backHref,
   children,
 }: PropsWithChildren<{
   title: string;
   description?: string;
   /** Replaces the standard title block (for pages with a compact header of their own). */
   heading?: ReactNode;
+  /** Shows a back button above the heading; used when the page is opened from another page. */
+  backHref?: Href;
 }>) {
   const { colors, locale } = useAppPreferences();
   const styles = makeStyles(colors);
@@ -27,6 +31,7 @@ export function AppPage({
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.content}>
+        {backHref ? <BackButton fallback={backHref} /> : null}
         {customHeading ?? (
           <View style={[styles.heading, !description && styles.headingCompact]}>
             <View style={[styles.headingRule, { backgroundColor: colors.primaryButton }]} />

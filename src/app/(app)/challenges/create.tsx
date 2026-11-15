@@ -375,7 +375,7 @@ export default function CreateChallengeScreen() {
                   <View style={styles.vs}>
                     <View style={styles.side}>
                       <Crest {...look} initials={crestInitials(team?.name ?? '')} size={52} />
-                      <Text numberOfLines={1} style={styles.sideName}>
+                      <Text numberOfLines={2} style={styles.sideName}>
                         {team?.name}
                       </Text>
                       <Text style={styles.sideTag}>{copy.challengeHomeLabel}</Text>
@@ -386,7 +386,7 @@ export default function CreateChallengeScreen() {
                     </View>
                     <View style={styles.side}>
                       <OpenSpotCrest size={52} color={lime} />
-                      <Text numberOfLines={1} style={styles.sideName}>
+                      <Text numberOfLines={2} style={styles.sideName}>
                         {copy.challengeSlotWaiting}
                       </Text>
                       <Text style={styles.sideTag}>{copy.challengeOpenSpot}</Text>
@@ -703,7 +703,13 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       paddingHorizontal: 8,
     },
     side: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5 },
-    sideName: { color: colors.textPrimary, fontSize: 14, fontWeight: '700', maxWidth: '100%' },
+    sideName: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '700',
+      maxWidth: '100%',
+      textAlign: 'center',
+    },
     sideTag: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
     vsText: { color: lime, fontSize: 26, lineHeight: 28, fontWeight: '800' },
     formatPill: {

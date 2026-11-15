@@ -5,9 +5,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/toast/ToastProvider';
 import { AppPage } from '@/components/layout/AppPage';
+import { ChallengeCard } from '@/features/teams/ChallengeCard';
 import { listTeamChallenges, type TeamChallenge } from '@/features/teams/challenge-service';
 import { CaptainBadge, Crest as CrestArt, crestInitials } from '@/features/teams/TeamCrest';
-import { isSkillLevel, levelLabel } from '@/features/profile/PlayerProfile';
 import { getProfileCompletion } from '@/features/profile/profile-service';
 import {
   listMyTeamInvites,
@@ -208,19 +208,6 @@ export default function TeamsScreen() {
               )}
               {isCaptain ? (
                 <>
-                  <View style={styles.hero}>
-                    <View style={styles.heroRing} pointerEvents="none" />
-                    <Text style={styles.heroKicker}>{copy.teamChallengeKicker}</Text>
-                    <Text style={styles.heroTitle}>{copy.teamChallengeHeroTitle}</Text>
-                    <Text style={styles.heroCopy}>{copy.teamChallengeHeroCopy}</Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => router.push('/challenges' as Href)}
-                      style={({ pressed }) => [styles.heroButton, pressed && { opacity: 0.88 }]}
-                    >
-                      <Text style={styles.heroButtonText}>{`⚡  ${copy.challengeCreate}`}</Text>
-                    </Pressable>
-                  </View>
                   <View style={styles.sectionHead}>
                     <Text accessibilityRole="header" style={styles.sectionTitle}>
                       {copy.challengeDirectory}
@@ -234,44 +221,29 @@ export default function TeamsScreen() {
                       <Text style={styles.seeAllText}>{`${copy.teamSeeAll} ›`}</Text>
                     </Pressable>
                   </View>
-                  {openChallenges.slice(0, 3).map((challenge) => (
-                    <Pressable
-                      key={challenge.id}
-                      accessibilityRole="link"
-                      onPress={() => router.push(`/challenges/${challenge.id}` as Href)}
-                      style={styles.teamCard}
-                    >
-                      <View style={styles.cardRow}>
-                        <NameTile name={challenge.homeTeamName} styles={styles} />
-                        <View style={styles.cardCopy}>
-                          <Text style={styles.cardTitle}>{challenge.homeTeamName}</Text>
-                          <Text style={styles.meta}>
-                            {`${locale === 'el' ? challenge.cityNameEl : challenge.cityNameEn} · ${formatWindow(challenge, locale)}`}
-                          </Text>
-                        </View>
-                        <Text style={styles.vs}>VS</Text>
-                      </View>
-                      <View style={styles.tags}>
-                        <Text style={styles.tag}>{`${challenge.format}v${challenge.format}`}</Text>
-                        {isSkillLevel(challenge.skillLevel) ? (
-                          <Text style={styles.tag}>{levelLabel(challenge.skillLevel, copy)}</Text>
-                        ) : null}
-                        <Text style={styles.tag}>
-                          {locale === 'el' ? challenge.areaNameEl : challenge.areaNameEn}
-                        </Text>
-                      </View>
-                      <View style={styles.fightButton}>
-                        <Text style={styles.fightText}>{`⚔  ${copy.teamChallengeThem}`}</Text>
-                      </View>
-                    </Pressable>
-                  ))}
-                  {openChallenges.length === 0 ? (
+                  {openChallenges[0] ? (
+                    <ChallengeCard
+                      challenge={openChallenges[0]}
+                      crest={
+                        directory.find((item) => item.teamId === openChallenges[0].homeTeamId)
+                          ?.crest ?? null
+                      }
+                      mine={false}
+                    />
+                  ) : (
                     <EmptyRow
                       title={copy.challengeNoOpen}
                       hint={copy.teamChallengeHint}
                       styles={styles}
                     />
-                  ) : null}
+                  )}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push('/challenges/create' as Href)}
+                    style={({ pressed }) => [styles.postButton, pressed && { opacity: 0.88 }]}
+                  >
+                    <Text style={styles.postButtonText}>{`⚡  ${copy.challengeCreate}`}</Text>
+                  </Pressable>
                 </>
               ) : null}
             </>
@@ -330,25 +302,6 @@ export default function TeamsScreen() {
 
 type Styles = ReturnType<typeof makeStyles>;
 
-function formatWindow(challenge: TeamChallenge, locale: string) {
-  const first = challenge.windows[0];
-  if (!first) return '';
-  const start = new Date(first.startsAt);
-  const end = new Date(first.endsAt);
-  const day = start.toLocaleDateString(locale === 'el' ? 'el-GR' : 'en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'Asia/Nicosia',
-  });
-  const time = (date: Date) =>
-    date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Nicosia',
-    });
-  return `${day} ${time(start)}–${time(end)}`;
-}
 const crestColors = ['#cfff4a', '#3db8ff', '#ffb347', '#c79bff', '#3ff0c0'];
 
 function NameTile({ name, styles }: { name: string; styles: Styles }) {
@@ -649,6 +602,14 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       justifyContent: 'center',
     },
     fightText: { color: '#ffffff', fontSize: 16, fontWeight: '800' },
+    postButton: {
+      minHeight: 50,
+      borderRadius: 16,
+      backgroundColor: colors.primaryButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    postButtonText: { color: colors.primaryButtonText, fontSize: 16, fontWeight: '800' },
     seeAll: { marginLeft: 'auto', minHeight: 36, justifyContent: 'center' },
     seeAllText: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },

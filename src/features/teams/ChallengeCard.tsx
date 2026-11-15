@@ -90,7 +90,7 @@ export function ChallengeCard({
           <View style={styles.side}>
             <Crest {...look} initials={crestInitials(challenge.homeTeamName)} size={52} />
             <Text
-              numberOfLines={1}
+              numberOfLines={2}
               style={[styles.sideName, { fontFamily: bodyFont(locale, 'semibold') }]}
             >
               {challenge.homeTeamName}
@@ -112,7 +112,7 @@ export function ChallengeCard({
           <View style={styles.side}>
             <OpenSpotCrest size={52} color={accent} />
             <Text
-              numberOfLines={1}
+              numberOfLines={2}
               style={[styles.sideName, { fontFamily: bodyFont(locale, 'semibold') }]}
             >
               {mine ? copy.challengeSlotWaiting : copy.challengeSlotQuestion}
@@ -214,7 +214,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       paddingHorizontal: 8,
     },
     side: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5 },
-    sideName: { color: colors.textPrimary, fontSize: 14, maxWidth: '100%' },
+    sideName: { color: colors.textPrimary, fontSize: 14, maxWidth: '100%', textAlign: 'center' },
     sideTag: { color: colors.textSecondary, fontSize: 10, letterSpacing: 1, fontWeight: '700' },
     mid: { alignItems: 'center', gap: 4 },
     vsText: { fontSize: 26, lineHeight: 28, fontWeight: '800' },

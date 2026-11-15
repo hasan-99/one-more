@@ -242,3 +242,35 @@ test('challenge screens fit a 360px phone in Greek', async ({ page }) => {
     path: join(process.cwd(), 'docs', 'screenshots', 'phase-17', 'challenges-list-el-360.png'),
   });
 });
+
+test('teams page shows one challenge and a create button, and the list has a back button', async ({
+  page,
+}) => {
+  await seedSession(page);
+  await mockRpc(page, 'get_my_teams', [myTeam]);
+  await mockRpc(page, 'get_my_team_invites', []);
+  await mockRpc(page, 'list_team_directory', []);
+  await mockRpc(page, 'list_team_challenges', [
+    challengeRow({
+      challenge_id: 'a2222222-4d3b-4f73-9d5f-1d0c9c3a7b11',
+      home_team_id: 'c0000000-7f28-4eaa-9b95-0cd871741b56',
+      home_team_name: 'Blue Hawks',
+    }),
+    challengeRow({
+      challenge_id: 'a3333333-4d3b-4f73-9d5f-1d0c9c3a7b11',
+      home_team_id: 'c0000000-7f28-4eaa-9b95-0cd871741b57',
+      home_team_name: 'Red Lions',
+    }),
+  ]);
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/teams');
+  await expect(page.getByText('Blue Hawks').first()).toBeVisible();
+  await expect(page.getByText('Red Lions')).toHaveCount(0);
+  await page.getByRole('button', { name: /Post a challenge/ }).click();
+  await expect(page.getByRole('heading', { name: 'Your team' })).toBeVisible();
+  await page.goBack();
+  await page.getByRole('link', { name: /See all/ }).click();
+  await expect(page.getByText('2 open challenges')).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page).toHaveURL(/\/teams$/);
+});

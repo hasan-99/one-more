@@ -164,19 +164,19 @@ export default function ChallengeDetailsScreen() {
   const localeArea = (area: MatchArea) => (locale === 'el' ? area.name_el : area.name_en);
   if (loading)
     return (
-      <AppPage title={copy.challengeDetails}>
+      <AppPage backHref="/teams" title={copy.challengeDetails}>
         <View accessibilityRole="progressbar" accessibilityLabel={copy.teamDetailLoading} />
       </AppPage>
     );
   if (loadError)
     return (
-      <AppPage title={copy.challengeDetails}>
+      <AppPage backHref="/teams" title={copy.challengeDetails}>
         <Action label={copy.challengeRetry} onPress={() => void load()} colors={colors} />
       </AppPage>
     );
   if (!challenge)
     return (
-      <AppPage title={copy.challengeDetails}>
+      <AppPage backHref="/teams" title={copy.challengeDetails}>
         <EmptyState title={copy.challengeUnavailable} description={copy.challengeIntro} />
         <Action
           label={copy.appGoTeams}
@@ -196,6 +196,7 @@ export default function ChallengeDetailsScreen() {
   const matchArea = areas.find((area) => area.id === challenge.proposedAreaId);
   return (
     <AppPage
+      backHref="/teams"
       title={`${challenge.homeTeamName} ${copy.challengeVs} ${opponentName ?? '…'}`}
       description={`${challenge.format}v${challenge.format} · ${locale === 'el' ? challenge.cityNameEl : challenge.cityNameEn} · ${locale === 'el' ? challenge.areaNameEl : challenge.areaNameEn}`}
     >
