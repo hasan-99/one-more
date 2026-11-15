@@ -175,10 +175,11 @@ export type Database = {
         Row: {
           body_key: string;
           created_at: string;
+          details: Json;
           event_type: string;
           href: string;
           id: string;
-          outbox_id: string;
+          outbox_id: string | null;
           read_at: string | null;
           recipient_id: string;
           title_key: string;
@@ -186,10 +187,11 @@ export type Database = {
         Insert: {
           body_key: string;
           created_at?: string;
+          details?: Json;
           event_type: string;
           href: string;
           id?: string;
-          outbox_id: string;
+          outbox_id?: string | null;
           read_at?: string | null;
           recipient_id: string;
           title_key: string;
@@ -197,10 +199,11 @@ export type Database = {
         Update: {
           body_key?: string;
           created_at?: string;
+          details?: Json;
           event_type?: string;
           href?: string;
           id?: string;
-          outbox_id?: string;
+          outbox_id?: string | null;
           read_at?: string | null;
           recipient_id?: string;
           title_key?: string;
@@ -1302,6 +1305,10 @@ export type Database = {
       confirm_challenge_match: {
         Args: { p_challenge_id: string };
         Returns: string;
+      };
+      count_match_published_notifications: {
+        Args: { p_match_id: string };
+        Returns: number;
       };
       create_match_with_positions: {
         Args: { p_booking?: Json; p_match: Json; p_positions: Json };

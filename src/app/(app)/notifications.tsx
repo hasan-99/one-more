@@ -52,6 +52,7 @@ const notificationCopy = {
     'notificationChallengeCancelledTitle',
     'notificationChallengeCancelledBody',
   ],
+  match_published: ['notificationMatchPublishedTitle', 'notificationMatchPublishedBody'],
   match_reminder_24h: ['notificationReminder24hTitle', 'notificationReminder24hBody'],
   match_reminder_2h: ['notificationReminder2hTitle', 'notificationReminder2hBody'],
 } as const satisfies Record<string, readonly [TranslationKey, TranslationKey]>;
@@ -183,6 +184,14 @@ export default function NotificationsScreen() {
                   </Text>
                 </View>
                 <Text style={[styles.body, { color: colors.textSecondary }]}>{body}</Text>
+                {notification.event_type === 'match_published' ? (
+                  <GameBadges
+                    details={notification.details}
+                    locale={locale}
+                    copy={copy}
+                    colors={colors}
+                  />
+                ) : null}
                 {!notification.read_at ? (
                   <ActionButton
                     label={
@@ -205,6 +214,91 @@ export default function NotificationsScreen() {
         </>
       )}
     </AppPage>
+  );
+}
+
+type GameDetails = {
+  title?: string;
+  side_size?: number;
+  starts_at?: string;
+  area_name_en?: string;
+  area_name_el?: string;
+  price_eur?: number;
+  open?: number;
+};
+
+function GameBadges({
+  details,
+  locale,
+  copy,
+  colors,
+}: {
+  details: unknown;
+  locale: 'en' | 'el';
+  copy: Record<'notificationBadgeNew' | 'notificationBadgeNeed' | 'notificationBadgeFree', string>;
+  colors: ReturnType<typeof useAppPreferences>['colors'];
+}) {
+  const game = (details && typeof details === 'object' ? details : {}) as GameDetails;
+  const when = game.starts_at ? new Date(game.starts_at) : null;
+  const tag = locale === 'el' ? 'el-GR' : 'en-GB';
+  const day = when
+    ? new Intl.DateTimeFormat(tag, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'Asia/Nicosia',
+      }).format(when)
+    : null;
+  const time = when
+    ? new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Nicosia',
+      }).format(when)
+    : null;
+  const area = locale === 'el' ? game.area_name_el : game.area_name_en;
+  const badges: { label: string; hot?: boolean }[] = [
+    { label: copy.notificationBadgeNew, hot: true },
+    ...(game.side_size ? [{ label: `${game.side_size}v${game.side_size}` }] : []),
+    ...(day && time ? [{ label: `${day} · ${time}` }] : []),
+    ...(area ? [{ label: area }] : []),
+    ...(typeof game.open === 'number' && game.open > 0
+      ? [{ label: copy.notificationBadgeNeed.replace('{n}', String(game.open)) }]
+      : []),
+    ...(typeof game.price_eur === 'number'
+      ? [
+          {
+            label: game.price_eur > 0 ? `€${game.price_eur}` : copy.notificationBadgeFree,
+            hot: game.price_eur === 0,
+          },
+        ]
+      : []),
+  ];
+  return (
+    <View style={styles.badgeRow}>
+      {game.title ? (
+        <Text style={[styles.gameTitle, { color: colors.textPrimary }]}>{game.title}</Text>
+      ) : null}
+      <View style={styles.badges}>
+        {badges.map((badge) => (
+          <Text
+            key={badge.label}
+            style={[
+              styles.badge,
+              badge.hot
+                ? { backgroundColor: colors.primaryButton, color: colors.primaryButtonText }
+                : {
+                    backgroundColor: colors.surfaceRaised,
+                    color: colors.textPrimary,
+                    borderColor: colors.border,
+                  },
+            ]}
+          >
+            {badge.label}
+          </Text>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -240,6 +334,19 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
+  badgeRow: { gap: 8 },
+  gameTitle: { fontSize: 18, fontWeight: '800' },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  badge: {
+    overflow: 'hidden',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    fontSize: 12,
+    fontWeight: '800',
+  },
   notification: { borderWidth: 1, borderRadius: 16, padding: 18, gap: 10 },
   notificationHeader: {
     flexDirection: 'row',

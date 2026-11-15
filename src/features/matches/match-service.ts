@@ -209,6 +209,15 @@ export async function saveMatch(values: MatchEditorValues, id?: string): Promise
   return result.data;
 }
 
+/** How many players were told about a game (only the organizer gets a number). */
+export async function countPublishedNotifications(matchId: string): Promise<number> {
+  const { data, error } = await getSupabaseClient().rpc('count_match_published_notifications', {
+    p_match_id: matchId,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function cancelMatch(id: string): Promise<void> {
   const { error } = await getSupabaseClient().rpc('cancel_match', { p_match_id: id });
   if (error) throw error;

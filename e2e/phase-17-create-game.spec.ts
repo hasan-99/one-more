@@ -78,6 +78,9 @@ async function seed(page: Page) {
 test('creating a game takes five steps and saves what was chosen', async ({ page }) => {
   await seed(page);
   let saved: { p_match: Record<string, unknown>; p_positions: unknown[] } | undefined;
+  await page.route('**/rest/v1/rpc/count_match_published_notifications', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '12' }),
+  );
   await page.route('**/rest/v1/rpc/create_match_with_positions', async (route) => {
     saved = route.request().postDataJSON();
     await route.fulfill({
@@ -157,5 +160,61 @@ test('creating a game takes five steps and saves what was chosen', async ({ page
   });
   expect(String(saved?.p_match.starts_at)).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:45:00/);
   expect(saved?.p_positions).toHaveLength(5);
+  // The celebration shows how many players were told, then View game opens the match.
+  await expect(page.getByRole('heading', { name: 'Game published!' })).toBeVisible();
+  await expect(page.getByText('12', { exact: true })).toBeVisible();
+  await expect(page.getByText('PUBLISHED', { exact: true })).toBeVisible();
+  await page.waitForTimeout(1600);
+  await page.screenshot({ path: join(shots, 'create-game-6-celebration-mobile.png') });
+  await page.getByRole('button', { name: 'View game' }).click();
   await expect(page).toHaveURL(new RegExp(`/matches/${matchId}$`));
+});
+
+test('a published-game notification shows clear badges', async ({ page }) => {
+  await seed(page);
+  await page.route('**/rest/v1/inbox_notifications**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 'n1',
+          recipient_id: userId,
+          outbox_id: null,
+          event_type: 'match_published',
+          title_key: 'notificationMatchPublishedTitle',
+          body_key: 'notificationMatchPublishedBody',
+          href: `/matches/${matchId}`,
+          created_at: new Date().toISOString(),
+          read_at: null,
+          details: {
+            match_id: matchId,
+            title: 'Sunday night 5s',
+            side_size: 5,
+            starts_at: '2026-11-22T19:30:00Z',
+            area_name_en: 'Strovolos',
+            area_name_el: 'Στρόβολος',
+            price_eur: 10,
+            open: 4,
+          },
+        },
+      ]),
+    }),
+  );
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto('/notifications');
+  await expect(page.getByText('New game near you')).toBeVisible();
+  for (const badge of ['NEW GAME', '5v5', 'Strovolos', '4 needed', '€10']) {
+    await expect(page.getByText(badge, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByText('Sunday night 5s')).toBeVisible();
+  await page.screenshot({
+    path: join(
+      process.cwd(),
+      'docs',
+      'screenshots',
+      'phase-17',
+      'notification-new-game-mobile.png',
+    ),
+  });
 });

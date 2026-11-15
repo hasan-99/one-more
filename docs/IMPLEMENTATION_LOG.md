@@ -1728,3 +1728,10 @@
 - Saved values: `reserved_guest_slots = total places − needed`, `open positions = needed` (position "any"), `skill_level = null`, venue name defaults to the area name, notes/booking empty, waitlist offer 15 min.
 - Saved design alternatives (not built): ticket (built), live pitch card and matchday poster are kept as artifacts for later.
 - Checks: tsc, eslint (0 warnings), vitest 39, Playwright: new `phase-17-create-game.spec.ts` (all five steps, no scrolling, publish button in Next's place, saved payload), create-team, layout audit and the create gate spec pass (22).
+
+## Phase 17 — Publish celebration and "new game" notifications
+
+- Publishing a game shows a celebration: the ticket drops in with a bounce, a PUBLISHED stamp lands on it, confetti falls, a "N players notified" pill and View game / Share game buttons. Saving a draft keeps the old flow (toast, then the match page).
+- Migration `20261115090000_match_published_notifications.sql` (NOT applied from this environment): `inbox_notifications.outbox_id` becomes optional and gains `details jsonb`; a trigger on `matches` (insert or event_status change to published) calls `private.notify_match_published`, which writes in-app notifications (no outbox row, so no email and no per-player HTTP call) for players with a completed profile who are in the game's city, are free that Cyprus-time weekday (profile day keys, or the legacy weekday/weekend evening slots when the game starts at 17:00 or later), whose preferred formats are empty or include the game's format, who have in-app notifications on, excluding the organizer, once per game, capped at 200 players. `count_match_published_notifications` lets only the organizer read the count shown on the celebration.
+- Notifications screen: `match_published` items show a "NEW GAME" badge and format, day · time, area, "N needed" and price badges plus the game name. New en/el copy. The notification opens the match.
+- Checks: tsc, eslint, vitest 39, Playwright create-game (flow, celebration, notification badges), layout audit and create-team pass.

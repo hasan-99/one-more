@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Animated,
   Easing,
@@ -7,11 +7,13 @@ import {
   Modal,
   Platform,
   Pressable,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -25,7 +27,13 @@ import { translations, type Locale } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
 
-import { loadMatchFilters, saveMatch, type MatchArea, type MatchCity } from './match-service';
+import {
+  countPublishedNotifications,
+  loadMatchFilters,
+  saveMatch,
+  type MatchArea,
+  type MatchCity,
+} from './match-service';
 import { cyprusDateTimeToIso } from './match-validation';
 
 type Copy = { [Key in keyof typeof translations.en]: string };
@@ -134,6 +142,7 @@ export function CreateGameWizard() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState<{ id: string; notified: number | null } | null>(null);
 
   const total = size * 2;
   const cityAreas = useMemo(
@@ -223,8 +232,14 @@ export function CreateGameWizard() {
         })),
         booking: { organizer_notes: '', reference: '' },
       });
-      showToast(copy.matchCreateSuccess, 'success');
-      router.replace(`/matches/${id}` as Href);
+      if (status === 'published') {
+        // The count is a nice-to-have: a failure here must not hide the celebration.
+        const notified = await countPublishedNotifications(id).catch(() => null);
+        setDone({ id, notified });
+      } else {
+        showToast(copy.matchCreateSuccess, 'success');
+        router.replace(`/matches/${id}` as Href);
+      }
     } catch {
       showToast(copy.matchSaveError, 'error');
     } finally {
@@ -561,6 +576,20 @@ export function CreateGameWizard() {
         </View>
       </KeyboardAvoidingView>
 
+      {done ? (
+        <Celebration
+          notified={done.notified}
+          copy={copy}
+          styles={styles}
+          ticket={<MatchTicket {...ticketProps} mini={false} />}
+          onView={() => router.replace(`/matches/${done.id}` as Href)}
+          onShare={() =>
+            void Share.share({
+              message: copy.gameWizShareMessage.replace('{title}', title.trim()),
+            }).catch(() => undefined)
+          }
+        />
+      ) : null}
       <TimeSheet
         kind={sheet}
         hour={hour}
@@ -578,6 +607,158 @@ export function CreateGameWizard() {
           setSheet(null);
         }}
       />
+    </View>
+  );
+}
+
+const confettiColors = ['#cfff4a', '#f2f5ec', '#5cc8ff', '#ffa94d', '#ff8fc0'];
+
+function Celebration({
+  notified,
+  copy,
+  styles,
+  ticket,
+  onView,
+  onShare,
+}: {
+  notified: number | null;
+  copy: Copy;
+  styles: Styles;
+  ticket: ReactNode;
+  onView: () => void;
+  onShare: () => void;
+}) {
+  const { height } = useWindowDimensions();
+  const [drop] = useState(() => new Animated.Value(0));
+  const [rise] = useState(() => new Animated.Value(0));
+  const [stamp] = useState(() => new Animated.Value(0));
+  const [pieces] = useState(() =>
+    Array.from({ length: 36 }, (_, index) => ({
+      left: Math.random() * 100,
+      color: confettiColors[index % confettiColors.length] ?? '#cfff4a',
+      delay: Math.random() * 700,
+      duration: 2200 + Math.random() * 1400,
+      spin: 360 + Math.random() * 540,
+      value: new Animated.Value(0),
+    })),
+  );
+  useEffect(() => {
+    const animations = [
+      Animated.spring(drop, { toValue: 1, speed: 6, bounciness: 12, useNativeDriver: true }),
+      Animated.sequence([
+        Animated.delay(450),
+        Animated.timing(rise, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ]),
+      Animated.sequence([
+        Animated.delay(800),
+        Animated.spring(stamp, { toValue: 1, speed: 14, bounciness: 14, useNativeDriver: true }),
+      ]),
+      ...pieces.map((piece) =>
+        Animated.sequence([
+          Animated.delay(piece.delay),
+          Animated.timing(piece.value, {
+            toValue: 1,
+            duration: piece.duration,
+            easing: Easing.in(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ];
+    animations.forEach((animation) => animation.start());
+    return () => animations.forEach((animation) => animation.stop());
+  }, [drop, rise, stamp, pieces]);
+  return (
+    <View accessibilityViewIsModal style={styles.celebration}>
+      <View pointerEvents="none" style={styles.confetti}>
+        {pieces.map((piece, index) => (
+          <Animated.View
+            key={index}
+            style={[
+              styles.piece,
+              {
+                left: `${piece.left}%`,
+                backgroundColor: piece.color,
+                transform: [
+                  {
+                    translateY: piece.value.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-20, height + 20],
+                    }),
+                  },
+                  {
+                    rotate: piece.value.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', `${piece.spin}deg`],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+        ))}
+      </View>
+      <Animated.View
+        style={{
+          opacity: drop,
+          transform: [
+            { translateY: drop.interpolate({ inputRange: [0, 1], outputRange: [-280, 0] }) },
+            { rotate: drop.interpolate({ inputRange: [0, 1], outputRange: ['-8deg', '0deg'] }) },
+          ],
+        }}
+      >
+        {ticket}
+        <Animated.View
+          style={[
+            styles.stamp,
+            {
+              opacity: stamp,
+              transform: [
+                { rotate: '12deg' },
+                { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.4, 1] }) },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.stampText}>{copy.gameWizPublished}</Text>
+        </Animated.View>
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.celebrationCopy,
+          {
+            opacity: rise,
+            transform: [
+              { translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+            ],
+          },
+        ]}
+      >
+        <Text accessibilityRole="header" style={styles.celebrationTitle}>
+          {copy.gameWizDoneTitle}
+        </Text>
+        <Text style={styles.celebrationBody}>{copy.gameWizDoneBody}</Text>
+        <View accessibilityLiveRegion="polite" style={styles.notifiedPill}>
+          <Text style={styles.notifiedNumber}>{notified ?? '–'}</Text>
+          <Text style={styles.notifiedLabel}>
+            {notified === 0 ? copy.gameWizNotifiedNone : copy.gameWizNotified}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onView}
+          style={[styles.next, { flexShrink: 0, flexGrow: 0, minHeight: 52 }]}
+        >
+          <Text style={styles.nextText}>{copy.gameWizViewGame}</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onShare}
+          style={[styles.softButton, { flexShrink: 0 }]}
+        >
+          <Text style={styles.softButtonText}>{copy.gameWizShare}</Text>
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
@@ -1026,6 +1207,60 @@ function makeStyles(colors: ThemeColors) {
   const ink = colors.primaryButtonText;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.background },
+    celebration: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 20,
+      backgroundColor: colors.background,
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      gap: 18,
+    },
+    confetti: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+    piece: { position: 'absolute', top: 0, width: 9, height: 15, borderRadius: 2 },
+    stamp: {
+      position: 'absolute',
+      right: 8,
+      top: -10,
+      borderWidth: 3,
+      borderColor: '#cfff4a',
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      backgroundColor: 'rgba(12,18,16,0.85)',
+    },
+    stampText: { color: '#cfff4a', fontSize: 14, fontWeight: '900', letterSpacing: 2 },
+    celebrationCopy: { alignItems: 'stretch', gap: 10, flexShrink: 0 },
+    celebrationTitle: {
+      color: colors.textPrimary,
+      fontSize: 30,
+      fontWeight: '900',
+      textAlign: 'center',
+    },
+    celebrationBody: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    notifiedPill: {
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 8,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: 'rgba(207,255,74,0.4)',
+      backgroundColor: 'rgba(207,255,74,0.1)',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      marginVertical: 4,
+    },
+    notifiedNumber: { color: colors.accentText, fontSize: 30, fontWeight: '900' },
+    notifiedLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
     frame: { flex: 1 },
     header: {
       flexDirection: 'row',
