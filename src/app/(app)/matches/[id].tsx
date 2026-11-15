@@ -271,15 +271,11 @@ export default function MatchDetailsScreen() {
             statusLabel: match.isOrganizer ? copy.heroStatusPublished : undefined,
           }}
         />
-        <View style={styles.infoCard}>
-          <Text style={styles.detail}>{`${match.venueName} · ${match.venueAddress}`}</Text>
-          {match.notes ? (
-            <Text style={styles.detail}>
-              {copy.matchNotesLabel}: {match.notes}
-            </Text>
-          ) : null}
-          <Text style={styles.disclosure}>{copy.matchBookingDisclosure}</Text>
-        </View>
+        {match.notes ? (
+          <Text style={styles.detail}>
+            {copy.matchNotesLabel}: {match.notes}
+          </Text>
+        ) : null}
         {!match.isOrganizer ? (
           <AppCard>
             <Text style={styles.sectionTitle}>{copy.matchJoinRequest}</Text>
@@ -500,17 +496,8 @@ export default function MatchDetailsScreen() {
             )}
           </AppCard>
         ) : null}
-        {user && (match.isOrganizer || currentJoinState?.own?.status === 'active') ? (
-          <AppCard>
-            <Text style={styles.sectionTitle}>{copy.appChatTitle}</Text>
-            <Text style={styles.detail}>{copy.chatDescription}</Text>
-            <AppAction labelKey="appChatTitle" href={`/chat/${match.id}`} />
-          </AppCard>
-        ) : null}
         {match.isOrganizer ? (
-          <AppCard>
-            <Text style={styles.sectionTitle}>{copy.matchOrganizerActions}</Text>
-            <AppAction labelKey="matchEditTitle" href={`/create?matchId=${match.id}`} />
+          <View style={styles.cancelBlock}>
             {!cancelPending ? (
               <Pressable
                 accessibilityRole="button"
@@ -553,7 +540,7 @@ export default function MatchDetailsScreen() {
                 </View>
               </>
             )}
-          </AppCard>
+          </View>
         ) : null}
         <AppAction labelKey="matchBackToExplore" href="/explore" secondary />
       </AppPage>
@@ -620,6 +607,7 @@ function formatCountdown(milliseconds: number) {
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
+    cancelBlock: { gap: 10, alignItems: 'center' },
     detail: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
     bar: {
       position: 'absolute',

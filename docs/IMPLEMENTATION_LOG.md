@@ -1788,3 +1788,7 @@
 - `/challenges/[id]` rebuilt: back button, face-off card (`FaceOff`, shared with the list card) with status sticker, four-stage progress (Posted, Opponent, Time & pitch, Match ready) and one panel per stage/viewer: requests with accept/decline and cancel (home captain); play-as + request (other captain); waiting + withdraw; propose exact kick-off (day chips from the slots, ±30 min stepper clamped to the slot, area chips, pitch name and address); confirm proposal; match ready with link; closed states.
 - All existing RPC calls unchanged; kick-off is sent as an instant inside the chosen slot. No "decline proposal" (no backend for it).
 - Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (details as home captain incl. accept payload, as other captain incl. confirm view), layout-audit, create-game pass (mocked Supabase). Not verified on device or live backend; propose/confirm submit paths not exercised in e2e.
+
+## Phase 17 — Game page cleanup
+- Removed the venue/booking-disclosure card, the Match chat card and the Organizer controls card from the game page. Edit and chat stay in the fixed bottom bar; notes show as a plain line when present; organizer "Cancel match" stays as a text button at the bottom with its confirm step.
+- Checks: tsc, eslint, prettier clean; Playwright create-game + layout-audit pass (mocked Supabase).
