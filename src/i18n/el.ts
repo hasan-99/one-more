@@ -717,7 +717,7 @@ export const el = {
   teamLeaveHint: 'Μεταβίβασε την αρχηγία για να φύγεις.',
   teamChallengeKicker: 'ΓΙΑ ΑΡΧΗΓΟΥΣ',
   teamChallengeHeroTitle: 'Ρίξε το γάντι',
-  teamChallengeHeroCopy: 'Διάλεξε μέρα, format, επίπεδο. Οι αντίπαλοι έρχονται σε σένα.',
+  teamChallengeHeroCopy: 'Διάλεξε μέρα, format, περιοχή. Οι αντίπαλοι έρχονται σε σένα.',
   teamChallengeThem: 'Πρόκληση',
   teamChallengeHint: 'Δημοσίευσε ένα και άλλοι αρχηγοί θα μπορούν να ζητήσουν τον αγώνα.',
   teamNoMineShort: 'Δεν έχεις ομάδα ακόμη',

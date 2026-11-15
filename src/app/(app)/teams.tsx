@@ -208,6 +208,19 @@ export default function TeamsScreen() {
               )}
               {isCaptain ? (
                 <>
+                  <View style={styles.hero}>
+                    <View style={styles.heroRing} pointerEvents="none" />
+                    <Text style={styles.heroKicker}>{copy.teamChallengeKicker}</Text>
+                    <Text style={styles.heroTitle}>{copy.teamChallengeHeroTitle}</Text>
+                    <Text style={styles.heroCopy}>{copy.teamChallengeHeroCopy}</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push('/challenges/create' as Href)}
+                      style={({ pressed }) => [styles.heroButton, pressed && { opacity: 0.88 }]}
+                    >
+                      <Text style={styles.heroButtonText}>{`⚡  ${copy.challengeCreate}`}</Text>
+                    </Pressable>
+                  </View>
                   <View style={styles.sectionHead}>
                     <Text accessibilityRole="header" style={styles.sectionTitle}>
                       {copy.challengeDirectory}
@@ -237,13 +250,6 @@ export default function TeamsScreen() {
                       styles={styles}
                     />
                   )}
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push('/challenges/create' as Href)}
-                    style={({ pressed }) => [styles.postButton, pressed && { opacity: 0.88 }]}
-                  >
-                    <Text style={styles.postButtonText}>{`⚡  ${copy.challengeCreate}`}</Text>
-                  </Pressable>
                 </>
               ) : null}
             </>
@@ -602,14 +608,6 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       justifyContent: 'center',
     },
     fightText: { color: '#ffffff', fontSize: 16, fontWeight: '800' },
-    postButton: {
-      minHeight: 50,
-      borderRadius: 16,
-      backgroundColor: colors.primaryButton,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    postButtonText: { color: colors.primaryButtonText, fontSize: 16, fontWeight: '800' },
     seeAll: { marginLeft: 'auto', minHeight: 36, justifyContent: 'center' },
     seeAllText: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
     tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },

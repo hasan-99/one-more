@@ -264,6 +264,7 @@ test('teams page shows one challenge and a create button, and the list has a bac
   await page.goto('/teams');
   await expect(page.getByText('Blue Hawks').first()).toBeVisible();
   await expect(page.getByText('Red Lions')).toHaveCount(0);
+  await expect(page.getByText('Throw down a challenge')).toBeVisible();
   await page.getByRole('button', { name: /Post a challenge/ }).click();
   await expect(page.getByRole('heading', { name: 'Team, area and format' })).toBeVisible();
   await page.goBack();

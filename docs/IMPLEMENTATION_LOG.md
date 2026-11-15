@@ -1796,3 +1796,7 @@
 ## Phase 17 — Challenge creation: three steps
 - Steps "your team" and "where and what" merged into one ("Team, area and format"). Creation is now 3 steps: team + area + format, when, review and publish.
 - Checks: tsc, eslint, prettier, vitest 42/42; Playwright challenges (3-step create with payload, step one screenshot, Greek 360), layout-audit pass (mocked Supabase).
+
+## Phase 17 — Teams page post-a-challenge banner
+- The lime "FOR CAPTAINS / Throw down a challenge" banner is back on the Teams page (captains), above the challenges section; its button opens `/challenges/create`. Copy now says "a day, a format, an area" (no level).
+- Checks: tsc, eslint, prettier clean; Playwright challenges + layout-audit 22/22 (mocked Supabase).

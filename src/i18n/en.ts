@@ -714,7 +714,7 @@ export const en = {
   teamLeaveHint: 'Transfer captaincy to leave the team.',
   teamChallengeKicker: 'FOR CAPTAINS',
   teamChallengeHeroTitle: 'Throw down a challenge',
-  teamChallengeHeroCopy: 'Pick a day, a format, a level. Rival teams come to you.',
+  teamChallengeHeroCopy: 'Pick a day, a format, an area. Rival teams come to you.',
   teamChallengeThem: 'Challenge them',
   teamChallengeHint: 'Post one and other captains can request the game.',
   teamNoMineShort: 'No team yet',
