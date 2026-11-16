@@ -723,13 +723,13 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
     },
     side: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5 },
     sideName: {
-      color: colors.textPrimary,
+      color: '#F2F5EC',
       fontSize: 14,
       fontWeight: '700',
       maxWidth: '100%',
       textAlign: 'center',
     },
-    sideTag: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
+    sideTag: { color: '#B9C4B4', fontSize: 10, fontWeight: '700', letterSpacing: 1.4 },
     vsText: { color: lime, fontSize: 26, lineHeight: 28, fontWeight: '800' },
     formatPill: {
       color: colors.textPrimary,

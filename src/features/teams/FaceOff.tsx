@@ -107,8 +107,8 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       paddingHorizontal: 8,
     },
     side: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5 },
-    sideName: { color: colors.textPrimary, fontSize: 14, maxWidth: '100%', textAlign: 'center' },
-    sideTag: { color: colors.textSecondary, fontSize: 10, letterSpacing: 1, fontWeight: '700' },
+    sideName: { color: '#F2F5EC', fontSize: 14, maxWidth: '100%', textAlign: 'center' },
+    sideTag: { color: '#B9C4B4', fontSize: 10, letterSpacing: 1, fontWeight: '700' },
     mid: { alignItems: 'center', gap: 4 },
     vsText: { fontSize: 26, lineHeight: 28, fontWeight: '800' },
     formatPill: {

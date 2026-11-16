@@ -37,6 +37,8 @@ export function MatchCard({ match, index = 0 }: { match: MatchDiscoveryItem; ind
       : match.freeSpots === 1
         ? 'last'
         : 'open';
+  // The kick-off board is always dark, so its text uses the dark theme's bright colours in both modes.
+  const boardAccent = status === 'open' || status === 'mine' ? '#CFFF4A' : null;
   const accent = status === 'last' ? '#ffb84a' : status === 'full' ? '#8a968d' : colors.accentText;
   const sticker =
     status === 'mine'
@@ -168,24 +170,29 @@ export function MatchCard({ match, index = 0 }: { match: MatchDiscoveryItem; ind
               <Text
                 style={[
                   styles.boardDow,
-                  { color: accent, fontFamily: bodyFont(locale, 'semibold') },
+                  { color: boardAccent ?? accent, fontFamily: bodyFont(locale, 'semibold') },
                 ]}
               >
                 {parts.weekday.toUpperCase()}
               </Text>
-              <Text style={[styles.boardDay, heading]}>
+              <Text style={[styles.boardDay, heading, { color: '#F2F5EC' }]}>
                 {parts.day} {parts.month.toUpperCase()}
               </Text>
             </View>
             <View style={styles.boardLine} />
             <View style={styles.boardCell}>
-              <Text style={[styles.boardTime, { color: accent, fontFamily: displayFont(locale) }]}>
+              <Text
+                style={[
+                  styles.boardTime,
+                  { color: boardAccent ?? accent, fontFamily: displayFont(locale) },
+                ]}
+              >
                 {parts.time}
               </Text>
               <Text
                 style={[
                   styles.boardLabel,
-                  { color: colors.textSecondary, fontFamily: bodyFont(locale, 'semibold') },
+                  { color: '#B9C4B4', fontFamily: bodyFont(locale, 'semibold') },
                 ]}
               >
                 {copy.matchKickoff}
@@ -206,7 +213,7 @@ export function MatchCard({ match, index = 0 }: { match: MatchDiscoveryItem; ind
                 return (
                   <View
                     key={slot}
-                    style={[styles.seg, { backgroundColor: 'rgba(242,245,236,0.17)' }]}
+                    style={[styles.seg, { backgroundColor: colors.textPrimary, opacity: 0.17 }]}
                   />
                 );
               }
@@ -303,7 +310,13 @@ function JoinButton({
               }
             : ghost
               ? { borderColor: accent, backgroundColor: 'transparent' }
-              : { backgroundColor: accent, borderColor: accent },
+              : {
+                  // Dark text sits on the bright lime button in both themes (accent is dark green in light mode).
+                  backgroundColor:
+                    status === 'open' || status === 'mine' ? colors.primaryButton : accent,
+                  borderColor:
+                    status === 'open' || status === 'mine' ? colors.primaryButton : accent,
+                },
           { opacity: busy ? 0.7 : 1 },
         ]}
       >

@@ -33,6 +33,8 @@ export function ChallengeCard({
   const [now] = useState(() => Date.now());
   const isNew = now - Date.parse(challenge.createdAt) < 2 * dayMs;
   const accent = mine ? colors.accentText : isNew ? amber : colors.accentText;
+  // Filled buttons/stickers carry dark text, so they use the bright lime in both themes.
+  const fill = !mine && isNew ? amber : colors.primaryButton;
   const sticker = mine ? copy.challengeStickerMine : isNew ? copy.challengeStickerNew : null;
   const area = locale === 'el' ? challenge.areaNameEl : challenge.areaNameEn;
   const city = locale === 'el' ? challenge.cityNameEl : challenge.cityNameEn;
@@ -64,7 +66,7 @@ export function ChallengeCard({
           away={null}
           awayLabel={mine ? copy.challengeSlotWaiting : copy.challengeSlotQuestion}
           format={challenge.format}
-          accent={accent}
+          accent={mine || !isNew ? '#CFFF4A' : amber}
         />
 
         <Text numberOfLines={1} style={[styles.where, { fontFamily: bodyFont(locale) }]}>
@@ -101,7 +103,7 @@ export function ChallengeCard({
               styles.cta,
               mine
                 ? { borderColor: accent, borderWidth: 1.5 }
-                : { backgroundColor: accent, borderColor: accent, borderWidth: 1.5 },
+                : { backgroundColor: fill, borderColor: fill, borderWidth: 1.5 },
             ]}
           >
             <Text
@@ -116,7 +118,7 @@ export function ChallengeCard({
         </View>
       </Pressable>
       {sticker ? (
-        <View pointerEvents="none" style={[styles.sticker, { backgroundColor: accent }]}>
+        <View pointerEvents="none" style={[styles.sticker, { backgroundColor: fill }]}>
           <Text style={[styles.stickerText, { fontFamily: bodyFont(locale, 'semibold') }]}>
             {sticker}
           </Text>

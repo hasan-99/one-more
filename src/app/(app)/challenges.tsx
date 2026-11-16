@@ -265,7 +265,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       borderRadius: 18,
       paddingVertical: 16,
     },
-    emptyVsText: { color: colors.accentText, fontSize: 30 },
+    emptyVsText: { color: '#CFFF4A', fontSize: 30 },
     emptyTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '700', textAlign: 'center' },
     emptyCopy: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center' },
     emptyButton: {
