@@ -542,9 +542,7 @@ export function HomeStadium({
             </Text>
           </PressLink>
           <PressLink href={'/create' as Href} style={styles.action}>
-            <Text style={[styles.actionText, { fontFamily: semibold }]}>
-              {copy.homeCreateCta}
-            </Text>
+            <Text style={[styles.actionText, { fontFamily: semibold }]}>{copy.homeCreateCta}</Text>
           </PressLink>
         </View>
       )}

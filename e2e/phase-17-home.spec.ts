@@ -160,7 +160,7 @@ test('no game yet: home invites to play, shows open games and localizes to Greek
   const languageToggle = page.getByRole('button', { name: 'Language: English' });
   await languageToggle.click();
   await expect(page.getByRole('heading', { name: 'Το γήπεδο περιμένει.' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Ανακάλυψε αγώνες' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Αναζήτηση' }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Πού πάμε;' })).toBeVisible();
 });
 
@@ -217,8 +217,14 @@ for (const theme of ['dark', 'light'] as const) {
     );
     await expect(page.getByText(/, Hasan$/)).toBeVisible();
 
-    await expect(page.locator('[data-testid^="home-tile-"]')).toHaveCount(6);
-    await expect(page.getByRole('link', { name: 'Notifications, 3' })).toBeVisible();
+    await expect(page.locator('[data-testid^="home-tile-"]')).toHaveCount(3);
+    await expect(page.getByTestId('home-tile-find')).toBeVisible();
+    await expect(page.getByTestId('home-tile-challenges')).toBeVisible();
+    await expect(page.getByTestId('home-tile-teams')).toBeVisible();
+    // Create, Notifications and Settings are reachable from the tab bar and the top bar, not here.
+    await expect(page.getByTestId('home-tile-create')).toHaveCount(0);
+    await expect(page.getByTestId('home-tile-alerts')).toHaveCount(0);
+    await expect(page.getByTestId('home-tile-settings')).toHaveCount(0);
     // The player's own game is the hero, so the rail only lists the other open games.
     await expect(page.getByTestId('home-rail-card')).toHaveCount(2);
     await expect(page.getByRole('link', { name: /Strovolos United/ })).toBeVisible();

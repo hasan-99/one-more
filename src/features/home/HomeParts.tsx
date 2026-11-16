@@ -256,7 +256,6 @@ const tileIcons: Record<string, (color: string) => ReactNode> = {
       <Path d="M21 21l-4.3-4.3" stroke={c} strokeWidth="1.8" strokeLinecap="round" />
     </>
   ),
-  create: (c) => <Path d="M12 5v14M5 12h14" stroke={c} strokeWidth="2.2" strokeLinecap="round" />,
   challenges: (c) => (
     <Path
       d="M4 4l9 9M4 4v4M4 4h4M20 4l-9 9M20 4v4M20 4h-4M9 13l-4 4M15 13l4 4M6 16l-2 4M18 16l2 4"
@@ -274,82 +273,41 @@ const tileIcons: Record<string, (color: string) => ReactNode> = {
       strokeLinejoin="round"
     />
   ),
-  alerts: (c) => (
-    <Path
-      d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21a2 2 0 0 0 4 0"
-      stroke={c}
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  ),
-  settings: (c) => (
-    <>
-      <Circle cx="12" cy="12" r="3" stroke={c} strokeWidth="1.8" />
-      <Path
-        d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.100 2.100M16.300 16.300l2.100 2.100M18.400 5.600l-2.100 2.100M7.700 16.300l-2.100 2.100"
-        stroke={c}
-        strokeWidth="1.800"
-        strokeLinecap="round"
-      />
-    </>
-  ),
 };
 
 /** Six shortcuts in a plain grid. The create tile is the bright one. */
-export function HomeTiles({ unread }: { unread: number }) {
+export function HomeTiles() {
   const { colors, locale } = useAppPreferences();
   const copy = translations[locale];
-  const tiles: { id: string; label: string; href: string; primary?: boolean; badge?: number }[] = [
+  const tiles: { id: keyof typeof tileIcons; label: string; href: string }[] = [
     { id: 'find', label: copy.homeTileFind, href: '/explore' },
-    { id: 'create', label: copy.homeTileCreate, href: '/create', primary: true },
     { id: 'challenges', label: copy.homeTileChallenges, href: '/challenges' },
     { id: 'teams', label: copy.homeTileTeams, href: '/teams' },
-    { id: 'alerts', label: copy.homeTileAlerts, href: '/notifications', badge: unread },
-    { id: 'settings', label: copy.homeTileSettings, href: '/settings' },
   ];
   return (
     <View style={styles.tiles}>
-      {tiles.map((tile) => {
-        const ink = tile.primary ? colors.primaryButtonText : colors.accentText;
-        return (
-          <PressLink
-            key={tile.id}
-            href={tile.href as Href}
-            label={
-              tile.badge ? `${tile.label}, ${tile.badge > 99 ? '99+' : tile.badge}` : tile.label
-            }
-            testID={`home-tile-${tile.id}`}
+      {tiles.map((tile) => (
+        <PressLink
+          key={tile.id}
+          href={tile.href as Href}
+          label={tile.label}
+          testID={`home-tile-${tile.id}`}
+          style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            {tileIcons[tile.id](colors.accentText)}
+          </Svg>
+          <Text
+            numberOfLines={2}
             style={[
-              styles.tile,
-              tile.primary
-                ? { backgroundColor: colors.primaryButton, borderColor: colors.primaryButton }
-                : { backgroundColor: colors.surface, borderColor: colors.border },
+              styles.tileText,
+              { color: colors.textPrimary, fontFamily: bodyFont(locale, 'semibold') },
             ]}
           >
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              {tileIcons[tile.id](ink)}
-            </Svg>
-            <Text
-              numberOfLines={2}
-              style={[
-                styles.tileText,
-                {
-                  color: tile.primary ? colors.primaryButtonText : colors.textPrimary,
-                  fontFamily: bodyFont(locale, 'semibold'),
-                },
-              ]}
-            >
-              {tile.label}
-            </Text>
-            {tile.badge ? (
-              <View style={[styles.tileBadge, { borderColor: colors.surface }]}>
-                <Text style={styles.tileBadgeText}>{tile.badge > 99 ? '99+' : tile.badge}</Text>
-              </View>
-            ) : null}
-          </PressLink>
-        );
-      })}
+            {tile.label}
+          </Text>
+        </PressLink>
+      ))}
     </View>
   );
 }
@@ -570,20 +528,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   tileText: { fontSize: 12.5, lineHeight: 16, textAlign: 'center' },
-  tileBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    paddingHorizontal: 4,
-    backgroundColor: '#E5352B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', lineHeight: 14 },
   rail: { marginHorizontal: -20 },
   railContent: { paddingHorizontal: 20, gap: 12 },
   // Each open game is a small match ticket with a tear-off stub for the kick-off time.

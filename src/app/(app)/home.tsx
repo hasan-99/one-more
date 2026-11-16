@@ -166,7 +166,7 @@ export default function AppHomeScreen() {
 
         <Rise delay={220} style={styles.section}>
           <HomeSectionHead eyebrow={copy.homeQuickEyebrow} title={copy.homeQuickTitle} />
-          <HomeTiles unread={unread} />
+          <HomeTiles />
         </Rise>
 
         <Rise delay={300} style={styles.section}>
