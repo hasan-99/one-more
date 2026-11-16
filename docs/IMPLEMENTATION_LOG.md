@@ -1837,3 +1837,6 @@
 
 ## Football loader
 - The profile wait on launch now shows a bouncing football (squash on landing, spin, shadow, grass puff) with a changing line after 0.8 s, a 'taking longer' message after 6 s and the existing retry after 12 s (`BallLoader`, `WaitScreen`, EN+GL copy). Respects reduce-motion. Tests: `e2e/startup.spec.ts`; regression 62 passed / 1 skipped (mobile). Screenshot `docs/screenshots/phase-17/startup-ball-loader.png`. Not tested on a device.
+
+## Notification bell
+- Top bar (signed-in, all pages with the bar): bell box beside the language switch (both 40 px high) with a red unread badge (99+ above 99), lime bell when there is something unread, rings once when the count grows. Count = unread rows of `inbox_notifications` (head count), refreshed on sign-in, page change, app resume and every 60 s; the Notifications page keeps it in sync and now has a back button. Hidden when signed out. Tests: `e2e/notification-bell.spec.ts`; regression 67 passed + 9 desktop. Not tested on a device; no realtime push (polling only).
