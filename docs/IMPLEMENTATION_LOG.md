@@ -1858,3 +1858,12 @@
 - **Change:** Profile load has a 15 s timeout with Retry and shows a skeleton; stalled in-flight requests are no longer shared (20 s). New `SkeletonList` (card, row, profile, detail, chat) replaces blank/text loading on Explore, Teams, Challenges, Notifications, Profile, match/team/challenge details and chat. Honours Reduce Motion.
 - **Checks:** tsc PASS, eslint PASS, vitest 58 PASS, build:web PASS, Playwright mobile 70 passed/1 skipped, desktop 9 passed (new `skeleton-loading.spec.ts`, light + dark).
 - **Not verified:** real device; skeleton of every page was seen only for Explore on web.
+
+### 2026-11-16 — Home page redesign ("matchday")
+- **Approved design:** artifact "Matchday Home", quick access style B (simple tiles).
+- **Change:** new home: greeting with a rotating line of real facts, next-game hero with a ticking countdown scoreboard, ball rolling to kick-off and squad bar, one "needs you" line (join requests waiting, team invite, or a load error with retry), six shortcut tiles, a sideways rail of open games, the player's teams. Without a game: "Find your next game" hero with a pitch where the ball is passed and a count of open games. Skeleton while loading, 15 s timeout, EN + EL copy. No new SQL: uses `match_discovery`, `match_participants`, `get_my_teams`, `get_my_team_invites`, `get_match_join_requests`.
+- **New files:** `src/features/home/{home-logic,home-service,use-now,HomeNextGame,HomeParts,PressLink}`; `mapDiscoveryRow` exported.
+- **Deviation from the mock:** the mock's "My games" and "Chats" shortcuts have no list page in the app, so the tiles are Find a game, Create a game, Challenges, My teams, Notifications, Settings. "Squad chat" on the hero opens the chat of the next game. No unread-chat badge (no data source).
+- **Found while building:** `Link asChild` drops function and animated styles on web; `PressLink` puts the press animation on a wrapper.
+- **Checks:** tsc PASS, eslint PASS, vitest 64 PASS (6 new), build:web PASS, `e2e/phase-17-home.spec.ts` 5 PASS on mobile (rewritten: the old signed-out test was stale because /home requires sign-in). Full regression: see next entry.
+- **Not verified:** real device (animation smoothness, countdown on native).

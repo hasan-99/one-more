@@ -67,7 +67,7 @@ export type MatchDiscoveryPage = { items: MatchDiscoveryItem[]; hasMore: boolean
 export type MatchCity = Tables<'cities'>;
 export type MatchArea = Tables<'areas'>;
 
-function mapDiscoveryRow(row: Tables<'match_discovery'>): MatchDiscoveryItem | null {
+export function mapDiscoveryRow(row: Tables<'match_discovery'>): MatchDiscoveryItem | null {
   if (
     !row.id ||
     !row.title ||

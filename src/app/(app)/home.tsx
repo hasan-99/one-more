@@ -1,444 +1,304 @@
-import { Link, type Href } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Rect } from 'react-native-svg';
+import type { Href } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAuth } from '@/auth/AuthProvider';
+import { SkeletonList } from '@/components/loading/Skeleton';
+import { Rise } from '@/components/motion';
+import { HomeNextGame } from '@/features/home/HomeNextGame';
+import {
+  HomeGameRail,
+  HomeGreeting,
+  HomeNeedBar,
+  HomePitchScene,
+  HomeSectionHead,
+  HomeTeamRow,
+  HomeTiles,
+} from '@/features/home/HomeParts';
+import {
+  firstName,
+  greetingKey,
+  openGames,
+  tickerFacts,
+  type HomeMatch,
+} from '@/features/home/home-logic';
+import { loadHomeMatches, loadHomePersonal, type HomePersonal } from '@/features/home/home-service';
+import { PressLink } from '@/features/home/PressLink';
+import { useNow } from '@/features/home/use-now';
+import { useUnreadCount } from '@/features/notifications/unread-store';
 import { translations } from '@/i18n';
+import { withTimeout } from '@/lib/with-timeout';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { bodyFont, displayFont } from '@/theme/typography';
+
+const loadTimeoutMs = 15_000;
+type Loaded<T> = { key: string; value: T | null };
 
 export default function AppHomeScreen() {
   const { locale, colors } = useAppPreferences();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const copy = translations[locale];
-  const styles = makeStyles(colors);
+  const unread = useUnreadCount();
+  const now = useNow(1000);
+  const [attempt, setAttempt] = useState(0);
+  const [games, setGames] = useState<Loaded<HomeMatch[]> | null>(null);
+  const [personal, setPersonal] = useState<Loaded<HomePersonal> | null>(null);
+
+  // `value: null` means the load failed; a different key means it is still loading.
+  const gamesKey = `games:${attempt}`;
+  const personalKey = user ? `${user.id}:${attempt}` : null;
+  const gamesLoading = games?.key !== gamesKey;
+  const upcoming = gamesLoading ? null : games.value;
+  const mine = personalKey && personal?.key === personalKey ? personal : null;
+  const personalLoading = Boolean(personalKey) && !gamesLoading && !mine;
+
+  useEffect(() => {
+    let active = true;
+    void withTimeout(loadHomeMatches(), loadTimeoutMs)
+      .then((value) => {
+        if (active) setGames({ key: gamesKey, value });
+      })
+      .catch(() => {
+        if (active) setGames({ key: gamesKey, value: null });
+      });
+    return () => {
+      active = false;
+    };
+  }, [gamesKey]);
+
+  useEffect(() => {
+    if (!user || !personalKey || gamesLoading) return;
+    let active = true;
+    void withTimeout(loadHomePersonal(user.id, upcoming ?? []), loadTimeoutMs)
+      .then((value) => {
+        if (active) setPersonal({ key: personalKey, value });
+      })
+      .catch(() => {
+        if (active) setPersonal({ key: personalKey, value: null });
+      });
+    return () => {
+      active = false;
+    };
+  }, [gamesLoading, personalKey, upcoming, user]);
+
+  const retry = () => setAttempt((value) => value + 1);
+  const next = mine?.value?.next ?? null;
+  const open = upcoming && now !== null ? openGames(upcoming, next?.id ?? null, 8, now) : [];
+  const name = firstName(user?.user_metadata?.display_name);
+  const greeting = name ? `${copy[greetingKey(now)]}, ${name}` : copy[greetingKey(now)];
+  const lines = tickerFacts(open, unread).map((fact) => {
+    if (fact.kind === 'open') {
+      return fact.count === 1
+        ? copy.homeTickerOpenOne
+        : copy.homeTickerOpen.replace('{count}', String(fact.count));
+    }
+    if (fact.kind === 'last') return copy.homeTickerLast.replace('{title}', fact.title);
+    if (fact.kind === 'unread') {
+      return fact.count === 1
+        ? copy.homeTickerUnreadOne
+        : copy.homeTickerUnread.replace('{count}', String(fact.count));
+    }
+    return copy.homeTickerNone;
+  });
+  const pending = mine?.value?.pendingRequests ?? 0;
+  const invite = mine?.value?.invites[0] ?? null;
+  const teams = mine?.value?.teams ?? [];
+  const openChip =
+    open.length === 0
+      ? null
+      : open.length === 1
+        ? copy.homeOpenCountOne
+        : copy.homeOpenCount.replace('{count}', String(open.length));
+  const semibold = bodyFont(locale, 'semibold');
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={{ flex: 1, backgroundColor: colors.background }}
+        style={styles.root}
         contentContainerStyle={StyleSheet.flatten([
           styles.content,
           { paddingBottom: Math.max(insets.bottom, 16) + 112 },
         ])}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.hero}>
-          <View style={styles.heroTop}>
-            <View style={styles.eyebrow}>
-              <View style={[styles.liveDot, { backgroundColor: colors.accentText }]} />
-              <Text style={[styles.eyebrowText, { color: colors.textSecondary }]}>
-                {copy.appHomeEyebrow}
-              </Text>
-            </View>
-            <Text
-              style={[styles.cityPill, { color: colors.accentText, borderColor: colors.border }]}
+        <Rise>
+          <HomeGreeting greeting={greeting} lines={lines} />
+        </Rise>
+
+        {gamesLoading || personalLoading ? (
+          <SkeletonList kind="detail" label={copy.homeLoading} />
+        ) : next ? (
+          <Rise delay={80}>
+            <HomeNextGame match={next} now={now} />
+          </Rise>
+        ) : (
+          <Rise delay={80}>
+            <View
+              style={[styles.hero, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
-              {copy.appCityLabel}
-            </Text>
-          </View>
-
-          <Text accessibilityRole="header" style={[styles.title, { color: colors.textPrimary }]}>
-            {copy.appHomeHeroFirst}{' '}
-            <Text style={{ color: colors.accentText }}>{copy.appHomeHeroAccent}</Text>
-          </Text>
-          <Text style={[styles.description, { color: colors.textSecondary }]}>
-            {copy.appHomeIntro}
-          </Text>
-
-          <View
-            style={[
-              styles.pitchFrame,
-              { backgroundColor: colors.pitch, borderColor: colors.border },
-            ]}
-          >
-            <View style={[styles.formatBadge, { backgroundColor: colors.primaryButton }]}>
-              <Text style={[styles.formatText, { color: colors.primaryButtonText }]}>5v5</Text>
-            </View>
-            <HomePitch
-              lineColor={colors.pitchLine}
-              homeColor={colors.accentText}
-              awayColor={colors.pitchText}
-              accessibilityLabel={copy.appHomePitchAccessibility}
-            />
-          </View>
-
-          <View style={styles.actions}>
-            <Link href={'/explore' as Href} asChild>
-              <Pressable
-                accessibilityRole="link"
-                style={StyleSheet.flatten([
-                  styles.primaryAction,
-                  { backgroundColor: colors.primaryButton },
-                ])}
+              <Text
+                accessibilityRole="header"
+                style={[
+                  styles.heroTitle,
+                  { color: colors.textPrimary, fontFamily: displayFont(locale) },
+                ]}
               >
-                <Text style={[styles.primaryActionText, { color: colors.primaryButtonText }]}>
+                {copy.appHomeHeroFirst}{' '}
+                <Text style={{ color: colors.accentText }}>{copy.appHomeHeroAccent}</Text>
+              </Text>
+              <Text
+                style={[
+                  styles.heroCopy,
+                  { color: colors.textSecondary, fontFamily: bodyFont(locale) },
+                ]}
+              >
+                {copy.appHomeIntro}
+              </Text>
+              <HomePitchScene
+                colors={colors}
+                label={copy.appHomePitchAccessibility}
+                chip={openChip}
+              />
+              <PressLink
+                href={'/explore' as Href}
+                style={[styles.primary, { backgroundColor: colors.primaryButton }]}
+              >
+                <Text
+                  style={[
+                    styles.primaryText,
+                    { color: colors.primaryButtonText, fontFamily: semibold },
+                  ]}
+                >
                   {copy.appExploreAction}
                 </Text>
-                <Text aria-hidden style={[styles.actionArrow, { color: colors.primaryButtonText }]}>
+                <Text aria-hidden style={[styles.primaryText, { color: colors.primaryButtonText }]}>
                   →
                 </Text>
-              </Pressable>
-            </Link>
-            <Link href={'/create' as Href} asChild>
-              <Pressable
-                accessibilityRole="link"
-                style={StyleSheet.flatten([
-                  styles.secondaryAction,
-                  { borderColor: colors.border, backgroundColor: colors.surface },
-                ])}
+              </PressLink>
+            </View>
+          </Rise>
+        )}
+
+        {mine && mine.value === null ? (
+          <HomeNeedBar
+            tone="error"
+            title={copy.homePersonalError}
+            action={copy.homeRetry}
+            onPress={retry}
+          />
+        ) : next && pending > 0 ? (
+          <Rise delay={160}>
+            <HomeNeedBar
+              title={
+                pending === 1
+                  ? copy.homeNeedApprovalsOne
+                  : copy.homeNeedApprovals.replace('{count}', String(pending))
+              }
+              subtitle={copy.homeNeedApprovalsSub.replace('{title}', next.title)}
+              action={copy.homeNeedReview}
+              href={`/matches/${next.id}` as Href}
+            />
+          </Rise>
+        ) : invite ? (
+          <Rise delay={160}>
+            <HomeNeedBar
+              title={copy.homeNeedInvite.replace('{team}', invite.teamName)}
+              subtitle={copy.homeNeedInviteSub}
+              action={copy.homeNeedView}
+              href={'/teams' as Href}
+            />
+          </Rise>
+        ) : null}
+
+        <Rise delay={220} style={styles.section}>
+          <HomeSectionHead eyebrow={copy.homeQuickEyebrow} title={copy.homeQuickTitle} />
+          <HomeTiles unread={unread} />
+        </Rise>
+
+        <Rise delay={300} style={styles.section}>
+          <HomeSectionHead
+            eyebrow={copy.homeRailEyebrow}
+            title={copy.homeRailTitle}
+            link={{ label: copy.appHomeSeeGames, href: '/explore' as Href }}
+          />
+          {gamesLoading ? (
+            <SkeletonList kind="row" count={2} label={copy.matchLoading} />
+          ) : upcoming === null ? (
+            <HomeNeedBar
+              tone="error"
+              title={copy.homeRailError}
+              action={copy.homeRetry}
+              onPress={retry}
+            />
+          ) : open.length > 0 ? (
+            <HomeGameRail games={open} />
+          ) : (
+            <View
+              style={[
+                styles.empty,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[styles.emptyTitle, { color: colors.textPrimary, fontFamily: semibold }]}
               >
-                <Text style={[styles.secondaryActionText, { color: colors.textPrimary }]}>
-                  {copy.appCreateAction}
-                </Text>
-              </Pressable>
-            </Link>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeading}>
-          <View>
-            <Text style={[styles.sectionEyebrow, { color: colors.accentText }]}>
-              {copy.appHomeNextSection}
-            </Text>
-            <Text
-              accessibilityRole="header"
-              style={[styles.sectionTitle, { color: colors.textPrimary }]}
-            >
-              {copy.appUpcomingGames}
-            </Text>
-          </View>
-          <Link href={'/explore' as Href} accessibilityRole="link" style={styles.seeAllLink}>
-            <Text style={[styles.seeAllText, { color: colors.accentText }]}>
-              {copy.appHomeSeeGames}
-            </Text>
-          </Link>
-        </View>
-
-        <View
-          style={[
-            styles.emptyCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={[styles.emptyIcon, { backgroundColor: colors.surfaceRaised }]}>
-            <HomeBallIcon color={colors.accentText} lineColor={colors.pitchLine} />
-          </View>
-          <View style={styles.emptyCopy}>
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-              {copy.appNoGamesTitle}
-            </Text>
-            <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-              {copy.appNoGamesCopy}
-            </Text>
-          </View>
-          <Link href={'/explore' as Href} asChild>
-            <Pressable
-              accessibilityRole="link"
-              style={StyleSheet.flatten([styles.inlineAction, { borderColor: colors.border }])}
-            >
-              <Text style={[styles.inlineActionText, { color: colors.accentText }]}>
-                {copy.appHomeBrowseGames}
+                {copy.appNoGamesTitle}
               </Text>
-              <Text aria-hidden style={[styles.inlineArrow, { color: colors.accentText }]}>
-                →
+              <Text
+                style={[
+                  styles.emptyCopy,
+                  { color: colors.textSecondary, fontFamily: bodyFont(locale) },
+                ]}
+              >
+                {copy.appNoGamesCopy}
               </Text>
-            </Pressable>
-          </Link>
-        </View>
+            </View>
+          )}
+        </Rise>
 
-        <View style={styles.sectionHeading}>
-          <View>
-            <Text style={[styles.sectionEyebrow, { color: colors.accentText }]}>
-              {copy.appHomePlayTogether}
-            </Text>
-            <Text
-              accessibilityRole="header"
-              style={[styles.sectionTitle, { color: colors.textPrimary }]}
-            >
-              {copy.appChallenges}
-            </Text>
-          </View>
-          <Link href={'/challenges' as Href} accessibilityRole="link" style={styles.seeAllLink}>
-            <Text style={[styles.seeAllText, { color: colors.accentText }]}>
-              {copy.appHomeSeeAll}
-            </Text>
-          </Link>
-        </View>
-
-        <View
-          style={[
-            styles.challengeCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-          ]}
-        >
-          <View style={[styles.challengeMark, { backgroundColor: colors.success }]}>
-            <Text style={[styles.challengeMarkText, { color: colors.successText }]}>VS</Text>
-          </View>
-          <View style={styles.emptyCopy}>
-            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-              {copy.appNoChallengesTitle}
-            </Text>
-            <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
-              {copy.appNoChallengesCopy}
-            </Text>
-          </View>
-        </View>
+        {teams.length > 0 ? (
+          <Rise delay={360} style={styles.section}>
+            <HomeSectionHead
+              eyebrow={copy.homeTeamsEyebrow}
+              title={copy.homeTeamsTitle}
+              link={{ label: copy.homeTeamsAll, href: '/teams' as Href }}
+            />
+            {teams.slice(0, 2).map((team) => (
+              <HomeTeamRow key={team.teamId} team={team} />
+            ))}
+          </Rise>
+        ) : null}
       </ScrollView>
     </View>
   );
 }
 
-function HomePitch({
-  lineColor,
-  homeColor,
-  awayColor,
-  accessibilityLabel,
-}: {
-  lineColor: string;
-  homeColor: string;
-  awayColor: string;
-  accessibilityLabel: string;
-}) {
-  const players = [
-    { x: 48, y: 50, color: homeColor },
-    { x: 48, y: 126, color: homeColor },
-    { x: 112, y: 88, color: homeColor },
-    { x: 166, y: 50, color: awayColor },
-    { x: 166, y: 126, color: awayColor },
-    { x: 224, y: 88, color: awayColor },
-  ];
-
-  return (
-    <Svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 272 176"
-      preserveAspectRatio="none"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="image"
-    >
-      <Rect
-        x="7"
-        y="7"
-        width="258"
-        height="162"
-        rx="10"
-        fill="none"
-        stroke={lineColor}
-        strokeWidth="1.5"
-        opacity="0.85"
-      />
-      <Line x1="136" y1="7" x2="136" y2="169" stroke={lineColor} strokeWidth="1.5" opacity="0.7" />
-      <Circle
-        cx="136"
-        cy="88"
-        r="29"
-        fill="none"
-        stroke={lineColor}
-        strokeWidth="1.5"
-        opacity="0.7"
-      />
-      <Circle cx="136" cy="88" r="2.5" fill={homeColor} />
-      <Rect
-        x="7"
-        y="54"
-        width="26"
-        height="68"
-        fill="none"
-        stroke={lineColor}
-        strokeWidth="1.5"
-        opacity="0.65"
-      />
-      <Rect
-        x="239"
-        y="54"
-        width="26"
-        height="68"
-        fill="none"
-        stroke={lineColor}
-        strokeWidth="1.5"
-        opacity="0.65"
-      />
-      <Line x1="48" y1="50" x2="112" y2="88" stroke={homeColor} strokeWidth="1.5" opacity="0.7" />
-      <Line x1="48" y1="126" x2="112" y2="88" stroke={homeColor} strokeWidth="1.5" opacity="0.7" />
-      <Line x1="112" y1="88" x2="166" y2="50" stroke={homeColor} strokeWidth="1.5" opacity="0.7" />
-      <Line x1="112" y1="88" x2="166" y2="126" stroke={homeColor} strokeWidth="1.5" opacity="0.7" />
-      <Line x1="166" y1="50" x2="224" y2="88" stroke={awayColor} strokeWidth="1.5" opacity="0.55" />
-      <Line
-        x1="166"
-        y1="126"
-        x2="224"
-        y2="88"
-        stroke={awayColor}
-        strokeWidth="1.5"
-        opacity="0.55"
-      />
-      {players.map((player, index) => (
-        <Circle
-          key={index}
-          cx={player.x}
-          cy={player.y}
-          r="7"
-          fill={player.color}
-          stroke={lineColor}
-          strokeWidth="1.5"
-        />
-      ))}
-      <Circle cx="148" cy="94" r="7" fill="#111712" stroke="#F2F5EC" strokeWidth="1.5" />
-      <Circle cx="148" cy="94" r="2.4" fill="#F2F5EC" />
-    </Svg>
-  );
-}
-
-function HomeBallIcon({ color, lineColor }: { color: string; lineColor: string }) {
-  return (
-    <Svg width={28} height={28} viewBox="0 0 28 28" fill="none" accessibilityElementsHidden>
-      <Circle cx="14" cy="14" r="10.25" stroke={lineColor} strokeWidth="1.5" />
-      <Circle cx="14" cy="14" r="3.4" stroke={color} strokeWidth="1.5" />
-      <PathCircle color={color} cx={14} cy={4} />
-      <PathCircle color={color} cx={23.5} cy={14} />
-      <PathCircle color={color} cx={14} cy={24} />
-      <PathCircle color={color} cx={4.5} cy={14} />
-    </Svg>
-  );
-}
-
-function PathCircle({ color, cx, cy }: { color: string; cx: number; cy: number }) {
-  return <Circle cx={cx} cy={cy} r="1.25" fill={color} />;
-}
-
-function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
-  return StyleSheet.create({
-    content: {
-      width: '100%',
-      maxWidth: 760,
-      alignSelf: 'center',
-      paddingHorizontal: 20,
-      paddingTop: 22,
-      gap: 22,
-    },
-    hero: {
-      overflow: 'hidden',
-      padding: 18,
-      gap: 16,
-      borderWidth: 1,
-      borderRadius: 26,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    heroTop: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 10,
-    },
-    eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-    liveDot: { width: 8, height: 8, borderRadius: 4 },
-    eyebrowText: { fontFamily: 'Inter_600SemiBold', fontSize: 11, letterSpacing: 1.5 },
-    cityPill: {
-      borderWidth: 1,
-      borderRadius: 99,
-      paddingHorizontal: 10,
-      paddingVertical: 7,
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 10,
-      letterSpacing: 0.7,
-    },
-    title: {
-      fontFamily: 'BarlowCondensed_700Bold',
-      fontSize: 38,
-      lineHeight: 42,
-      fontWeight: '700',
-    },
-    description: { fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 23, marginTop: -8 },
-    pitchFrame: { height: 180, overflow: 'hidden', borderWidth: 1, borderRadius: 18, padding: 8 },
-    formatBadge: {
-      position: 'absolute',
-      zIndex: 1,
-      top: 14,
-      left: 14,
-      borderRadius: 10,
-      paddingHorizontal: 9,
-      paddingVertical: 5,
-    },
-    formatText: { fontFamily: 'BarlowCondensed_700Bold', fontSize: 14, fontWeight: '700' },
-    actions: { gap: 10 },
-    primaryAction: {
-      minHeight: 54,
-      borderRadius: 15,
-      paddingHorizontal: 18,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 10,
-    },
-    primaryActionText: { fontFamily: 'Inter_600SemiBold', fontSize: 15, fontWeight: '700' },
-    actionArrow: { fontSize: 20, lineHeight: 22 },
-    secondaryAction: {
-      minHeight: 50,
-      borderWidth: 1,
-      borderRadius: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    secondaryActionText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '700' },
-    sectionHeading: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-      gap: 12,
-      marginTop: 3,
-    },
-    sectionEyebrow: {
-      fontFamily: 'Inter_600SemiBold',
-      fontSize: 10,
-      letterSpacing: 1.4,
-      textTransform: 'uppercase',
-    },
-    sectionTitle: {
-      fontFamily: 'BarlowCondensed_700Bold',
-      fontSize: 26,
-      lineHeight: 30,
-      fontWeight: '700',
-      marginTop: 2,
-    },
-    seeAllLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 2 },
-    seeAllText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '700' },
-    emptyCard: { borderWidth: 1, borderRadius: 22, padding: 16, gap: 14 },
-    emptyIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emptyCopy: { gap: 5 },
-    emptyTitle: {
-      fontFamily: 'BarlowCondensed_700Bold',
-      fontSize: 22,
-      lineHeight: 26,
-      fontWeight: '700',
-    },
-    emptyDescription: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 21 },
-    inlineAction: {
-      minHeight: 46,
-      borderWidth: 1,
-      borderRadius: 14,
-      paddingHorizontal: 14,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    inlineActionText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, fontWeight: '700' },
-    inlineArrow: { fontSize: 18 },
-    challengeCard: { borderWidth: 1, borderRadius: 22, padding: 16, gap: 14 },
-    challengeMark: {
-      width: 48,
-      height: 48,
-      borderRadius: 15,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    challengeMarkText: { fontFamily: 'BarlowCondensed_700Bold', fontSize: 16, fontWeight: '700' },
-  });
-}
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  content: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    gap: 18,
+  },
+  section: { gap: 12 },
+  hero: { borderWidth: 1, borderRadius: 24, padding: 16, gap: 12 },
+  heroTitle: { fontSize: 38, lineHeight: 42, fontWeight: '800' },
+  heroCopy: { fontSize: 15, lineHeight: 22 },
+  primary: {
+    minHeight: 54,
+    borderRadius: 16,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryText: { fontSize: 16, fontWeight: '700' },
+  empty: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
+  emptyTitle: { fontSize: 16 },
+  emptyCopy: { fontSize: 14, lineHeight: 20 },
+});
