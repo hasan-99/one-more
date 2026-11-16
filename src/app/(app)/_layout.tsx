@@ -10,6 +10,7 @@ import { AuthButton, AuthPage } from '@/components/auth/AuthPage';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import { getProfileCompletion } from '@/features/profile/profile-service';
+import { withTimeout } from '@/lib/with-timeout';
 
 export default function AppLayout() {
   const pathname = usePathname();
@@ -159,23 +160,6 @@ const profileCheckTimeoutMs = 12_000;
 
 function completeKey(userId: string) {
   return `one-more.profile-complete.${userId}`;
-}
-
-/** Rejects if the promise has not settled in time, so a stalled request shows a retry. */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('timeout')), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error: unknown) => {
-        clearTimeout(timer);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      },
-    );
-  });
 }
 
 const styles = StyleSheet.create({

@@ -39,4 +39,16 @@ describe('cachedRequest', () => {
     await expect(cachedRequest('k', 1000, load)).rejects.toThrow('down');
     await expect(cachedRequest('k', 1000, load)).resolves.toBe('ok');
   });
+
+  it('does not share a request that has stalled for too long', async () => {
+    vi.useFakeTimers();
+    const load = vi
+      .fn<() => Promise<string>>()
+      .mockImplementationOnce(() => new Promise<string>(() => undefined))
+      .mockResolvedValueOnce('fresh');
+    void cachedRequest('k', 0, load);
+    vi.advanceTimersByTime(21_000);
+    await expect(cachedRequest('k', 0, load)).resolves.toBe('fresh');
+    vi.useRealTimers();
+  });
 });

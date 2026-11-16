@@ -4,6 +4,7 @@
 // Failed requests are never cached, and user data must keep ttlMs = 0 so nothing stale is shown.
 type Entry<T> = { promise: Promise<T>; expiresAt: number };
 
+const inFlightMs = 20_000;
 const entries = new Map<string, Entry<unknown>>();
 
 export function cachedRequest<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<T> {
@@ -12,7 +13,11 @@ export function cachedRequest<T>(key: string, ttlMs: number, load: () => Promise
   if (hit && hit.expiresAt > now) return hit.promise;
 
   // While in flight the entry is valid; once settled it lives for ttlMs (or is dropped when 0).
-  const entry: Entry<T> = { promise: undefined as unknown as Promise<T>, expiresAt: Infinity };
+  // A stalled request must not be shared forever, so an in-flight entry is only reused briefly.
+  const entry: Entry<T> = {
+    promise: undefined as unknown as Promise<T>,
+    expiresAt: now + inFlightMs,
+  };
   entry.promise = load().then(
     (value) => {
       if (ttlMs > 0) entry.expiresAt = Date.now() + ttlMs;

@@ -69,6 +69,8 @@ import {
   type AreaRow,
   type CityRow,
 } from './profile-service';
+import { WaitScreen } from '@/components/loading/WaitScreen';
+import { withTimeout } from '@/lib/with-timeout';
 
 export type Copy = { [Key in TranslationKey]: string };
 
@@ -126,7 +128,10 @@ export function PlayerProfile() {
         setLoadError(false);
       }
       try {
-        const [bundle, myTeams] = await Promise.all([getProfileBundle(user.id), listMyTeams()]);
+        const [bundle, myTeams] = await withTimeout(
+          Promise.all([getProfileBundle(user.id), listMyTeams()]),
+          15_000,
+        );
         setCities(bundle.cities);
         setAreas(bundle.areas);
         setTeams(myTeams);
@@ -201,9 +206,7 @@ export function PlayerProfile() {
     return (
       <View style={styles.stateRoot}>
         {loading ? (
-          <Text accessibilityRole="progressbar" style={styles.muted}>
-            {copy.profileLoading}
-          </Text>
+          <WaitScreen label={copy.profileLoading} subtitle={copy.loaderSub} />
         ) : (
           <View style={styles.stateCard}>
             <AuthFeedback>{copy.profileLoadError}</AuthFeedback>
