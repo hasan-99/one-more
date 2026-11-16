@@ -88,3 +88,6 @@ I checked each item against the code before changing anything:
 | P1-6 font scale 1.3× | ⚠️ open: web cannot emulate OS text size faithfully; test on a device with Settings → Display → Larger Text |
 | P3-3 React Compiler | ⚠️ open: the healthcheck command was blocked in this environment; run `npx react-compiler-healthcheck@latest` locally |
 | P1-7 runtimeVersion → fingerprint | ⚠️ open: waiting for your OK (changes which updates reach which builds) |
+
+## P0-1 done (2026-11-16)
+Bundle id and Android package are now `com.onemore.app` (chosen by the owner). Register exactly this id in App Store Connect and Play Console; it cannot be changed after the first upload.

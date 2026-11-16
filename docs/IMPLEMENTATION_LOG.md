@@ -1849,3 +1849,7 @@
 ### 2026-11-16 — Store readiness batch 2 (audit of perf items + static legal files)
 - **Change:** added `scripts/export-legal.mjs` (`npm run legal:export`) and the generated `legal/` files. FlatList, expo-image and native-driver items were checked and intentionally not changed (see FIX_PLAN.md).
 - **Checks:** script run PASS; no app code changed.
+
+### 2026-11-16 — Final bundle id
+- **Change:** `ios.bundleIdentifier` and `android.package` set to `com.onemore.app` (was the placeholder `com.anonymous.onemore`). Old id remains only in historical docs.
+- **Checks:** `expo config` shows the new values. Expo Go and OTA are unaffected (they do not use the app's bundle id).

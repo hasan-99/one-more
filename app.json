@@ -116,7 +116,7 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.anonymous.onemore",
+      "package": "com.onemore.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#050807"
@@ -132,7 +132,7 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.anonymous.onemore",
+      "bundleIdentifier": "com.onemore.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
