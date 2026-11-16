@@ -1,12 +1,13 @@
+import { HOME_FONT_FACES } from './home-reference-fonts';
+
 const HOME_REFERENCE_HTML = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OneMore</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&amp;family=Barlow:wght@400;500;600&amp;display=swap" rel="stylesheet">
-<style>
+<style>${HOME_FONT_FACES}
+
 body{margin:0;background:#0c1210}
 .om-root{font-family:'Barlow',system-ui,sans-serif;color:#f2f5ec}
 .om-display{font-family:'Barlow Condensed','Arial Narrow',sans-serif}

@@ -33,7 +33,7 @@ export const legalContent: Record<LegalKind, Record<Locale, LegalDoc>> = {
           heading: 'Who receives it',
           paragraphs: [
             'Other players see only what is needed to play together: your display name, position, skill level, shirt number, team and your messages in a game chat. Your email and phone number are never shown to other players.',
-            'Service providers acting for us: Supabase (database, authentication, serverless functions), Resend (sending notification and account emails), Expo / EAS (hosting the web app and delivering app updates; update requests include your IP address and app version) and Google Fonts (the app start screen on phones loads fonts from Google, which receives your IP address). They may process data outside the EU/EEA under standard contractual clauses.',
+            'Service providers acting for us: Supabase (database, authentication, serverless functions), Resend (sending notification and account emails), Expo / EAS (hosting the web app and delivering app updates; update requests include your IP address and app version). They may process data outside the EU/EEA under standard contractual clauses.',
             'We do not sell your data and do not share it for advertising.',
           ],
         },
@@ -96,7 +96,7 @@ export const legalContent: Record<LegalKind, Record<Locale, LegalDoc>> = {
           heading: 'Ποιος τα λαμβάνει',
           paragraphs: [
             'Οι άλλοι παίκτες βλέπουν μόνο όσα χρειάζονται για να παίξετε μαζί: όνομα εμφάνισης, θέση, επίπεδο, αριθμό φανέλας, ομάδα και τα μηνύματά σου στη συνομιλία αγώνα. Το email και το τηλέφωνό σου δεν εμφανίζονται ποτέ σε άλλους παίκτες.',
-            'Πάροχοι που ενεργούν για λογαριασμό μας: Supabase (βάση δεδομένων, ταυτοποίηση, serverless λειτουργίες), Resend (αποστολή email ειδοποιήσεων και λογαριασμού), Expo / EAS (φιλοξενία web και παράδοση ενημερώσεων εφαρμογής· τα αιτήματα ενημέρωσης περιλαμβάνουν IP και έκδοση εφαρμογής) και Google Fonts (η αρχική οθόνη στα κινητά φορτώνει γραμματοσειρές από τη Google, που λαμβάνει τη διεύθυνση IP σου). Μπορεί να επεξεργάζονται δεδομένα εκτός ΕΕ/ΕΟΧ με τυποποιημένες συμβατικές ρήτρες.',
+            'Πάροχοι που ενεργούν για λογαριασμό μας: Supabase (βάση δεδομένων, ταυτοποίηση, serverless λειτουργίες), Resend (αποστολή email ειδοποιήσεων και λογαριασμού), Expo / EAS (φιλοξενία web και παράδοση ενημερώσεων εφαρμογής· τα αιτήματα ενημέρωσης περιλαμβάνουν IP και έκδοση εφαρμογής). Μπορεί να επεξεργάζονται δεδομένα εκτός ΕΕ/ΕΟΧ με τυποποιημένες συμβατικές ρήτρες.',
             'Δεν πουλάμε τα δεδομένα σου και δεν τα μοιραζόμαστε για διαφημίσεις.',
           ],
         },

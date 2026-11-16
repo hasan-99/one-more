@@ -28,6 +28,9 @@ describe('buildHomeReferenceHtml', () => {
     expect(html).toContain('@keyframes om-ball');
     expect(html).toContain('animation-name:om-spin;animation-timing-function:linear');
     expect(html).toContain('Example game');
+    // Fonts are embedded: the page must not call Google Fonts (privacy, offline use).
+    expect(html).not.toMatch(/googleapis|gstatic/);
+    expect(html).toContain("font-family:'Barlow Condensed';font-weight:800");
     expect(html).toContain('Nicosia, this week, evening');
     expect(html).toContain('Somewhere tonight, a team is one short.');
     expect(html).toContain('id="home-signin"');
