@@ -1813,3 +1813,7 @@
 ## Security hardening
 - Headers (HSTS, CSP, COOP, CORP) in `app.json`; HTTPS-only Supabase URL guard; password policy 8+ with letter and digit (client + `config.toml`); Auth rate limits and OTP expiry 30 min in `config.toml`; migration `20261117090000_security_hardening.sql` (per-user insert rate limits, match price 0-500; not applied from the sandbox); six unused packages removed; full report in `docs/reports/security-audit-2026-11.md`.
 - Checks: tsc, eslint, vitest 42/42; Playwright auth + security-headers (30/30 desktop+mobile) and challenges/create-game/layout-audit (mobile) pass; `npm audit` 0 vulnerabilities; web build OK; migration tested on scratch PostgreSQL 16 only; pgTAP not run.
+
+## Performance and navigation
+- Measured 7 key pages before/after (`scripts/perf/measure.mjs`, `docs/reports/performance-2026-11.md`): page weight about -52%, full load on throttled 4G -27%, no duplicate API calls on Create game. Changes: 256 px logo and favicon, subset fonts, in-memory request cache for cities/areas, web stub for native-only landing, two unused components removed, skip link + main landmark, prefetch on main nav.
+- Checks: tsc, eslint, vitest 46/46, Playwright mobile (navigation, security headers, auth, challenges, create game, onboarding, profile, layout audit). JS bundle not reduced (remaining issue).

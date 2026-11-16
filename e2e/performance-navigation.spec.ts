@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const userId = 'e1ac8110-73a3-4f8b-a885-c6fc601e5a0d';
-const iso = new Date().toISOString();
 
 async function signedIn(page: Page) {
   await page.addInitScript((id) => {
