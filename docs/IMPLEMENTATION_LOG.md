@@ -1821,3 +1821,6 @@
 ## Store compliance audit
 - Real in-app account deletion (`delete_my_account`), user blocking (`block_user` and friends), full Privacy/Terms/Support/Deletion/Licences pages (EN+GL) with links on landing, sign-up and Settings, Android permissions reduced to INTERNET + VIBRATE, iOS Face ID string removed, privacy manifest, opaque/adaptive icons, production EAS profile, store docs (`docs/store/`), report `docs/reports/store-compliance-2026-11.md`.
 - Checks: tsc, eslint, vitest 50/50, Playwright store-compliance 20/20, regression 47 pass / 4 pre-existing failures (same on the earlier build), expo prebuild android+ios inspected. New migrations not applied; SQL tested on scratch PostgreSQL only. No real-device or store-console verification.
+
+## Stale e2e tests updated
+- `landing.spec`, `phase-02` (main navigation, Greek) and `phase-10-teams` updated to current behaviour and a mocked backend; all pass (desktop + mobile). No app code changed.

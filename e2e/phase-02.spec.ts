@@ -74,6 +74,10 @@ test('main navigation opens every shell section and secondary route', async ({
   page,
 }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile-chromium';
+  // No backend in the test run: answer every Supabase call with an empty list.
+  await page.route('**/*.supabase.co/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+  );
   await page.goto('/');
   const languageButton = page.getByRole('button', { name: 'Language: English' });
   await expect(languageButton).toBeEnabled();
@@ -88,8 +92,10 @@ test('main navigation opens every shell section and secondary route', async ({
   await page.goto('/explore');
 
   const navigation = page.getByRole('navigation', { name: 'Main navigation' });
+  // Home is a private area: signed-out visitors are sent to sign in and returned afterwards.
   await navigation.getByRole('link', { name: 'Home' }).click();
-  await expect(page).toHaveURL(/\/home$/);
+  await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fhome$/);
+  await page.goto('/explore');
   await navigation.getByRole('link', { name: mobile ? 'Create' : 'Create a game' }).click();
   await expect(page).toHaveURL(/\/sign-in\?returnTo=%2Fcreate$/);
   await page.goto('/explore');
@@ -198,13 +204,15 @@ test('appearance choices live in settings and persist across navigation', async 
 
 test('main screens localize in Greek', async ({ page }, testInfo) => {
   const mobile = testInfo.project.name === 'mobile-chromium';
+  // No backend in the test run: answer every Supabase call with an empty list.
+  await page.route('**/*.supabase.co/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
+  );
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Language: English' })).toBeEnabled();
-  await page
-    .getByRole('button', { name: mobile ? 'Language: English' : 'Language: Ελληνικά' })
-    .click();
+  await page.getByRole('button', { name: 'Language: English' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'el');
-  await page.getByRole('button', { name: 'Βρες αγώνα' }).click();
+  await page.goto('/explore');
   await expect(page.getByRole('heading', { name: 'Βρες τον επόμενο αγώνα σου' })).toBeVisible();
   await page
     .getByRole('navigation', { name: 'Κύρια πλοήγηση' })

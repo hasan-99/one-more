@@ -77,7 +77,7 @@ Rate limits, security headers, password policy and secret scans were handled ear
 
 - `npx tsc --noEmit`, `npx eslint src e2e --max-warnings=0`: clean. Unit tests: 50/50 (vitest).
 - Playwright (mobile and desktop): `store-compliance.spec.ts` 20/20 (public pages EN and GL, legal links, Settings links, blocked-player list and unblock, account deletion, block in chat).
-- Regression run (mobile): 47 passed, 4 failed. The same 4 fail identically on the build from before this work (`landing.spec`, `phase-02` main navigation and Greek, `phase-10-teams` guest directory): stale selectors from earlier redesigns, not regressions. They should be updated separately.
+- Regression run (mobile): 47 passed, 4 failed. The same 4 failed identically on the build from before this work (`landing.spec`, `phase-02` main navigation and Greek, `phase-10-teams` guest directory): they still asserted older screens (a "Find a game" button, a public Home page, a two-button language switch) and ran without a mocked backend. The tests were updated to the current behaviour (Home is a private page that returns to sign-in; one language toggle; empty-list backend mock) and now pass on desktop and mobile.
 - `expo prebuild` for Android and iOS: merged manifest, Info.plist and PrivacyInfo reviewed (permissions listed above).
 - SQL: delete and block functions executed on a scratch PostgreSQL 16 (restricting foreign keys reproduced). The full migration chain could not be replayed locally because some historical migration timestamps are out of dependency order; this is a known limitation.
 - `npm audit`: 0 vulnerabilities.

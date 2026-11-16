@@ -5,10 +5,14 @@ import { expect, test } from '@playwright/test';
 
 test('renders the ONE MORE landing at mobile and desktop widths', async ({ page }, testInfo) => {
   await page.goto('/');
-  await expect(page.getByText('ONE MORE.').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Find a game' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Your game\s*starts here/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign in or create account' })).toBeVisible();
   await expect(page.getByText('DEMO PREVIEW').first()).toBeVisible();
-  await expect(page.getByText('Your game starts here.')).toBeVisible();
+  await expect(
+    page
+      .getByRole('navigation', { name: 'Legal and support' })
+      .getByRole('link', { name: 'Privacy Policy' }),
+  ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     testInfo.project.use.viewport?.width ?? 0,
   );
