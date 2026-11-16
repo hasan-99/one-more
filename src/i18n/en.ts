@@ -210,6 +210,8 @@ export const en = {
   loaderSub: 'Getting your profile ready.',
   loaderSlow: 'Taking longer than usual…',
   loaderSlowSub: 'Your connection may be slow. We keep trying.',
+  notificationsBellUnread: 'Notifications, {count} unread',
+  notificationsBellNone: 'Notifications, none unread',
   profileLoading: 'Loading your profile…',
   profileRetry: 'Try again',
   profileValidationName: 'Enter a name between 2 and 40 characters.',

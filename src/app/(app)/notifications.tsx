@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { AppAction, AppPage, EmptyState } from '@/components/layout/AppPage';
+import { setUnreadCount } from '@/features/notifications/unread-store';
 import { useToast } from '@/components/toast/ToastProvider';
 import {
   listInboxNotifications,
@@ -77,7 +78,9 @@ export default function NotificationsScreen() {
     setLoading(true);
     setLoadError(false);
     try {
-      setNotifications(await listInboxNotifications());
+      const list = await listInboxNotifications();
+      setNotifications(list);
+      setUnreadCount(list.filter((item) => !item.read_at).length);
     } catch {
       setLoadError(true);
     } finally {
@@ -118,7 +121,11 @@ export default function NotificationsScreen() {
 
   const unreadCount = notifications.filter((notification) => !notification.read_at).length;
   return (
-    <AppPage title={copy.appNotificationsTitle} description={copy.appNotificationsIntro}>
+    <AppPage
+      title={copy.appNotificationsTitle}
+      description={copy.appNotificationsIntro}
+      backHref="/home"
+    >
       {!user ? (
         <>
           <EmptyState title={copy.appNoNotificationsTitle} description={copy.notificationsSignIn} />

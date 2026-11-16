@@ -5,6 +5,7 @@ import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/brand-mark';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { LanguageSwitcher } from '@/components/preferences-switchers';
 import { AppNavigation } from '@/components/layout/AppNavigation';
 import { translations } from '@/i18n';
@@ -111,7 +112,10 @@ export function AppShell({ children }: PropsWithChildren) {
             ]}
           >
             <View style={styles.titleBlock}>{!showSide ? <BrandMark prominent /> : null}</View>
-            <LanguageSwitcher compact />
+            <View style={styles.topActions}>
+              <NotificationBell />
+              <LanguageSwitcher compact />
+            </View>
           </View>
         ) : null}
         {showRow ? (
@@ -203,6 +207,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       paddingHorizontal: 16,
       paddingVertical: 6,
     },
+    topActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     routeContent: { flex: 1, minWidth: 0, minHeight: 0 },
     mobileNav: {
       zIndex: 20,

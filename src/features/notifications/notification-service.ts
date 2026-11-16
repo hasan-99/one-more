@@ -13,6 +13,15 @@ export async function listInboxNotifications(): Promise<InboxNotification[]> {
   return data;
 }
 
+export async function countUnreadNotifications(): Promise<number> {
+  const { count, error } = await getSupabaseClient()
+    .from('inbox_notifications')
+    .select('id', { count: 'exact', head: true })
+    .is('read_at', null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function markInboxNotificationRead(notificationId: string): Promise<void> {
   const { data, error } = await getSupabaseClient().rpc('mark_inbox_notification_read', {
     p_notification_id: notificationId,

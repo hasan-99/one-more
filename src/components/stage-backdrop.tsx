@@ -4,7 +4,13 @@ import Svg, { Defs, LinearGradient, Polygon, RadialGradient, Rect, Stop } from '
 import { useLoop } from '@/components/motion';
 import type { ThemeColors } from '@/theme/tokens';
 
-const sparks: { left: DimensionValue; size: number; lime: boolean; duration: number; delay: number }[][] = [
+const sparks: {
+  left: DimensionValue;
+  size: number;
+  lime: boolean;
+  duration: number;
+  delay: number;
+}[][] = [
   [
     { left: '14%', size: 4, lime: true, duration: 7000, delay: 0 },
     { left: '30%', size: 3, lime: false, duration: 9000, delay: 2000 },
@@ -57,7 +63,15 @@ export function StageBackdrop({
     <View pointerEvents="none" style={[styles.root, { height }]}>
       <Svg width="100%" height="100%" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id={`${id}-glow`} cx="50%" cy={glowY} rx="80%" ry="100%" fx="50%" fy={glowY}>
+          <RadialGradient
+            id={`${id}-glow`}
+            cx="50%"
+            cy={glowY}
+            rx="80%"
+            ry="100%"
+            fx="50%"
+            fy={glowY}
+          >
             <Stop offset="0" stopColor={dark ? glowColor : colors.pitch} />
             <Stop offset={glowStop} stopColor={colors.background} />
             <Stop offset="1" stopColor={colors.background} />
@@ -68,7 +82,12 @@ export function StageBackdrop({
       <Animated.View
         style={[
           styles.beam,
-          { left: -90, width: beamWidth, height: beamHeight, transform: pivot(left, '-16deg', '-30deg') },
+          {
+            left: -90,
+            width: beamWidth,
+            height: beamHeight,
+            transform: pivot(left, '-16deg', '-30deg'),
+          },
         ]}
       >
         <Beam id={`${id}-beam-l`} opacity={dark ? 0.23 : 0.5} />
@@ -76,7 +95,12 @@ export function StageBackdrop({
       <Animated.View
         style={[
           styles.beam,
-          { right: -90, width: beamWidth, height: beamHeight, transform: pivot(right, '30deg', '16deg') },
+          {
+            right: -90,
+            width: beamWidth,
+            height: beamHeight,
+            transform: pivot(right, '30deg', '16deg'),
+          },
         ]}
       >
         <Beam id={`${id}-beam-r`} opacity={dark ? 0.2 : 0.45} />
@@ -137,7 +161,9 @@ function Spark({
         borderRadius: size,
         backgroundColor: color,
         opacity: progress.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.8, 0] }),
-        transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, -rise] }) }],
+        transform: [
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, -rise] }) },
+        ],
       }}
     />
   );

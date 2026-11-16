@@ -212,6 +212,8 @@ export const el = {
   loaderSub: 'Ετοιμάζουμε το προφίλ σου.',
   loaderSlow: 'Αργεί περισσότερο από το συνηθισμένο…',
   loaderSlowSub: 'Η σύνδεσή σου μπορεί να είναι αργή. Συνεχίζουμε να προσπαθούμε.',
+  notificationsBellUnread: 'Ειδοποιήσεις, {count} μη αναγνωσμένες',
+  notificationsBellNone: 'Ειδοποιήσεις, καμία μη αναγνωσμένη',
   profileLoading: 'Φόρτωση προφίλ…',
   profileRetry: 'Δοκίμασε ξανά',
   profileValidationName: 'Πληκτρολόγησε όνομα 2 έως 40 χαρακτήρων.',
