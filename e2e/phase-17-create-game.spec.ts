@@ -389,22 +389,34 @@ test('the game page footer keeps Back to games and Cancel match in one row', asy
     path: '/tmp/pgt2/footer-row.png',
     clip: { x: 0, y: 500, width: 393, height: 352 },
   });
+  // Cancelling asks first, in a small popup.
   await cancel.click();
-  await expect(page.getByText('Cancel this match? Players will no longer see it.')).toBeVisible();
-  const keep = page.getByRole('button', { name: 'Keep match' });
-  const confirm = page.getByRole('button', { name: 'Cancel match' });
+  const dialog = page.getByTestId('cancel-match-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Cancel this match? Players will no longer see it.')).toBeVisible();
+  const keep = dialog.getByRole('button', { name: 'Keep match' });
+  const confirm = dialog.getByRole('button', { name: 'Cancel match' });
   const k = (await keep.boundingBox())!;
   const c = (await confirm.boundingBox())!;
   expect(Math.abs(k.y - c.y)).toBeLessThan(2);
+  expect(Math.abs(k.width - c.width)).toBeLessThan(2);
   await page.waitForTimeout(300);
-  await scrollToEnd(keep);
-  await page.waitForTimeout(300);
-  await page.screenshot({
-    path: '/tmp/pgt2/footer-confirm.png',
-    clip: { x: 0, y: 500, width: 393, height: 352 },
-  });
+  await page.screenshot({ path: '/tmp/pgt2/cancel-dialog.png' });
   await keep.click();
+  await expect(dialog).toHaveCount(0);
   await expect(back).toBeVisible();
+
+  // Confirming cancels the match and returns to the games list.
+  let cancelled = false;
+  await page.route('**/rest/v1/rpc/cancel_match', async (route) => {
+    cancelled =
+      JSON.stringify(route.request().postDataJSON()) === JSON.stringify({ p_match_id: matchId });
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await cancel.click();
+  await dialog.getByRole('button', { name: 'Cancel match' }).click();
+  await expect(page).toHaveURL(/\/explore$/);
+  expect(cancelled).toBe(true);
 });
 
 test('explore cards show stickers, the kick-off time and the places bar', async ({ page }) => {

@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppAction, AppCard, AppPage, EmptyState } from '@/components/layout/AppPage';
 import { useToast } from '@/components/toast/ToastProvider';
@@ -496,65 +496,84 @@ export default function MatchDetailsScreen() {
             )}
           </AppCard>
         ) : null}
-        {match.isOrganizer && cancelPending ? (
-          <Text style={[styles.error, styles.cancelConfirm]}>{copy.matchCancelConfirm}</Text>
-        ) : null}
         <View style={styles.footerRow}>
-          {match.isOrganizer && cancelPending ? (
-            <>
-              <Pressable
-                accessibilityRole="button"
-                disabled={cancelling}
-                onPress={() => setCancelPending(false)}
-                style={styles.footerButton}
-              >
-                <Text numberOfLines={2} style={styles.footerText}>
-                  {copy.matchCancelKeep}
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={cancelling}
-                onPress={() => {
-                  setCancelling(true);
-                  void cancelMatch(match.id)
-                    .then(() => {
-                      showToast(copy.matchCancelSuccess, 'success');
-                      router.replace('/explore');
-                    })
-                    .catch(() => showToast(copy.matchCancelError, 'error'))
-                    .finally(() => setCancelling(false));
-                }}
-                style={[styles.footerButton, styles.footerDanger]}
-              >
-                <Text numberOfLines={2} style={[styles.footerText, styles.footerDangerText]}>
-                  {cancelling ? copy.matchSaving : copy.matchCancel}
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Link href={'/explore' as Href} asChild>
-                <Pressable accessibilityRole="link" style={styles.footerButton}>
-                  <Text numberOfLines={2} style={styles.footerText}>
-                    {copy.matchBackToExplore}
-                  </Text>
-                </Pressable>
-              </Link>
-              {match.isOrganizer ? (
+          <Link href={'/explore' as Href} asChild>
+            <Pressable accessibilityRole="link" style={styles.footerButton}>
+              <Text numberOfLines={2} style={styles.footerText}>
+                {copy.matchBackToExplore}
+              </Text>
+            </Pressable>
+          </Link>
+          {match.isOrganizer ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setCancelPending(true)}
+              style={[styles.footerButton, styles.footerDanger]}
+            >
+              <Text numberOfLines={2} style={[styles.footerText, styles.footerDangerText]}>
+                {copy.matchCancel}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <Modal
+          transparent
+          visible={cancelPending}
+          animationType="fade"
+          onRequestClose={() => (cancelling ? undefined : setCancelPending(false))}
+        >
+          <View style={styles.dialogBackdrop}>
+            <Pressable
+              accessibilityLabel={copy.matchCancelKeep}
+              disabled={cancelling}
+              onPress={() => setCancelPending(false)}
+              style={StyleSheet.absoluteFill}
+            />
+            <View
+              accessibilityRole="alert"
+              accessibilityViewIsModal
+              style={styles.dialog}
+              testID="cancel-match-dialog"
+            >
+              <Text accessibilityRole="header" style={styles.dialogTitle}>
+                {copy.matchCancel}
+              </Text>
+              <Text style={styles.dialogBody}>{copy.matchCancelConfirm}</Text>
+              <View style={styles.footerRow}>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setCancelPending(true)}
-                  style={[styles.footerButton, styles.footerDanger]}
+                  disabled={cancelling}
+                  onPress={() => setCancelPending(false)}
+                  style={styles.footerButton}
                 >
-                  <Text numberOfLines={2} style={[styles.footerText, styles.footerDangerText]}>
-                    {copy.matchCancel}
+                  <Text numberOfLines={2} style={styles.footerText}>
+                    {copy.matchCancelKeep}
                   </Text>
                 </Pressable>
-              ) : null}
-            </>
-          )}
-        </View>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={cancelling}
+                  onPress={() => {
+                    setCancelling(true);
+                    void cancelMatch(match.id)
+                      .then(() => {
+                        setCancelPending(false);
+                        showToast(copy.matchCancelSuccess, 'success');
+                        router.replace('/explore');
+                      })
+                      .catch(() => showToast(copy.matchCancelError, 'error'))
+                      .finally(() => setCancelling(false));
+                  }}
+                  style={[styles.footerButton, styles.footerDangerSolid]}
+                >
+                  <Text numberOfLines={2} style={[styles.footerText, styles.footerDangerSolidText]}>
+                    {cancelling ? copy.matchSaving : copy.matchCancel}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </AppPage>
       {showBar ? (
         <View style={styles.bar}>
@@ -619,7 +638,27 @@ function formatCountdown(milliseconds: number) {
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
-    cancelConfirm: { marginTop: 4 },
+    dialogBackdrop: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    dialog: {
+      width: '100%',
+      maxWidth: 360,
+      gap: 12,
+      padding: 20,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    dialogTitle: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
+    dialogBody: { color: colors.textSecondary, fontSize: 15, lineHeight: 22 },
+    footerDangerSolid: { borderColor: colors.errorText, backgroundColor: colors.errorText },
+    footerDangerSolidText: { color: colors.background, fontWeight: '800' },
     footerRow: { flexDirection: 'row', gap: 10 },
     footerButton: {
       flex: 1,

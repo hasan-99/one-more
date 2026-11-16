@@ -1833,3 +1833,4 @@
 - App launch: returning users no longer wait on the profile check (saved answer per user, re-verified in the background; incomplete profile still redirects to onboarding); first launch shows a spinner instead of a full card. Tests: `e2e/startup.spec.ts`.
 - Game page: "Back to games" and "Cancel match" share one row with the same button design (cancel in the error colour); confirm step shows "Keep match" / "Cancel match" in the same row. Tests: `phase-17-create-game.spec.ts` (equal row, height and width), screenshot `docs/screenshots/phase-17/game-footer-row.png`.
 - Ball loader: three designs shown as an Artifact, awaiting the user's choice; not built.
+- Cancel match now asks in a small popup (Keep match / Cancel match in one row); tests in phase-17-create-game.spec.ts cover open, keep, and confirm (cancel_match payload, redirect).
