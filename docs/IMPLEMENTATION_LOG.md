@@ -1881,3 +1881,8 @@
 ### 2026-11-16 — Stadium home: full regression
 - **Checks:** Playwright mobile 75 passed / 1 skipped, desktop 14 passed, 0 failed (includes `phase-17-home` and `notification-bell` on both).
 - **Not verified:** real device.
+
+### 2026-11-16 — Original home restored; Greek fixes; final regression
+- **Change:** the home page is the original again (the night-stadium redesign and its strings/files were removed at the owner's request). Kept: skeleton loading, Greek button fixes (+ `e2e/greek-buttons.spec.ts`), light-mode contrast fixes, profile loading timeout. Fixed a race where account deletion could land on the sign-in page; lazy legal pages test now waits for the text; home e2e rewritten with a mocked sign-in.
+- **Checks:** tsc PASS, eslint PASS, vitest 58 PASS, build:web PASS, Playwright mobile 74 passed / 1 skipped, desktop 10 passed, 0 failed.
+- **Not verified:** real device.
