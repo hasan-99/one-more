@@ -1828,3 +1828,8 @@
 ## Bundle and font follow-ups
 - Greek copy (`el.ts`, about 150 KB) loads on demand via `loadLocale` (English users never download it); legal texts load only on legal pages; native landing fonts are embedded (no Google Fonts request, verified in Chromium with zero external requests). Shared JS chunk 860 KB -> 639 KB raw; entry unchanged.
 - Checks: tsc, eslint, vitest 50/50; Playwright mobile 55 passed / 1 skipped (navigation, Greek, legal pages, auth, challenges, create game, layout audit, onboarding, notifications). Not tested on a device.
+
+## Startup loader and game page footer
+- App launch: returning users no longer wait on the profile check (saved answer per user, re-verified in the background; incomplete profile still redirects to onboarding); first launch shows a spinner instead of a full card. Tests: `e2e/startup.spec.ts`.
+- Game page: "Back to games" and "Cancel match" share one row with the same button design (cancel in the error colour); confirm step shows "Keep match" / "Cancel match" in the same row. Tests: `phase-17-create-game.spec.ts` (equal row, height and width), screenshot `docs/screenshots/phase-17/game-footer-row.png`.
+- Ball loader: three designs shown as an Artifact, awaiting the user's choice; not built.

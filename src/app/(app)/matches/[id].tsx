@@ -508,7 +508,7 @@ export default function MatchDetailsScreen() {
                 onPress={() => setCancelPending(false)}
                 style={styles.footerButton}
               >
-                <Text numberOfLines={1} style={styles.footerText}>
+                <Text numberOfLines={2} style={styles.footerText}>
                   {copy.matchCancelKeep}
                 </Text>
               </Pressable>
@@ -527,7 +527,7 @@ export default function MatchDetailsScreen() {
                 }}
                 style={[styles.footerButton, styles.footerDanger]}
               >
-                <Text numberOfLines={1} style={[styles.footerText, styles.footerDangerText]}>
+                <Text numberOfLines={2} style={[styles.footerText, styles.footerDangerText]}>
                   {cancelling ? copy.matchSaving : copy.matchCancel}
                 </Text>
               </Pressable>
@@ -536,7 +536,7 @@ export default function MatchDetailsScreen() {
             <>
               <Link href={'/explore' as Href} asChild>
                 <Pressable accessibilityRole="link" style={styles.footerButton}>
-                  <Text numberOfLines={1} style={styles.footerText}>
+                  <Text numberOfLines={2} style={styles.footerText}>
                     {copy.matchBackToExplore}
                   </Text>
                 </Pressable>
@@ -547,7 +547,7 @@ export default function MatchDetailsScreen() {
                   onPress={() => setCancelPending(true)}
                   style={[styles.footerButton, styles.footerDanger]}
                 >
-                  <Text numberOfLines={1} style={[styles.footerText, styles.footerDangerText]}>
+                  <Text numberOfLines={2} style={[styles.footerText, styles.footerDangerText]}>
                     {copy.matchCancel}
                   </Text>
                 </Pressable>
@@ -632,7 +632,7 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       borderColor: colors.border,
       backgroundColor: colors.surfaceRaised,
     },
-    footerText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+    footerText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700', textAlign: 'center' },
     footerDanger: { borderColor: colors.errorText, backgroundColor: 'transparent' },
     footerDangerText: { color: colors.errorText },
     detail: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },

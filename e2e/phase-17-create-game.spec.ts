@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const userId = 'f3476a3f-21b6-4c93-9b01-b63de7a46031';
 const matchId = 'b3e7a7d6-4d3b-4f73-9d5f-1d0c9c3a7b11';
@@ -371,8 +371,24 @@ test('the game page footer keeps Back to games and Cancel match in one row', asy
   expect(Math.abs(a.y - b.y)).toBeLessThan(2);
   expect(Math.abs(a.height - b.height)).toBeLessThan(2);
   expect(Math.abs(a.width - b.width)).toBeLessThan(2);
-  await cancel.scrollIntoViewIfNeeded();
-  await page.screenshot({ path: '/tmp/pgt2/footer-row.png' });
+  const scrollToEnd = (target: Locator) =>
+    target.evaluate((el) => {
+      let node = el.parentElement;
+      while (node) {
+        const overflow = getComputedStyle(node).overflowY;
+        if (node.scrollHeight > node.clientHeight + 5 && overflow !== 'visible') {
+          node.scrollTop = node.scrollHeight;
+          return;
+        }
+        node = node.parentElement;
+      }
+    });
+  await scrollToEnd(back);
+  await page.waitForTimeout(500);
+  await page.screenshot({
+    path: '/tmp/pgt2/footer-row.png',
+    clip: { x: 0, y: 500, width: 393, height: 352 },
+  });
   await cancel.click();
   await expect(page.getByText('Cancel this match? Players will no longer see it.')).toBeVisible();
   const keep = page.getByRole('button', { name: 'Keep match' });
@@ -380,7 +396,13 @@ test('the game page footer keeps Back to games and Cancel match in one row', asy
   const k = (await keep.boundingBox())!;
   const c = (await confirm.boundingBox())!;
   expect(Math.abs(k.y - c.y)).toBeLessThan(2);
-  await page.screenshot({ path: '/tmp/pgt2/footer-confirm.png' });
+  await page.waitForTimeout(300);
+  await scrollToEnd(keep);
+  await page.waitForTimeout(300);
+  await page.screenshot({
+    path: '/tmp/pgt2/footer-confirm.png',
+    clip: { x: 0, y: 500, width: 393, height: 352 },
+  });
   await keep.click();
   await expect(back).toBeVisible();
 });
