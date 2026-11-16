@@ -4,9 +4,10 @@ import {
   countdownParts,
   firstName,
   greetingKey,
-  journeyProgress,
   openGames,
   pickNextGame,
+  pitchPositions,
+  projectOnPitch,
   tickerFacts,
   type HomeMatch,
 } from './home-logic';
@@ -64,11 +65,31 @@ describe('home logic', () => {
     expect(countdownParts(-5000)).toEqual({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   });
 
-  it('measures the road from creation to kick-off', () => {
-    expect(journeyProgress('2026-11-14T10:00:00Z', '2026-11-18T10:00:00Z', now)).toBe(0.5);
-    expect(journeyProgress(null, '2026-11-18T10:00:00Z', now)).toBeCloseTo(5 / 7, 5);
-    expect(journeyProgress('2026-11-14T10:00:00Z', '2026-11-15T10:00:00Z', now)).toBe(1);
-    expect(journeyProgress('bad', 'bad', now)).toBe(0);
+  it('stands the whole squad on the pitch, half on each side', () => {
+    for (const capacity of [10, 14, 16, 22]) {
+      const spots = pitchPositions(capacity);
+      expect(spots).toHaveLength(capacity);
+      expect(spots.filter((spot) => spot.team === 'home')).toHaveLength(capacity / 2);
+      expect(spots.every((spot) => Math.abs(spot.x) <= 0.4 && spot.t > 0 && spot.t < 1)).toBe(true);
+      expect(spots.filter((spot) => spot.team === 'home').every((spot) => spot.t < 0.5)).toBe(true);
+      expect(spots.filter((spot) => spot.team === 'away').every((spot) => spot.t > 0.5)).toBe(true);
+      // No two players share a position.
+      expect(new Set(spots.map((spot) => `${spot.x.toFixed(3)}:${spot.t.toFixed(3)}`)).size).toBe(
+        capacity,
+      );
+    }
+    expect(pitchPositions(15)).toHaveLength(15);
+    expect(pitchPositions(40)).toHaveLength(22);
+    expect(pitchPositions(0)).toEqual([]);
+  });
+
+  it('projects pitch points with perspective: further is higher and smaller', () => {
+    const near = projectOnPitch(0.3, 0.1, 300);
+    const far = projectOnPitch(0.3, 0.9, 300);
+    expect(projectOnPitch(0, 0, 300)).toEqual({ left: 150, bottom: 0, scale: 1 });
+    expect(far.bottom).toBeGreaterThan(near.bottom);
+    expect(far.scale).toBeLessThan(near.scale);
+    expect(far.left - 150).toBeLessThan(near.left - 150);
   });
 
   it('lists open future games without the next game', () => {

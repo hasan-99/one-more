@@ -1871,3 +1871,9 @@
 ### 2026-11-16 — Home redesign regression
 - **Checks:** full run: mobile 74 passed / 1 skipped / 1 failed, desktop 12 passed / 2 failed. All 3 failures were test locators made ambiguous by the new page (the "99+" badge now also appears on the Notifications tile; "Explore games" also exists in the desktop navigation). Locators scoped; `phase-17-home` + `notification-bell` re-run: 8/8 on mobile and 8/8 on desktop. The other specs were not re-run after this locator-only change.
 - **Next:** a second, bolder home proposal ("Floodlit Home" artifact) is with the owner for a decision; nothing of it is built.
+
+### 2026-11-16 — Home hero rebuilt as a night stadium
+- **Approved design:** artifact "Floodlit Home" (owner: "Build it").
+- **Change:** the home hero is now `HomeStadium`: floodlights that flicker on and sway, a scoreboard countdown, and a pitch tilted in perspective where every player who is in stands on a position (drop-in entrance) and free places pulse. Without a game the same stadium shows an empty pitch ("The pitch is waiting."). Open games in the rail are now tickets with a tear-off stub. The stadium is night in both themes. `HomeNextGame` and the small flat pitch were removed; `pitchPositions` and `projectOnPitch` (pure, tested) place the markers with the same perspective maths as the tilted view.
+- **Honest limits:** markers show how full the squad is, not real positions; the "YOU" tag is on the first marker. On native the pitch tilt uses `perspective` + `rotateX` with `transformOrigin`, and marker positions are computed separately, so alignment on a real device is unverified.
+- **Checks:** tsc PASS, eslint PASS, vitest 65 PASS, build:web PASS, `phase-17-home` 5/5 on mobile (15 markers + 1 free place; 10 free places when empty). Full regression: next entry.

@@ -1064,8 +1064,6 @@ export const el = {
   homeMinutes: 'ΛΕΠΤΑ',
   homeSeconds: 'ΔΕΥΤ',
   homeCountdownLabel: 'Χρόνος μέχρι τη σέντρα: {days} μέρες, {hours} ώρες, {minutes} λεπτά',
-  homeJourneyStart: 'Δημιουργήθηκε',
-  homeKickoffAt: 'Σέντρα {time}',
   homePlayersIn: '{count} από {capacity} παίκτες μέσα',
   homePlacesOpen: '{count} θέσεις ανοιχτές',
   homePlaceOpen: '1 θέση ανοιχτή',
@@ -1102,4 +1100,13 @@ export const el = {
   homeTeamMembers: '{count} παίκτες',
   homeLoading: 'Φόρτωση αρχικής…',
   homeKickoffLabel: 'ΣΕΝΤΡΑ',
+  homeKickoffIn: 'ΣΕΝΤΡΑ ΣΕ',
+  homeYou: 'ΕΣΥ',
+  homeStageLabel: '{count} από {capacity} παίκτες στο γήπεδο',
+  homeStageEmpty: 'Ένα άδειο γήπεδο που περιμένει παίκτες',
+  homeNoGameEyebrow: 'Χωρίς αγώνα ακόμη',
+  homePitchWaitingFirst: 'Το γήπεδο',
+  homePitchWaitingAccent: 'περιμένει.',
+  homePitchWaitingCopy:
+    'Δεν έχεις ακόμη αγώνα στο πρόγραμμά σου. Πάρε μια θέση ή ξεκίνα τον δικό σου.',
 } as const;

@@ -143,7 +143,7 @@ test('no game yet: home invites to play, shows open games and localizes to Greek
   await page.setViewportSize({ width, height: mobile ? 812 : 1000 });
   await page.goto('/home');
 
-  await expect(page.getByRole('heading', { name: 'Find your next game.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The pitch is waiting.' })).toBeVisible();
   await expect(page.getByText('2 open games', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Explore games' }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Where to?' })).toBeVisible();
@@ -159,7 +159,7 @@ test('no game yet: home invites to play, shows open games and localizes to Greek
 
   const languageToggle = page.getByRole('button', { name: 'Language: English' });
   await languageToggle.click();
-  await expect(page.getByRole('heading', { name: 'Βρες τον επόμενο αγώνα σου.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Το γήπεδο περιμένει.' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Ανακάλυψε αγώνες' }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Πού πάμε;' })).toBeVisible();
 });
@@ -194,6 +194,11 @@ for (const theme of ['dark', 'light'] as const) {
     const first = await timer.innerText();
     await expect.poll(() => timer.innerText(), { timeout: 4000 }).not.toBe(first);
     await expect(hero.getByText('15 of 16 players in')).toBeVisible();
+    // Every player who is in stands on the pitch; the one free place pulses.
+    await expect(hero.getByRole('img', { name: '15 of 16 players on the pitch' })).toBeVisible();
+    await expect(hero.getByTestId('home-pin')).toHaveCount(15);
+    await expect(hero.getByTestId('home-spot')).toHaveCount(1);
+    await expect(hero.getByText('YOU', { exact: true })).toBeVisible();
     await expect(hero.getByText('1 place open')).toBeVisible();
     await expect(hero.getByRole('link', { name: /Open game/ })).toHaveAttribute(
       'href',
@@ -224,7 +229,7 @@ for (const theme of ['dark', 'light'] as const) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       393,
     );
-    await page.waitForTimeout(1600);
+    await page.waitForTimeout(2600);
     await page.screenshot({ path: join(screenshots, `home-matchday-${theme}.png`) });
     await page.getByRole('link', { name: /Strovolos United/ }).scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
@@ -255,10 +260,12 @@ test('player without a game sees the invite to play and a team invite', async ({
   );
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/home');
-  await expect(page.getByRole('heading', { name: 'Find your next game.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The pitch is waiting.' })).toBeVisible();
   await expect(page.getByTestId('home-need').getByText('Nicosia Foxes invited you')).toBeVisible();
   await expect(page.getByTestId('home-next-game')).toHaveCount(0);
-  await page.waitForTimeout(600);
+  await expect(page.getByTestId('home-empty-stadium').getByTestId('home-spot')).toHaveCount(10);
+  await expect(page.getByTestId('home-pin')).toHaveCount(0);
+  await page.waitForTimeout(1800);
   await page.screenshot({ path: join(screenshots, 'home-matchday-empty.png') });
 });
 
@@ -273,7 +280,7 @@ test('a failed games request shows an error with a working retry', async ({ page
   const alert = page.getByRole('alert').filter({ hasText: 'Games could not be loaded.' });
   await expect(alert).toBeVisible();
   // The page still works without the list.
-  await expect(page.getByRole('heading', { name: 'Find your next game.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The pitch is waiting.' })).toBeVisible();
   fail = false;
   await alert.getByRole('button', { name: 'Try again' }).click();
   await expect(page.getByTestId('home-rail-card')).toHaveCount(2);

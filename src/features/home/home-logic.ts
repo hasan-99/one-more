@@ -28,15 +28,61 @@ export function countdownParts(msLeft: number) {
   };
 }
 
-const fallbackJourneyMs = 7 * 86_400_000;
+export type PitchPosition = { x: number; t: number; team: 'home' | 'away' };
 
-/** How far along the road from "game created" to kick-off we are, 0 to 1. */
-export function journeyProgress(createdAt: string | null, startsAt: string, nowMs: number): number {
-  const end = Date.parse(startsAt);
-  if (!Number.isFinite(end)) return 0;
-  const created = createdAt ? Date.parse(createdAt) : Number.NaN;
-  const start = Number.isFinite(created) && created < end ? created : end - fallbackJourneyMs;
-  return Math.min(1, Math.max(0, (nowMs - start) / (end - start)));
+const rowWidths: Record<number, [number, number]> = {
+  2: [0.26, 0.13],
+  3: [0.34, 0.24],
+  4: [0.38, 0.3],
+};
+
+/** One team's shape: a keeper, then rows of up to four. x is -0.5..0.5 across, t is 0..0.5 up the pitch. */
+function teamShape(players: number): { x: number; t: number }[] {
+  if (players <= 0) return [];
+  const shape = [{ x: 0, t: 0.06 }];
+  const outfield = players - 1;
+  if (outfield === 0) return shape;
+  const rows = Math.ceil(outfield / 4);
+  for (let row = 0; row < rows; row += 1) {
+    const inRow = Math.floor(outfield / rows) + (row < outfield % rows ? 1 : 0);
+    const t = rows === 1 ? 0.26 : 0.16 + (0.18 * row) / (rows - 1);
+    const width = inRow === 1 ? 0 : (rowWidths[inRow] ?? rowWidths[4])[row % 2];
+    for (let index = 0; index < inRow; index += 1) {
+      shape.push({ x: inRow === 1 ? 0 : -width + (2 * width * index) / (inRow - 1), t });
+    }
+  }
+  return shape;
+}
+
+export const maxPitchPlayers = 22;
+
+/**
+ * Where to stand `capacity` players on the pitch, alternating home and away so both halves fill up
+ * together. These show how full the squad is; they are not the players' real positions.
+ */
+export function pitchPositions(capacity: number): PitchPosition[] {
+  const total = Math.min(maxPitchPlayers, Math.max(0, Math.floor(capacity)));
+  const home = teamShape(Math.ceil(total / 2));
+  const away = teamShape(Math.floor(total / 2));
+  const out: PitchPosition[] = [];
+  for (let index = 0; index < home.length; index += 1) {
+    out.push({ ...home[index], team: 'home' });
+    if (index < away.length) {
+      out.push({ x: -away[index].x, t: 1 - away[index].t, team: 'away' });
+    }
+  }
+  return out;
+}
+
+// The pitch is one flat rectangle tilted back; markers are placed with the same perspective maths.
+export const pitchPlane = { length: 380, tiltDeg: 50, distance: 900 } as const;
+
+/** Screen position of a point on the tilted pitch: px from the left and from the bottom edge. */
+export function projectOnPitch(x: number, t: number, width: number) {
+  const along = t * pitchPlane.length;
+  const tilt = (pitchPlane.tiltDeg * Math.PI) / 180;
+  const scale = pitchPlane.distance / (pitchPlane.distance + along * Math.sin(tilt));
+  return { left: width / 2 + x * width * scale, bottom: along * Math.cos(tilt) * scale, scale };
 }
 
 /** Future games that still have a place, soonest first, without the player's own next game. */

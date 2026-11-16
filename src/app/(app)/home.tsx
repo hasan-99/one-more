@@ -6,16 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/AuthProvider';
 import { SkeletonList } from '@/components/loading/Skeleton';
 import { Rise } from '@/components/motion';
-import { HomeNextGame } from '@/features/home/HomeNextGame';
 import {
   HomeGameRail,
   HomeGreeting,
   HomeNeedBar,
-  HomePitchScene,
   HomeSectionHead,
   HomeTeamRow,
   HomeTiles,
 } from '@/features/home/HomeParts';
+import { HomeStadium } from '@/features/home/HomeStadium';
 import {
   firstName,
   greetingKey,
@@ -24,13 +23,12 @@ import {
   type HomeMatch,
 } from '@/features/home/home-logic';
 import { loadHomeMatches, loadHomePersonal, type HomePersonal } from '@/features/home/home-service';
-import { PressLink } from '@/features/home/PressLink';
 import { useNow } from '@/features/home/use-now';
 import { useUnreadCount } from '@/features/notifications/unread-store';
 import { translations } from '@/i18n';
 import { withTimeout } from '@/lib/with-timeout';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
-import { bodyFont, displayFont } from '@/theme/typography';
+import { bodyFont } from '@/theme/typography';
 
 const loadTimeoutMs = 15_000;
 type Loaded<T> = { key: string; value: T | null };
@@ -129,55 +127,9 @@ export default function AppHomeScreen() {
 
         {gamesLoading || personalLoading ? (
           <SkeletonList kind="detail" label={copy.homeLoading} />
-        ) : next ? (
-          <Rise delay={80}>
-            <HomeNextGame match={next} now={now} />
-          </Rise>
         ) : (
           <Rise delay={80}>
-            <View
-              style={[styles.hero, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            >
-              <Text
-                accessibilityRole="header"
-                style={[
-                  styles.heroTitle,
-                  { color: colors.textPrimary, fontFamily: displayFont(locale) },
-                ]}
-              >
-                {copy.appHomeHeroFirst}{' '}
-                <Text style={{ color: colors.accentText }}>{copy.appHomeHeroAccent}</Text>
-              </Text>
-              <Text
-                style={[
-                  styles.heroCopy,
-                  { color: colors.textSecondary, fontFamily: bodyFont(locale) },
-                ]}
-              >
-                {copy.appHomeIntro}
-              </Text>
-              <HomePitchScene
-                colors={colors}
-                label={copy.appHomePitchAccessibility}
-                chip={openChip}
-              />
-              <PressLink
-                href={'/explore' as Href}
-                style={[styles.primary, { backgroundColor: colors.primaryButton }]}
-              >
-                <Text
-                  style={[
-                    styles.primaryText,
-                    { color: colors.primaryButtonText, fontFamily: semibold },
-                  ]}
-                >
-                  {copy.appExploreAction}
-                </Text>
-                <Text aria-hidden style={[styles.primaryText, { color: colors.primaryButtonText }]}>
-                  →
-                </Text>
-              </PressLink>
-            </View>
+            <HomeStadium match={next} now={now} openChip={openChip} />
           </Rise>
         )}
 
@@ -286,18 +238,6 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   section: { gap: 12 },
-  hero: { borderWidth: 1, borderRadius: 24, padding: 16, gap: 12 },
-  heroTitle: { fontSize: 38, lineHeight: 42, fontWeight: '800' },
-  heroCopy: { fontSize: 15, lineHeight: 22 },
-  primary: {
-    minHeight: 54,
-    borderRadius: 16,
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryText: { fontSize: 16, fontWeight: '700' },
   empty: { borderWidth: 1, borderRadius: 18, padding: 16, gap: 6 },
   emptyTitle: { fontSize: 16 },
   emptyCopy: { fontSize: 14, lineHeight: 20 },

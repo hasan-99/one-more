@@ -1,7 +1,7 @@
 import { Link, type Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useLoop, useReducedMotion } from '@/components/motion';
 import { Crest, crestInitials } from '@/features/teams/TeamCrest';
@@ -11,11 +11,9 @@ import { formatLocalNumber, matchTicketParts } from '@/i18n/format';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import { bodyFont, displayFont } from '@/theme/typography';
 
-import { MiniBall } from './HomeNextGame';
 import type { HomeMatch } from './home-logic';
 import { PressLink } from './PressLink';
 
-type Colors = ReturnType<typeof useAppPreferences>['colors'];
 const lineHeight = 20;
 
 /** The greeting with a small line of true facts that changes every few seconds. */
@@ -364,7 +362,7 @@ export function HomeGameRail({ games }: { games: HomeMatch[] }) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      snapToInterval={244}
+      snapToInterval={260}
       decelerationRate="fast"
       style={styles.rail}
       contentContainerStyle={styles.railContent}
@@ -385,63 +383,73 @@ export function HomeGameRail({ games }: { games: HomeMatch[] }) {
             testID="home-rail-card"
             style={[styles.game, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
-            <View style={styles.gameTop}>
+            <View style={styles.gameMain}>
               <Text
                 style={[
                   styles.gameFormat,
                   { color: colors.accentText, fontFamily: displayFont(locale) },
                 ]}
               >
-                {game.sideSize}v{game.sideSize}
-              </Text>
-              <Text
-                style={[
-                  styles.gamePrice,
-                  { color: colors.textPrimary, fontFamily: displayFont(locale) },
-                ]}
-              >
+                {game.sideSize}v{game.sideSize} ·{' '}
                 {game.priceEur === 0
                   ? copy.matchFree
                   : `€${formatLocalNumber(game.priceEur, locale)}`}
               </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.gameName,
+                  { color: colors.textPrimary, fontFamily: displayFont(locale) },
+                ]}
+              >
+                {game.title}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.gameMeta,
+                  { color: colors.textSecondary, fontFamily: bodyFont(locale) },
+                ]}
+              >
+                {area} · {city}
+              </Text>
+              <Text
+                style={[
+                  styles.gameOpen,
+                  {
+                    color: last ? colors.warningText : colors.accentText,
+                    fontFamily: bodyFont(locale, 'semibold'),
+                  },
+                ]}
+              >
+                {open}
+              </Text>
             </View>
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.gameName,
-                { color: colors.textPrimary, fontFamily: displayFont(locale) },
-              ]}
-            >
-              {game.title}
-            </Text>
-            <View style={styles.gameWhen}>
+            <View style={[styles.gameStub, { borderLeftColor: colors.border }]}>
+              <Text style={[styles.gameDay, { fontFamily: bodyFont(locale, 'semibold') }]}>
+                {parts.weekday.toUpperCase()} {parts.day}
+              </Text>
               <Text style={[styles.gameTime, { fontFamily: displayFont(locale) }]}>
                 {parts.time}
               </Text>
               <Text style={[styles.gameDay, { fontFamily: bodyFont(locale, 'semibold') }]}>
-                {parts.weekday.toUpperCase()} {parts.day} {parts.month.toUpperCase()}
+                {copy.homeKickoffLabel}
               </Text>
             </View>
-            <Text
-              numberOfLines={1}
+            <View
               style={[
-                styles.gameMeta,
-                { color: colors.textSecondary, fontFamily: bodyFont(locale) },
+                styles.notch,
+                styles.notchTop,
+                { backgroundColor: colors.background, borderColor: colors.border },
               ]}
-            >
-              {area} · {city}
-            </Text>
-            <Text
+            />
+            <View
               style={[
-                styles.gameOpen,
-                {
-                  color: last ? colors.warningText : colors.accentText,
-                  fontFamily: bodyFont(locale, 'semibold'),
-                },
+                styles.notch,
+                styles.notchBottom,
+                { backgroundColor: colors.background, borderColor: colors.border },
               ]}
-            >
-              {open}
-            </Text>
+            />
           </PressLink>
         );
       })}
@@ -487,210 +495,6 @@ export function HomeTeamRow({ team }: { team: MyTeam }) {
         →
       </Text>
     </PressLink>
-  );
-}
-
-// Pitch drawing coordinates (viewBox 272 x 176); the ball is passed between the home players.
-const home = [
-  { x: 48, y: 50 },
-  { x: 48, y: 126 },
-  { x: 112, y: 88 },
-];
-const away = [
-  { x: 166, y: 50 },
-  { x: 166, y: 126 },
-  { x: 224, y: 88 },
-];
-const passOrder = [2, 0, 2, 1];
-const passBall = 16;
-
-/** Shown when the player has no game yet: a small pitch where the ball is passed around. */
-export function HomePitchScene({
-  colors,
-  label,
-  chip,
-}: {
-  colors: Colors;
-  label: string;
-  chip: string | null;
-}) {
-  const { locale } = useAppPreferences();
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  const [position] = useState(() => new Animated.ValueXY({ x: 0, y: 0 }));
-  const reduced = useReducedMotion();
-
-  useEffect(() => {
-    if (size.width === 0) return;
-    const at = (index: number) => ({
-      x: (home[index].x / 272) * size.width - passBall / 2 + 6,
-      y: (home[index].y / 176) * size.height - passBall / 2 + 6,
-    });
-    position.setValue(at(passOrder[0]));
-    if (reduced) return;
-    const animation = Animated.loop(
-      Animated.sequence(
-        passOrder
-          .slice(1)
-          .concat(passOrder[0])
-          .flatMap((index) => [
-            Animated.delay(450),
-            Animated.timing(position, {
-              toValue: at(index),
-              duration: 650,
-              easing: Easing.inOut(Easing.quad),
-              useNativeDriver: true,
-            }),
-          ]),
-      ),
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [position, reduced, size.height, size.width]);
-
-  return (
-    <View
-      onLayout={(event) =>
-        setSize({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })
-      }
-      style={[styles.pitch, { backgroundColor: colors.pitch, borderColor: colors.border }]}
-    >
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 272 176"
-        preserveAspectRatio="none"
-        accessibilityLabel={label}
-        accessibilityRole="image"
-      >
-        <Rect
-          x="7"
-          y="7"
-          width="258"
-          height="162"
-          rx="10"
-          fill="none"
-          stroke={colors.pitchLine}
-          strokeWidth="1.5"
-          opacity="0.85"
-        />
-        <Line
-          x1="136"
-          y1="7"
-          x2="136"
-          y2="169"
-          stroke={colors.pitchLine}
-          strokeWidth="1.5"
-          opacity="0.7"
-        />
-        <Circle
-          cx="136"
-          cy="88"
-          r="29"
-          fill="none"
-          stroke={colors.pitchLine}
-          strokeWidth="1.5"
-          opacity="0.7"
-        />
-        <Rect
-          x="7"
-          y="54"
-          width="26"
-          height="68"
-          fill="none"
-          stroke={colors.pitchLine}
-          strokeWidth="1.5"
-          opacity="0.65"
-        />
-        <Rect
-          x="239"
-          y="54"
-          width="26"
-          height="68"
-          fill="none"
-          stroke={colors.pitchLine}
-          strokeWidth="1.5"
-          opacity="0.65"
-        />
-        <Line
-          x1="48"
-          y1="50"
-          x2="112"
-          y2="88"
-          stroke={colors.accentText}
-          strokeWidth="1.5"
-          opacity="0.7"
-        />
-        <Line
-          x1="48"
-          y1="126"
-          x2="112"
-          y2="88"
-          stroke={colors.accentText}
-          strokeWidth="1.5"
-          opacity="0.7"
-        />
-        <Line
-          x1="166"
-          y1="50"
-          x2="224"
-          y2="88"
-          stroke={colors.pitchText}
-          strokeWidth="1.5"
-          opacity="0.55"
-        />
-        <Line
-          x1="166"
-          y1="126"
-          x2="224"
-          y2="88"
-          stroke={colors.pitchText}
-          strokeWidth="1.5"
-          opacity="0.55"
-        />
-        {home.map((player, index) => (
-          <Circle
-            key={`h${index}`}
-            cx={player.x}
-            cy={player.y}
-            r="7"
-            fill={colors.accentText}
-            stroke={colors.pitchLine}
-            strokeWidth="1.5"
-          />
-        ))}
-        {away.map((player, index) => (
-          <Circle
-            key={`a${index}`}
-            cx={player.x}
-            cy={player.y}
-            r="7"
-            fill={colors.pitchText}
-            stroke={colors.pitchLine}
-            strokeWidth="1.5"
-          />
-        ))}
-      </Svg>
-      {size.width > 0 ? (
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.passBall, { transform: position.getTranslateTransform() }]}
-        >
-          <MiniBall size={passBall} />
-        </Animated.View>
-      ) : null}
-      {chip ? (
-        <View style={[styles.pitchChip, { backgroundColor: colors.primaryButton }]}>
-          <Text
-            style={[
-              styles.pitchChipText,
-              { color: colors.primaryButtonText, fontFamily: displayFont(locale) },
-            ]}
-          >
-            {chip}
-          </Text>
-        </View>
-      ) : null}
-    </View>
   );
 }
 
@@ -782,30 +586,47 @@ const styles = StyleSheet.create({
   tileBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', lineHeight: 14 },
   rail: { marginHorizontal: -20 },
   railContent: { paddingHorizontal: 20, gap: 12 },
-  game: { width: 232, borderWidth: 1, borderRadius: 20, padding: 14, gap: 8 },
-  gameTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  gameFormat: { fontSize: 20, lineHeight: 22, fontWeight: '800' },
-  gamePrice: { fontSize: 18, lineHeight: 22, fontWeight: '800' },
-  gameName: { fontSize: 22, lineHeight: 25, fontWeight: '800' },
-  gameWhen: {
+  // Each open game is a small match ticket with a tear-off stub for the kick-off time.
+  game: { width: 248, borderWidth: 1, borderRadius: 18, flexDirection: 'row', overflow: 'hidden' },
+  gameMain: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 12,
+    paddingLeft: 14,
+    paddingRight: 12,
+    gap: 5,
+  },
+  gameFormat: { fontSize: 18, lineHeight: 20, fontWeight: '800' },
+  gameName: { fontSize: 21, lineHeight: 24, fontWeight: '800' },
+  gameMeta: { fontSize: 12.5 },
+  gameOpen: { fontSize: 12.5 },
+  gameStub: {
+    width: 78,
     backgroundColor: '#070B09',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    flexDirection: 'row',
+    borderLeftWidth: 2,
+    borderStyle: 'dashed',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 3,
   },
   gameTime: {
     color: '#CFFF4A',
-    fontSize: 22,
-    lineHeight: 24,
+    fontSize: 24,
+    lineHeight: 26,
     fontWeight: '800',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
-  gameDay: { color: '#B9C4B4', fontSize: 11, letterSpacing: 1.2 },
-  gameMeta: { fontSize: 13 },
-  gameOpen: { fontSize: 13 },
+  gameDay: { color: '#B9C4B4', fontSize: 10, letterSpacing: 1.2 },
+  notch: {
+    position: 'absolute',
+    right: 70,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  notchTop: { top: -9 },
+  notchBottom: { bottom: -9 },
   team: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -824,15 +645,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   teamName: { fontSize: 15 },
-  pitch: { height: 170, borderWidth: 1, borderRadius: 18, overflow: 'hidden' },
-  passBall: { position: 'absolute', left: 0, top: 0, width: passBall, height: passBall },
-  pitchChip: {
-    position: 'absolute',
-    left: 10,
-    top: 10,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  pitchChipText: { fontSize: 14, lineHeight: 16, fontWeight: '800' },
 });
