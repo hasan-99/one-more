@@ -1877,3 +1877,7 @@
 - **Change:** the home hero is now `HomeStadium`: floodlights that flicker on and sway, a scoreboard countdown, and a pitch tilted in perspective where every player who is in stands on a position (drop-in entrance) and free places pulse. Without a game the same stadium shows an empty pitch ("The pitch is waiting."). Open games in the rail are now tickets with a tear-off stub. The stadium is night in both themes. `HomeNextGame` and the small flat pitch were removed; `pitchPositions` and `projectOnPitch` (pure, tested) place the markers with the same perspective maths as the tilted view.
 - **Honest limits:** markers show how full the squad is, not real positions; the "YOU" tag is on the first marker. On native the pitch tilt uses `perspective` + `rotateX` with `transformOrigin`, and marker positions are computed separately, so alignment on a real device is unverified.
 - **Checks:** tsc PASS, eslint PASS, vitest 65 PASS, build:web PASS, `phase-17-home` 5/5 on mobile (15 markers + 1 free place; 10 free places when empty). Full regression: next entry.
+
+### 2026-11-16 — Stadium home: full regression
+- **Checks:** Playwright mobile 75 passed / 1 skipped, desktop 14 passed, 0 failed (includes `phase-17-home` and `notification-bell` on both).
+- **Not verified:** real device.
