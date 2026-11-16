@@ -1886,3 +1886,8 @@
 - **Change:** the home page is the original again (the night-stadium redesign and its strings/files were removed at the owner's request). Kept: skeleton loading, Greek button fixes (+ `e2e/greek-buttons.spec.ts`), light-mode contrast fixes, profile loading timeout. Fixed a race where account deletion could land on the sign-in page; lazy legal pages test now waits for the text; home e2e rewritten with a mocked sign-in.
 - **Checks:** tsc PASS, eslint PASS, vitest 58 PASS, build:web PASS, Playwright mobile 74 passed / 1 skipped, desktop 10 passed, 0 failed.
 - **Not verified:** real device.
+
+### 2026-11-16 — Night-stadium home restored (owner had approved it)
+- **Change:** restored the approved "Floodlit Home" (`HomeStadium`, `HomeParts`, `home-service`, `home-logic`, `use-now`, `PressLink`, EN/EL strings, home e2e) from the commit before the revert. Kept all later fixes (skeleton, Greek buttons, delete-account race, profile timeout).
+- **Checks:** tsc PASS, eslint PASS, vitest 65 PASS, build:web PASS, `phase-17-home` mobile 5/5 PASS (run with the installed Chromium; full regression not re-run).
+- **Not verified:** real device; full Playwright regression; desktop.
