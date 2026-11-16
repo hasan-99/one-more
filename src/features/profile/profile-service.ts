@@ -132,6 +132,12 @@ export async function requestAccountDeletion(): Promise<string> {
   return data;
 }
 
+/** Permanently deletes the signed-in user's account and personal data (see migration delete_my_account). */
+export async function deleteMyAccount(): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('delete_my_account');
+  if (error) throw error;
+}
+
 export async function cancelAccountDeletionRequest(requestId: string): Promise<boolean> {
   const { data, error } = await getSupabaseClient().rpc('cancel_account_deletion_request', {
     p_request_id: requestId,

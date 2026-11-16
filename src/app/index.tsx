@@ -22,6 +22,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { AuthButton, AuthPage } from '@/components/auth/AuthPage';
 import { DemoPlayerMovement } from '@/components/demo-player-movement';
 import { ReferenceLandingNative } from '@/components/landing/ReferenceLandingNative';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { LanguageSwitcher } from '@/components/preferences-switchers';
 import { PitchBackdrop } from '@/components/pitch-backdrop';
 import { translations } from '@/i18n';
@@ -382,6 +383,9 @@ function LandingScreenWeb() {
             </Reveal>
           </View>
         </View>
+      </View>
+      <View style={{ paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center' }}>
+        <LegalLinks compact />
       </View>
     </ScrollView>
   );

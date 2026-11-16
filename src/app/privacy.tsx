@@ -1,5 +1,5 @@
-import { LegalPlaceholder } from '@/components/legal/LegalPlaceholder';
+import { LegalDocument } from '@/components/legal/LegalDocument';
 
 export default function PrivacyPage() {
-  return <LegalPlaceholder kind="privacy" />;
+  return <LegalDocument kind="privacy" />;
 }

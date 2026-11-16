@@ -1,5 +1,5 @@
-import { LegalPlaceholder } from '@/components/legal/LegalPlaceholder';
+import { LegalDocument } from '@/components/legal/LegalDocument';
 
 export default function TermsPage() {
-  return <LegalPlaceholder kind="terms" />;
+  return <LegalDocument kind="terms" />;
 }

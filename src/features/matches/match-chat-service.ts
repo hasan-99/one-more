@@ -107,3 +107,25 @@ export async function leaveMatchChat(matchId: string): Promise<void> {
   const { error } = await getSupabaseClient().rpc('leave_match', { p_match_id: matchId });
   if (error) throw error;
 }
+
+export type BlockedUser = { userId: string; displayName: string; blockedAt: string };
+
+export async function blockUser(userId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('block_user', { p_user_id: userId });
+  if (error) throw error;
+}
+
+export async function unblockUser(userId: string): Promise<void> {
+  const { error } = await getSupabaseClient().rpc('unblock_user', { p_user_id: userId });
+  if (error) throw error;
+}
+
+export async function listBlockedUsers(): Promise<BlockedUser[]> {
+  const { data, error } = await getSupabaseClient().rpc('get_my_blocked_users');
+  if (error) throw error;
+  return data.map((row) => ({
+    userId: row.user_id,
+    displayName: row.display_name,
+    blockedAt: row.blocked_at,
+  }));
+}

@@ -12,6 +12,7 @@ import {
 import { useToast } from '@/components/toast/ToastProvider';
 import { useAuth } from '@/auth/AuthProvider';
 import { signUpWithPassword } from '@/features/auth/auth-service';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { authErrorMessageKey, validateSignup } from '@/features/auth/auth-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
@@ -113,6 +114,7 @@ export default function SignUpScreen() {
           onPress={() => void submit()}
         />
         <AuthTextLink href="/sign-in">{copy.authSignInLink}</AuthTextLink>
+        <LegalLinks compact />
       </AuthForm>
     </AuthPage>
   );

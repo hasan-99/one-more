@@ -10,6 +10,7 @@ import {
   loadMatchChatReportCounts,
   loadMatchChatMessages,
   moderateMatchMessage,
+  blockUser,
   reportMatchMessage,
   sendMatchMessage,
   subscribeToMatchMessages,
@@ -186,6 +187,19 @@ export default function MatchChatScreen() {
     }
   };
 
+  const block = async (senderId: string) => {
+    setMessageActionId(senderId);
+    try {
+      await blockUser(senderId);
+      await refreshMessages();
+      showToast(copy.chatUserBlocked, 'success');
+    } catch {
+      showToast(copy.chatBlockError, 'error');
+    } finally {
+      setMessageActionId(null);
+    }
+  };
+
   const moderate = async (messageId: string) => {
     setMessageActionId(messageId);
     try {
@@ -320,6 +334,13 @@ export default function MatchChatScreen() {
                           secondary
                         />
                       )}
+                      <Button
+                        label={copy.chatBlockUser}
+                        onPress={() => void block(message.sender_id)}
+                        colors={colors}
+                        disabled={messageActionId !== null}
+                        secondary
+                      />
                       {reportingId === message.id ? (
                         <View style={styles.reasonActions}>
                           {(

@@ -1,8 +1,10 @@
+import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { AuthButton, AuthFeedback } from '@/components/auth/AuthPage';
+import { LegalLinks } from '@/components/legal/LegalLinks';
 import { AppCard, AppPage } from '@/components/layout/AppPage';
 import { AppearanceSwitcher } from '@/components/preferences-switchers';
 import { useToast } from '@/components/toast/ToastProvider';
@@ -10,10 +12,16 @@ import {
   cancelAccountDeletionRequest,
   getAccountDeletionRequest,
   getNotificationPreferences,
-  requestAccountDeletion,
+  deleteMyAccount,
   saveNotificationPreferences,
   type AccountDeletionRequestRow,
 } from '@/features/profile/profile-service';
+import { getSupabaseClient } from '@/lib/supabase';
+import {
+  listBlockedUsers,
+  unblockUser,
+  type BlockedUser,
+} from '@/features/matches/match-chat-service';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 
@@ -33,6 +41,7 @@ export default function SettingsScreen() {
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletionRequest, setDeletionRequest] = useState<AccountDeletionRequestRow | null>(null);
+  const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   const [deletionConfirming, setDeletionConfirming] = useState(false);
   const [deletionBusy, setDeletionBusy] = useState(false);
   const currentState = user?.id === notificationState?.userId ? notificationState : null;
@@ -96,17 +105,41 @@ export default function SettingsScreen() {
     }
   };
 
-  const submitDeletionRequest = async () => {
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    void listBlockedUsers()
+      .then((rows) => {
+        if (active) setBlocked(rows);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const unblock = async (userId: string) => {
+    try {
+      await unblockUser(userId);
+      setBlocked((rows) => rows.filter((row) => row.userId !== userId));
+    } catch {
+      showToast(copy.settingsBlockedError, 'error');
+    }
+  };
+
+  const submitDeletion = async () => {
     if (!user) return;
     setDeletionBusy(true);
     try {
-      await requestAccountDeletion();
-      setDeletionRequest(await getAccountDeletionRequest(user.id));
-      setDeletionConfirming(false);
+      await deleteMyAccount();
+      // The account no longer exists; end the local session and leave the private area.
+      await getSupabaseClient()
+        .auth.signOut({ scope: 'local' })
+        .catch(() => undefined);
       showToast(copy.settingsDeletionRequestSuccess, 'success');
+      router.replace('/');
     } catch {
       showToast(copy.settingsDeletionRequestError, 'error');
-    } finally {
       setDeletionBusy(false);
     }
   };
@@ -183,6 +216,37 @@ export default function SettingsScreen() {
           )}
         </AppCard>
       ) : null}
+      <AppCard>
+        <Text
+          accessibilityRole="header"
+          style={[styles.sectionTitle, { color: colors.textPrimary }]}
+        >
+          {copy.legalLinksLabel}
+        </Text>
+        <LegalLinks />
+      </AppCard>
+      {user ? (
+        <AppCard>
+          <Text
+            accessibilityRole="header"
+            style={[styles.sectionTitle, { color: colors.textPrimary }]}
+          >
+            {copy.settingsBlockedTitle}
+          </Text>
+          {blocked.length === 0 ? (
+            <Text style={{ color: colors.textSecondary }}>{copy.settingsBlockedEmpty}</Text>
+          ) : (
+            blocked.map((row) => (
+              <View key={row.userId} style={{ gap: 8 }}>
+                <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>
+                  {row.displayName}
+                </Text>
+                <AuthButton label={copy.settingsUnblock} onPress={() => void unblock(row.userId)} />
+              </View>
+            ))
+          )}
+        </AppCard>
+      ) : null}
       {user && loaded && !loadError ? (
         <AppCard>
           <Text
@@ -201,13 +265,14 @@ export default function SettingsScreen() {
                 onPress={() => void cancelDeletionRequest()}
               />
             </>
-          ) : deletionConfirming ? (
+          ) : null}
+          {deletionConfirming ? (
             <>
               <AuthFeedback>{copy.settingsDeletionConfirm}</AuthFeedback>
               <AuthButton
                 label={deletionBusy ? copy.profileSaving : copy.settingsDeletionRequest}
                 disabled={deletionBusy}
-                onPress={() => void submitDeletionRequest()}
+                onPress={() => void submitDeletion()}
               />
               <AuthButton
                 label={copy.commonCancel}

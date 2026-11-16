@@ -1506,6 +1506,13 @@ export type Database = {
         Returns: string;
       };
       request_account_deletion: { Args: never; Returns: string };
+      delete_my_account: { Args: never; Returns: undefined };
+      block_user: { Args: { p_user_id: string }; Returns: undefined };
+      unblock_user: { Args: { p_user_id: string }; Returns: undefined };
+      get_my_blocked_users: {
+        Args: never;
+        Returns: { user_id: string; display_name: string; blocked_at: string }[];
+      };
       respond_team_invite: {
         Args: { p_decision: string; p_invite_id: string };
         Returns: string;
