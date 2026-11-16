@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, Slot, usePathname, type Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
@@ -20,6 +21,12 @@ export default function AppLayout() {
     complete: boolean | null;
     error: boolean;
   } | null>(null);
+  // A user who already finished their profile on this device does not wait for the server check on
+  // every launch: the last known answer is used right away and re-verified in the background.
+  const [knownComplete, setKnownComplete] = useState<{ userId: string; complete: boolean } | null>(
+    null,
+  );
+  const userId = session?.user.id ?? null;
   const protectedRoute =
     pathname === '/home' ||
     pathname === '/create' ||
@@ -42,10 +49,28 @@ export default function AppLayout() {
     profileRequestKey && profileStatus?.key === profileRequestKey ? profileStatus : null;
 
   useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    void AsyncStorage.getItem(completeKey(userId))
+      .then((value) => {
+        if (active && value === '1') setKnownComplete({ userId, complete: true });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
+  useEffect(() => {
     if (!profileRequestKey || !session) return;
     let active = true;
     void withTimeout(getProfileCompletion(session.user.id), profileCheckTimeoutMs)
       .then((complete) => {
+        void (
+          complete
+            ? AsyncStorage.setItem(completeKey(session.user.id), '1')
+            : AsyncStorage.removeItem(completeKey(session.user.id))
+        ).catch(() => undefined);
         if (active) setProfileStatus({ key: profileRequestKey, complete, error: false });
       })
       .catch(() => {
@@ -102,18 +127,25 @@ export default function AppLayout() {
         )}
       </AuthPage>
     );
-  } else if (protectedRoute && session && (!currentProfileStatus || currentProfileStatus.error)) {
-    gate = (
-      <AuthPage
-        title={currentProfileStatus?.error ? copy.profileLoadError : copy.profileLoading}
-        description={copy.profileOnboardingDescription}
-      >
-        {currentProfileStatus?.error ? (
-          <AuthButton label={copy.profileRetry} onPress={retryProfile} />
-        ) : (
-          <View accessibilityRole="progressbar" accessibilityLabel={copy.profileLoading} />
-        )}
+  } else if (
+    protectedRoute &&
+    session &&
+    (!currentProfileStatus || currentProfileStatus.error) &&
+    !(knownComplete?.userId === userId && knownComplete.complete)
+  ) {
+    gate = currentProfileStatus?.error ? (
+      <AuthPage title={copy.profileLoadError} description={copy.profileOnboardingDescription}>
+        <AuthButton label={copy.profileRetry} onPress={retryProfile} />
       </AuthPage>
+    ) : (
+      // Light loading state: just a spinner, no full card flashing on every launch.
+      <View style={styles.loading}>
+        <ActivityIndicator
+          size="large"
+          color={colors.accentText}
+          accessibilityLabel={copy.profileLoading}
+        />
+      </View>
     );
   }
   // The gate renders inside the shell so the navigation bar stays usable while
@@ -129,6 +161,10 @@ export default function AppLayout() {
 }
 
 const profileCheckTimeoutMs = 12_000;
+
+function completeKey(userId: string) {
+  return `one-more.profile-complete.${userId}`;
+}
 
 /** Rejects if the promise has not settled in time, so a stalled request shows a retry. */
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -150,4 +186,5 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   hidden: { display: 'none' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 240 },
 });
