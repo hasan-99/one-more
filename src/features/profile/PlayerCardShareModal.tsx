@@ -138,8 +138,18 @@ export function usePlayerCardActions(copy: Copy) {
           dialogTitle: copy.profileShareCardTitle,
         });
       } else {
-        await MediaLibrary.saveToLibraryAsync(fileUri);
-        showToast(copy.profileCardSaved, 'success');
+        try {
+          await MediaLibrary.saveToLibraryAsync(fileUri);
+          showToast(copy.profileCardSaved, 'success');
+        } catch (saveError) {
+          // Android builds do not request broad photo access (Google Play policy), so if the system
+          // refuses the direct save, hand the image to the share sheet, which can save it too.
+          if (Platform.OS !== 'android' || !(await Sharing.isAvailableAsync())) throw saveError;
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'image/png',
+            dialogTitle: copy.profileShareCardTitle,
+          });
+        }
       }
     } catch {
       showToast(copy.profileCardSaveError, 'error');

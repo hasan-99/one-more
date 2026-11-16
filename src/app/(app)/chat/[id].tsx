@@ -191,6 +191,8 @@ export default function MatchChatScreen() {
     setMessageActionId(senderId);
     try {
       await blockUser(senderId);
+      // Hide what is already on screen straight away; the server also stops returning them.
+      setMessages((current) => current.filter((message) => message.sender_id !== senderId));
       await refreshMessages();
       showToast(copy.chatUserBlocked, 'success');
     } catch {
