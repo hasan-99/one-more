@@ -1853,3 +1853,8 @@
 ### 2026-11-16 — Final bundle id
 - **Change:** `ios.bundleIdentifier` and `android.package` set to `com.onemore.app` (was the placeholder `com.anonymous.onemore`). Old id remains only in historical docs.
 - **Checks:** `expo config` shows the new values. Expo Go and OTA are unaffected (they do not use the app's bundle id).
+
+### 2026-11-16 — Profile loading timeout + skeleton loading everywhere
+- **Change:** Profile load has a 15 s timeout with Retry and shows a skeleton; stalled in-flight requests are no longer shared (20 s). New `SkeletonList` (card, row, profile, detail, chat) replaces blank/text loading on Explore, Teams, Challenges, Notifications, Profile, match/team/challenge details and chat. Honours Reduce Motion.
+- **Checks:** tsc PASS, eslint PASS, vitest 58 PASS, build:web PASS, Playwright mobile 70 passed/1 skipped, desktop 9 passed (new `skeleton-loading.spec.ts`, light + dark).
+- **Not verified:** real device; skeleton of every page was seen only for Explore on web.
