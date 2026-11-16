@@ -21,6 +21,7 @@ import {
 } from '@/features/teams/team-service';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 export default function TeamsScreen() {
   const { locale, colors } = useAppPreferences();
@@ -135,7 +136,7 @@ export default function TeamsScreen() {
       }
     >
       {loading ? (
-        <View accessibilityRole="progressbar" accessibilityLabel={copy.teamDetailLoading} />
+        <SkeletonList kind="card" count={3} label={copy.teamDetailLoading} />
       ) : loadError ? (
         <Action label={copy.teamRetry} onPress={() => void load()} colors={colors} />
       ) : (

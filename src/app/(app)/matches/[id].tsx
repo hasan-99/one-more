@@ -24,6 +24,7 @@ import {
 import { cancelMatch, loadMatch, type MatchDiscoveryItem } from '@/features/matches/match-service';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 export default function MatchDetailsScreen() {
   const { id: rawId } = useLocalSearchParams<{ id: string | string[] }>();
@@ -117,13 +118,7 @@ export default function MatchDetailsScreen() {
   if (loading) {
     return (
       <AppPage title={copy.matchDetails} description={copy.matchDetailsIntro}>
-        <View
-          accessibilityRole="progressbar"
-          accessibilityLabel={copy.matchLoading}
-          style={styles.stateBox}
-        >
-          <Text style={styles.stateText}>{copy.matchLoading}</Text>
-        </View>
+        <SkeletonList kind="detail" label={copy.matchLoading} />
       </AppPage>
     );
   }

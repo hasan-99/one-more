@@ -69,8 +69,8 @@ import {
   type AreaRow,
   type CityRow,
 } from './profile-service';
-import { WaitScreen } from '@/components/loading/WaitScreen';
 import { withTimeout } from '@/lib/with-timeout';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 export type Copy = { [Key in TranslationKey]: string };
 
@@ -206,7 +206,9 @@ export function PlayerProfile() {
     return (
       <View style={styles.stateRoot}>
         {loading ? (
-          <WaitScreen label={copy.profileLoading} subtitle={copy.loaderSub} />
+          <View style={styles.skeletonWrap}>
+            <SkeletonList kind="profile" label={copy.profileLoading} />
+          </View>
         ) : (
           <View style={styles.stateCard}>
             <AuthFeedback>{copy.profileLoadError}</AuthFeedback>
@@ -1391,6 +1393,7 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
       backgroundColor: colors.background,
     },
     stateCard: { width: '100%', maxWidth: 480, gap: 18 },
+    skeletonWrap: { width: '100%', maxWidth: 480 },
     scroll: { flex: 1 },
     content: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 22, paddingBottom: 28 },
     hero: {

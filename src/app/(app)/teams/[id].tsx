@@ -38,6 +38,7 @@ import { listTeamChallenges, type TeamChallenge } from '@/features/teams/challen
 import { validateTeamInput } from '@/features/teams/team-validation';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 export default function TeamDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -138,7 +139,7 @@ export default function TeamDetailsScreen() {
   if (loading)
     return (
       <AppPage title={copy.appTeamDetailsTitle}>
-        <View accessibilityRole="progressbar" accessibilityLabel={copy.teamDetailLoading} />
+        <SkeletonList kind="detail" label={copy.teamDetailLoading} />
       </AppPage>
     );
   if (loadError)

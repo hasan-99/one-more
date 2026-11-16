@@ -20,6 +20,7 @@ import {
 } from '@/features/matches/match-chat-service';
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 type ChatStatus = 'loading' | 'ready' | 'denied' | 'error';
 type ReportReason = 'spam' | 'harassment' | 'inappropriate';
@@ -224,13 +225,7 @@ export default function MatchChatScreen() {
   if (currentStatus === 'loading') {
     return (
       <AppPage title={copy.appChatTitle} description={copy.chatDescription}>
-        <View
-          accessibilityRole="progressbar"
-          accessibilityLabel={copy.chatLoading}
-          style={styles.state}
-        >
-          <Text style={styles.secondary}>{copy.chatLoading}</Text>
-        </View>
+        <SkeletonList kind="chat" count={5} label={copy.chatLoading} />
       </AppPage>
     );
   }

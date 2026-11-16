@@ -28,6 +28,7 @@ import { translations, type Locale } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import type { ThemeColors } from '@/theme/tokens';
 import { bodyFont, displayFont } from '@/theme/typography';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 const emptyFilters: MatchFilters = {
   cityId: null,
@@ -290,14 +291,7 @@ export default function ExploreScreen() {
               </Pressable>
             </View>
           ) : loading ? (
-            <View
-              accessibilityRole="progressbar"
-              accessibilityLabel={copy.matchLoading}
-              style={styles.stateBox}
-            >
-              <BouncingBall colors={colors} />
-              <Text style={styles.stateText}>{copy.matchLoading}</Text>
-            </View>
+            <SkeletonList kind="card" count={3} label={copy.matchLoading} />
           ) : loadError && matches.length === 0 ? (
             <View accessibilityRole="alert" style={styles.emptyBox}>
               <Text style={styles.emptyTitle}>{copy.matchLoadError}</Text>

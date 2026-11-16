@@ -17,6 +17,7 @@ import {
 import { translations } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import { bodyFont } from '@/theme/typography';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 const formats = [5, 8, 11] as const;
 
@@ -110,7 +111,7 @@ export default function ChallengesScreen() {
       }
     >
       {loading ? (
-        <View accessibilityRole="progressbar" accessibilityLabel={copy.chatLoading} />
+        <SkeletonList kind="card" count={3} label={copy.chatLoading} />
       ) : loadError ? (
         <Pressable accessibilityRole="button" onPress={() => void load()} style={styles.retry}>
           <Text style={styles.retryText}>{copy.challengeRetry}</Text>

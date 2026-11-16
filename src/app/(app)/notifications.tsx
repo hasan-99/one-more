@@ -14,6 +14,7 @@ import {
 } from '@/features/notifications/notification-service';
 import { translations, type TranslationKey } from '@/i18n';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 const notificationCopy = {
   match_join_requested: ['notificationJoinRequestedTitle', 'notificationJoinRequestedBody'],
@@ -132,7 +133,7 @@ export default function NotificationsScreen() {
           <AppAction labelKey="authSignIn" href="/sign-in?returnTo=%2Fnotifications" />
         </>
       ) : loading ? (
-        <View accessibilityRole="progressbar" accessibilityLabel={copy.chatLoading} />
+        <SkeletonList kind="row" count={5} label={copy.chatLoading} />
       ) : loadError ? (
         <>
           <EmptyState title={copy.profileLoadError} description={copy.notificationsMarkError} />

@@ -27,6 +27,7 @@ import { translations } from '@/i18n';
 import { matchTicketParts } from '@/i18n/format';
 import { useAppPreferences } from '@/preferences/AppPreferencesProvider';
 import { bodyFont } from '@/theme/typography';
+import { SkeletonList } from '@/components/loading/Skeleton';
 
 const grey = '#8a968d';
 const lime = '#cfff4a';
@@ -171,7 +172,7 @@ export default function ChallengeDetailsScreen() {
   if (loading)
     return (
       <AppPage backHref="/teams" title={copy.challengeDetails}>
-        <View accessibilityRole="progressbar" accessibilityLabel={copy.teamDetailLoading} />
+        <SkeletonList kind="detail" label={copy.teamDetailLoading} />
       </AppPage>
     );
   if (loadError)
