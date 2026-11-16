@@ -1824,3 +1824,7 @@
 
 ## Stale e2e tests updated
 - `landing.spec`, `phase-02` (main navigation, Greek) and `phase-10-teams` updated to current behaviour and a mocked backend; all pass (desktop + mobile). No app code changed.
+
+## Bundle and font follow-ups
+- Greek copy (`el.ts`, about 150 KB) loads on demand via `loadLocale` (English users never download it); legal texts load only on legal pages; native landing fonts are embedded (no Google Fonts request, verified in Chromium with zero external requests). Shared JS chunk 860 KB -> 639 KB raw; entry unchanged.
+- Checks: tsc, eslint, vitest 50/50; Playwright mobile 55 passed / 1 skipped (navigation, Greek, legal pages, auth, challenges, create game, layout audit, onboarding, notifications). Not tested on a device.
