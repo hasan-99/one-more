@@ -1,4 +1,5 @@
 import type { Tables } from '@/lib/database.types';
+import { loadAreaRows, loadCityRows } from '@/lib/reference-data';
 import { getSupabaseClient } from '@/lib/supabase';
 
 import type { ProfileInput } from './profile-validation';
@@ -22,8 +23,8 @@ export async function getProfileBundle(userId: string): Promise<ProfileBundle> {
   const client = getSupabaseClient();
   const [profile, cities, areas, preferences, notificationPreferences] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).single(),
-    client.from('cities').select('*').order('name_en'),
-    client.from('areas').select('*').order('name_en'),
+    loadCityRows(),
+    loadAreaRows(),
     client.from('user_preferences').select('*').eq('user_id', userId).single(),
     client.from('notification_preferences').select('*').eq('user_id', userId).single(),
   ]);
@@ -83,13 +84,15 @@ export async function saveProfile(userId: string, input: ProfileInput): Promise<
 
 export async function saveNotificationPreferences(
   userId: string,
-  values: Partial<Pick<
-    NotificationPreferencesRow,
-    | 'in_app_enabled'
-    | 'discovery_email_enabled'
-    | 'chat_email_enabled'
-    | 'transactional_email_enabled'
-  >>,
+  values: Partial<
+    Pick<
+      NotificationPreferencesRow,
+      | 'in_app_enabled'
+      | 'discovery_email_enabled'
+      | 'chat_email_enabled'
+      | 'transactional_email_enabled'
+    >
+  >,
 ): Promise<void> {
   const { error } = await getSupabaseClient()
     .from('notification_preferences')

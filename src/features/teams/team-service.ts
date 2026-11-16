@@ -1,4 +1,5 @@
 import type { Json, Tables } from '@/lib/database.types';
+import { cachedRequest } from '@/lib/request-cache';
 import { getSupabaseClient } from '@/lib/supabase';
 export { validateTeamInput } from './team-validation';
 
@@ -179,7 +180,12 @@ function toTeamDetails(value: Json): TeamDetails | null {
   };
 }
 
-export async function listTeamDirectory(): Promise<TeamDirectoryItem[]> {
+export function listTeamDirectory(): Promise<TeamDirectoryItem[]> {
+  // Screens that open together share one request; nothing is kept afterwards (ttl 0).
+  return cachedRequest('team-directory', 0, loadTeamDirectory);
+}
+
+async function loadTeamDirectory(): Promise<TeamDirectoryItem[]> {
   const { data, error } = await getSupabaseClient().rpc('list_team_directory');
   if (error) throw error;
   return data.map((row) => ({

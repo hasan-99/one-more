@@ -13,7 +13,7 @@ export function BrandMark({ subtitle, prominent = false, logoSize }: BrandMarkPr
   return (
     <View style={styles.wrap}>
       <Image
-        source={require('@/assets/images/one-more-logo.png')}
+        source={require('@/assets/images/one-more-logo-256.png')}
         accessibilityRole="image"
         accessibilityLabel="ONE MORE football logo"
         resizeMode="contain"

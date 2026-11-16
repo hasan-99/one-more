@@ -1,7 +1,7 @@
 import { useFonts } from 'expo-font';
 import { Link, usePathname, type Href } from 'expo-router';
 import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/brand-mark';
@@ -77,7 +77,9 @@ export function AppShell({ children }: PropsWithChildren) {
     return (
       <View style={StyleSheet.flatten([styles.root, { backgroundColor: colors.background }])}>
         <View style={[styles.main, styles.immersiveMain]}>
-          <View style={styles.routeContent}>{children}</View>
+          <View nativeID="main-content" accessibilityRole="main" style={styles.routeContent}>
+            {children}
+          </View>
         </View>
       </View>
     );
@@ -85,6 +87,7 @@ export function AppShell({ children }: PropsWithChildren) {
 
   return (
     <View style={styles.root}>
+      <SkipLink label={copy.appSkipToContent} />
       {showSide ? (
         <View nativeID="app-sidebar" style={styles.sidebar}>
           <BrandMark />
@@ -116,7 +119,9 @@ export function AppShell({ children }: PropsWithChildren) {
             <AppNavigation active={active} variant="row" />
           </View>
         ) : null}
-        <View style={styles.routeContent}>{children}</View>
+        <View nativeID="main-content" accessibilityRole="main" style={styles.routeContent}>
+          {children}
+        </View>
         {showBottom ? (
           <View
             nativeID="app-mobile-nav"
@@ -208,4 +213,32 @@ function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
       backgroundColor: colors.navBar,
     },
   });
+}
+
+// Keyboard users can jump past the navigation straight to the page content (web only).
+function SkipLink({ label }: { label: string }) {
+  const [focused, setFocused] = useState(false);
+  if (Platform.OS !== 'web') return null;
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      onPress={() => document.getElementById('main-content')?.focus()}
+      style={{
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        zIndex: 100,
+        padding: 12,
+        borderRadius: 10,
+        backgroundColor: '#cfff4a',
+        opacity: focused ? 1 : 0,
+        pointerEvents: focused ? 'auto' : 'none',
+      }}
+    >
+      <Text style={{ color: '#10170f', fontWeight: '800' }}>{label}</Text>
+    </Pressable>
+  );
 }

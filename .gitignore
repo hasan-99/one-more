@@ -49,6 +49,7 @@ assets/images/*
 !assets/images/one-more-logo.png
 !assets/images/player-card-*.jpg
 !assets/images/player-card-folds.png
+!assets/images/one-more-logo-256.png
 assets/expo.icon/
 
 # generated native folders

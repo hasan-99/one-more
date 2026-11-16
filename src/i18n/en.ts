@@ -78,6 +78,7 @@ export const en = {
   galleryNavHome: 'Home',
   galleryNavReview: 'Design review',
   galleryAccent: 'Electric Lime',
+  appSkipToContent: 'Skip to content',
   appNavigation: 'Main navigation',
   appHomeTitle: 'Home',
   appExploreTitle: 'Explore games',

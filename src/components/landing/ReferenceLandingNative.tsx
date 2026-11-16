@@ -120,7 +120,7 @@ export function ReferenceLandingNative() {
         accessibilityRole="image"
         pointerEvents="none"
         resizeMode="cover"
-        source={require('@/assets/images/one-more-logo.png')}
+        source={require('@/assets/images/one-more-logo-256.png')}
         style={[styles.logo, { left: logoLeft, top: insets.top + 14 }, logoStyle]}
       />
     </View>

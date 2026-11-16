@@ -1,4 +1,5 @@
 import type { Json, Tables } from '@/lib/database.types';
+import { loadAreaRows, loadCityRows } from '@/lib/reference-data';
 import { getSupabaseClient } from '@/lib/supabase';
 import { filterCityAreaOptions } from '@/features/location/city-options';
 
@@ -224,11 +225,7 @@ export async function cancelMatch(id: string): Promise<void> {
 }
 
 export async function loadMatchFilters(): Promise<{ cities: MatchCity[]; areas: MatchArea[] }> {
-  const client = getSupabaseClient();
-  const [cities, areas] = await Promise.all([
-    client.from('cities').select('*').order('name_en'),
-    client.from('areas').select('*').order('name_en'),
-  ]);
+  const [cities, areas] = await Promise.all([loadCityRows(), loadAreaRows()]);
   if (cities.error) throw cities.error;
   if (areas.error) throw areas.error;
   return filterCityAreaOptions(cities.data, areas.data);

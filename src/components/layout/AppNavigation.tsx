@@ -52,7 +52,7 @@ export function AppNavigation({ active, variant }: { active: string; variant: Na
         const bottom = variant === 'bottom';
         const createAction = bottom && key === 'create';
         return (
-          <Link key={key} href={href} asChild>
+          <Link key={key} href={href} prefetch asChild>
             <Pressable
               accessibilityRole="link"
               accessibilityState={{ selected }}

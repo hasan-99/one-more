@@ -78,6 +78,7 @@ export const el = {
   galleryNavHome: 'Αρχική',
   galleryNavReview: 'Έλεγχος σχεδίασης',
   galleryAccent: 'Electric Lime',
+  appSkipToContent: 'Μετάβαση στο περιεχόμενο',
   appNavigation: 'Κύρια πλοήγηση',
   appHomeTitle: 'Αρχική',
   appExploreTitle: 'Ανακάλυψη αγώνων',
