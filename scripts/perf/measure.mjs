@@ -29,11 +29,14 @@ const tables = {
   search_matches: matches, list_matches: matches, get_discover_matches: matches,
 };
 
-const pages = [
+const allPages = [
   ['landing', '/', false], ['sign-in', '/sign-in', false], ['sign-up', '/sign-up', false], ['privacy', '/privacy', false],
   ['home', '/home', true], ['explore', '/explore', true], ['teams', '/teams', true], ['challenges', '/challenges', true],
   ['profile', '/profile', true], ['settings', '/settings', true], ['notifications', '/notifications', true], ['create-game', '/create', true],
 ];
+
+const wanted = process.env.PERF_PAGES ? process.env.PERF_PAGES.split(',') : null;
+const pages = wanted ? allPages.filter((p) => wanted.includes(p[0])) : allPages;
 
 const observer = () => {
   window.__m = { lcp: 0, cls: 0, fcp: 0, inp: 0 };
@@ -83,13 +86,16 @@ async function once(browser, [name, path, signed]) {
   await page.goto(base + path, { waitUntil: 'load' });
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForTimeout(800);
-  // Interaction: tap the first focusable control to sample responsiveness.
-  await page.mouse.click(196, 120).catch(() => {});
-  await page.waitForTimeout(300);
+  // Paint metrics are read BEFORE any interaction so a tap that navigates cannot pollute them.
   const m = await page.evaluate(() => {
     const nav = performance.getEntriesByType('navigation')[0];
     return { ...window.__m, ttfb: nav.responseStart, load: nav.loadEventEnd, dcl: nav.domContentLoadedEventEnd, url: location.pathname };
   });
+  // Interaction: press a key on the page (no navigation) to sample input responsiveness.
+  await page.keyboard.press('Tab').catch(() => {});
+  await page.keyboard.press('Tab').catch(() => {});
+  await page.waitForTimeout(300);
+  m.inp = await page.evaluate(() => window.__m.inp);
   const dupes = [...seen.values()].filter((n) => n > 1).reduce((a, n) => a + n - 1, 0);
   await ctx.close();
   return { ...m, bytes, reqs, jsBytes, imgBytes, fontBytes, apiCalls, dupeApiCalls: dupes };
