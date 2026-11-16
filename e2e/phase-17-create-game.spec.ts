@@ -326,6 +326,65 @@ test('the game page shows the ticket, facts and the players number with its bar'
   });
 });
 
+test('the game page footer keeps Back to games and Cancel match in one row', async ({ page }) => {
+  await seed(page);
+  const row = {
+    id: matchId,
+    title: 'Last Whistle',
+    side_size: 5,
+    city_id: cityId,
+    city_name_en: 'Nicosia',
+    city_name_el: 'Λευκωσία',
+    area_id: strovolosId,
+    area_name_en: 'Strovolos',
+    area_name_el: 'Στρόβολος',
+    venue_display_name: 'Novo',
+    venue_address: 'Strovolos, Nicosia',
+    starts_at: '2030-11-18T20:00:00Z',
+    duration_minutes: 60,
+    skill_level: null,
+    price_eur: 10,
+    capacity: 10,
+    active_players: 0,
+    free_spots: 1,
+    open_positions: [],
+    notes: null,
+    booking_status: 'confirmed',
+    event_status: 'published',
+    is_organizer: true,
+    created_at: '2026-11-14T00:00:00Z',
+  };
+  await page.route('**/rest/v1/match_discovery**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(row) }),
+  );
+  await page.route('**/rest/v1/match_participants**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: 'null' }),
+  );
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto(`/matches/${matchId}`);
+  const back = page.getByRole('link', { name: 'Back to games' });
+  const cancel = page.getByRole('button', { name: 'Cancel match' });
+  await expect(back).toBeVisible();
+  await expect(cancel).toBeVisible();
+  const a = (await back.boundingBox())!;
+  const b = (await cancel.boundingBox())!;
+  expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+  expect(Math.abs(a.height - b.height)).toBeLessThan(2);
+  expect(Math.abs(a.width - b.width)).toBeLessThan(2);
+  await cancel.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: '/tmp/pgt2/footer-row.png' });
+  await cancel.click();
+  await expect(page.getByText('Cancel this match? Players will no longer see it.')).toBeVisible();
+  const keep = page.getByRole('button', { name: 'Keep match' });
+  const confirm = page.getByRole('button', { name: 'Cancel match' });
+  const k = (await keep.boundingBox())!;
+  const c = (await confirm.boundingBox())!;
+  expect(Math.abs(k.y - c.y)).toBeLessThan(2);
+  await page.screenshot({ path: '/tmp/pgt2/footer-confirm.png' });
+  await keep.click();
+  await expect(back).toBeVisible();
+});
+
 test('explore cards show stickers, the kick-off time and the places bar', async ({ page }) => {
   await seed(page);
   const base = {

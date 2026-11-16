@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { Link, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -496,53 +496,65 @@ export default function MatchDetailsScreen() {
             )}
           </AppCard>
         ) : null}
-        {match.isOrganizer ? (
-          <View style={styles.cancelBlock}>
-            {!cancelPending ? (
+        {match.isOrganizer && cancelPending ? (
+          <Text style={[styles.error, styles.cancelConfirm]}>{copy.matchCancelConfirm}</Text>
+        ) : null}
+        <View style={styles.footerRow}>
+          {match.isOrganizer && cancelPending ? (
+            <>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setCancelPending(true)}
-                style={styles.retry}
+                disabled={cancelling}
+                onPress={() => setCancelPending(false)}
+                style={styles.footerButton}
               >
-                <Text style={styles.error}>{copy.matchCancel}</Text>
+                <Text numberOfLines={1} style={styles.footerText}>
+                  {copy.matchCancelKeep}
+                </Text>
               </Pressable>
-            ) : (
-              <>
-                <Text style={styles.error}>{copy.matchCancelConfirm}</Text>
-                <View style={styles.ownerActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={cancelling}
-                    onPress={() => setCancelPending(false)}
-                    style={styles.retry}
-                  >
-                    <Text style={styles.retryText}>{copy.matchCancelKeep}</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={cancelling}
-                    onPress={() => {
-                      setCancelling(true);
-                      void cancelMatch(match.id)
-                        .then(() => {
-                          showToast(copy.matchCancelSuccess, 'success');
-                          router.replace('/explore');
-                        })
-                        .catch(() => showToast(copy.matchCancelError, 'error'))
-                        .finally(() => setCancelling(false));
-                    }}
-                    style={[styles.retry, { backgroundColor: colors.surfaceRaised }]}
-                  >
-                    <Text style={styles.error}>
-                      {cancelling ? copy.matchSaving : copy.matchCancel}
-                    </Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
-        ) : null}
-        <AppAction labelKey="matchBackToExplore" href="/explore" secondary />
+              <Pressable
+                accessibilityRole="button"
+                disabled={cancelling}
+                onPress={() => {
+                  setCancelling(true);
+                  void cancelMatch(match.id)
+                    .then(() => {
+                      showToast(copy.matchCancelSuccess, 'success');
+                      router.replace('/explore');
+                    })
+                    .catch(() => showToast(copy.matchCancelError, 'error'))
+                    .finally(() => setCancelling(false));
+                }}
+                style={[styles.footerButton, styles.footerDanger]}
+              >
+                <Text numberOfLines={1} style={[styles.footerText, styles.footerDangerText]}>
+                  {cancelling ? copy.matchSaving : copy.matchCancel}
+                </Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Link href={'/explore' as Href} asChild>
+                <Pressable accessibilityRole="link" style={styles.footerButton}>
+                  <Text numberOfLines={1} style={styles.footerText}>
+                    {copy.matchBackToExplore}
+                  </Text>
+                </Pressable>
+              </Link>
+              {match.isOrganizer ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setCancelPending(true)}
+                  style={[styles.footerButton, styles.footerDanger]}
+                >
+                  <Text numberOfLines={1} style={[styles.footerText, styles.footerDangerText]}>
+                    {copy.matchCancel}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </>
+          )}
+        </View>
       </AppPage>
       {showBar ? (
         <View style={styles.bar}>
@@ -607,7 +619,22 @@ function formatCountdown(milliseconds: number) {
 
 function makeStyles(colors: ReturnType<typeof useAppPreferences>['colors']) {
   return StyleSheet.create({
-    cancelBlock: { gap: 10, alignItems: 'center' },
+    cancelConfirm: { marginTop: 4 },
+    footerRow: { flexDirection: 'row', gap: 10 },
+    footerButton: {
+      flex: 1,
+      minHeight: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 12,
+      borderRadius: 15,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceRaised,
+    },
+    footerText: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+    footerDanger: { borderColor: colors.errorText, backgroundColor: 'transparent' },
+    footerDangerText: { color: colors.errorText },
     detail: { color: colors.textSecondary, fontSize: 14, lineHeight: 21 },
     bar: {
       position: 'absolute',
