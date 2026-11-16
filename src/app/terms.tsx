@@ -1,5 +1,5 @@
-import { LegalDocument } from '@/components/legal/LegalDocument';
+import { LazyLegalDocument } from '@/components/legal/LazyLegalDocument';
 
 export default function TermsPage() {
-  return <LegalDocument kind="terms" />;
+  return <LazyLegalDocument kind="terms" />;
 }

@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
-import { translations, type Locale } from '@/i18n';
+import { loadLocale, translations, type Locale } from '@/i18n';
 import { useToast } from '@/components/toast/ToastProvider';
 import { themeTokens, type ThemeColors, type ThemeMode } from '@/theme/tokens';
 
@@ -45,7 +45,9 @@ export function AppPreferencesProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let active = true;
     void Promise.all([AsyncStorage.getItem(THEME_KEY), AsyncStorage.getItem(LOCALE_KEY)])
-      .then(([savedTheme, savedLocale]) => {
+      .then(async ([savedTheme, savedLocale]) => {
+        // Greek copy is loaded on demand: wait for it before showing the saved Greek locale.
+        if (savedLocale === 'el') await loadLocale('el');
         if (!active) return;
         if (savedTheme === 'system' || savedTheme === 'dark' || savedTheme === 'light') {
           setThemePreferenceState(savedTheme);
@@ -102,8 +104,11 @@ export function AppPreferencesProvider({ children }: PropsWithChildren) {
   const setLocale = useCallback(
     (value: Locale) => {
       if (value === locale) return;
-      setLocaleState(value);
-      void AsyncStorage.setItem(LOCALE_KEY, value)
+      void loadLocale(value)
+        .then(() => {
+          setLocaleState(value);
+          return AsyncStorage.setItem(LOCALE_KEY, value);
+        })
         .then(() => showToast(translations[value].preferencesLanguageSaved, 'success'))
         .catch(() => showToast(translations[value].preferencesSavedError, 'error'));
     },

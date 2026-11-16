@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
-import { translations } from './index';
+import { loadLocale, translations } from './index';
 import { formatLocalDateTime, formatLocalNumber } from './format';
 
 describe('landing translations', () => {
+  beforeAll(() => loadLocale('el'));
+
   it('contains the same keys in English and Greek', () => {
     expect(Object.keys(translations.el).sort()).toEqual(Object.keys(translations.en).sort());
   });

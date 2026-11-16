@@ -1,5 +1,5 @@
-import { LegalDocument } from '@/components/legal/LegalDocument';
+import { LazyLegalDocument } from '@/components/legal/LazyLegalDocument';
 
 export default function DeleteAccountPage() {
-  return <LegalDocument kind="deletion" />;
+  return <LazyLegalDocument kind="deletion" />;
 }
