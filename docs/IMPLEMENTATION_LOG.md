@@ -1845,3 +1845,7 @@
 - **Change:** encrypted auth session storage (AES-256-GCM, key in SecureStore), iPhone-only iOS target, local data cleared on sign-out/deletion, EAS remote versioning + production iOS image, 44 px tap targets, Android R8 + resource shrinking via `expo-build-properties`. New deps: `@noble/ciphers`, `expo-crypto`, `expo-build-properties`.
 - **Checks:** tsc PASS, eslint PASS, vitest 55 PASS, `expo prebuild` (temp copy) PASS: iPhone-only family, minify and shrink true. Browser regression: see next entry.
 - **Not verified:** real device sign-in after the OTA (encrypted storage needs a device test; web uses Supabase's own storage).
+
+### 2026-11-16 — Store readiness batch 2 (audit of perf items + static legal files)
+- **Change:** added `scripts/export-legal.mjs` (`npm run legal:export`) and the generated `legal/` files. FlatList, expo-image and native-driver items were checked and intentionally not changed (see FIX_PLAN.md).
+- **Checks:** script run PASS; no app code changed.

@@ -64,6 +64,7 @@
     "dev:web": "expo start --web",
     "preview:web": "npm run build:web && npx expo serve --port 8080",
     "typecheck": "tsc --noEmit",
+    "legal:export": "node --experimental-strip-types scripts/export-legal.mjs",
     "test:run": "vitest run",
     "test": "vitest",
     "test:e2e": "playwright test",

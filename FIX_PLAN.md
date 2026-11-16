@@ -74,3 +74,17 @@ Not doing without your decision: P3-4 and P3-5 (large rewrites; "do not break ex
 | P2-2 | ⏭ dropped | The font plugin registers fonts by file name (`Barlow-Regular`) but the code uses names like `Barlow_400Regular`; switching would mean renaming every fontFamily for no gain. Runtime loading stays |
 | P2-7 | pending | static legal files |
 | P0-1 | waiting | needs your bundle id |
+
+## Progress — batch 2 (2026-11-16)
+
+I checked each item against the code before changing anything:
+
+| ID | Result |
+| --- | --- |
+| P2-3 FlatList | ⏭ not needed. Explore loads 10 games per page with a Load more button, notifications are capped at 50 rows, chat loads pages. No unbounded list exists, so converting would add risk without a measurable gain |
+| P2-4 expo-image | ⏭ not needed. The app has one `<Image>`, a bundled asset, and no remote image URLs. A disk cache has nothing to cache |
+| P2-5 `useNativeDriver: false` | ⏭ kept. Both uses animate a number shown as text and a progress bar width; the native driver cannot animate those properties |
+| P2-7 static legal files | ✅ `npm run legal:export` writes `legal/privacy-policy(.el).md`, `terms-of-service(.el).md`, `delete-account(.el).html` from the same source as the in-app pages. Missing email/publisher show as `[CONFIRM: …]` until the env vars are set |
+| P1-6 font scale 1.3× | ⚠️ open: web cannot emulate OS text size faithfully; test on a device with Settings → Display → Larger Text |
+| P3-3 React Compiler | ⚠️ open: the healthcheck command was blocked in this environment; run `npx react-compiler-healthcheck@latest` locally |
+| P1-7 runtimeVersion → fingerprint | ⚠️ open: waiting for your OK (changes which updates reach which builds) |
