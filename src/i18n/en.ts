@@ -1099,4 +1099,7 @@ export const en = {
   homePitchWaitingFirst: 'The pitch is',
   homePitchWaitingAccent: 'waiting.',
   homePitchWaitingCopy: 'No game in your calendar yet. Take a place or start your own.',
+  homeExploreCta: 'Explore games',
+  homeCreateCta: 'Create a game',
+  matchAllAreasShort: 'All areas',
 } as const;

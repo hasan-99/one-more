@@ -535,7 +535,7 @@ export function HomeStadium({
         <View style={styles.actions}>
           <PressLink href={'/explore' as Href} style={[styles.action, styles.actionPrimary]}>
             <Text style={[styles.actionText, styles.actionInk, { fontFamily: semibold }]}>
-              {copy.appExploreAction}
+              {copy.homeExploreCta}
             </Text>
             <Text aria-hidden style={[styles.actionText, styles.actionInk]}>
               →
@@ -543,7 +543,7 @@ export function HomeStadium({
           </PressLink>
           <PressLink href={'/create' as Href} style={styles.action}>
             <Text style={[styles.actionText, { fontFamily: semibold }]}>
-              {copy.appCreateAction}
+              {copy.homeCreateCta}
             </Text>
           </PressLink>
         </View>

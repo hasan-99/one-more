@@ -227,7 +227,7 @@ export default function ExploreScreen() {
             <View style={styles.selectorRow}>
               <PickerButton
                 label={copy.matchArea}
-                value={selectedArea ? areaName(selectedArea) : copy.matchAllAreas}
+                value={selectedArea ? areaName(selectedArea) : copy.matchAllAreasShort}
                 set={Boolean(filters.areaId)}
                 icon="pin"
                 onPress={() => setSheet('area')}
