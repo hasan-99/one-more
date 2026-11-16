@@ -48,6 +48,10 @@ test('startup shows a light spinner, then skips the wait on later launches', asy
   await page.goto('/home');
   await expect(page.getByRole('progressbar', { name: /Loading your profile/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Loading your profile/ })).toHaveCount(0);
+  // A short wait shows nothing extra; after a moment the football and a changing line appear.
+  await expect(page.getByText(/Warming up|Lacing up/)).toBeVisible({ timeout: 4000 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: '/tmp/pgt2/startup-ball.png' });
   await expect(page.getByRole('progressbar')).toHaveCount(0, { timeout: 8000 });
   expect(
     await page.evaluate((id) => localStorage.getItem(`one-more.profile-complete.${id}`), userId),

@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, Slot, usePathname, type Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
+import { WaitScreen } from '@/components/loading/WaitScreen';
 import { AppShell } from '@/components/layout/AppShell';
 import { AuthButton, AuthPage } from '@/components/auth/AuthPage';
 import { translations } from '@/i18n';
@@ -138,14 +139,8 @@ export default function AppLayout() {
         <AuthButton label={copy.profileRetry} onPress={retryProfile} />
       </AuthPage>
     ) : (
-      // Light loading state: just a spinner, no full card flashing on every launch.
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.accentText}
-          accessibilityLabel={copy.profileLoading}
-        />
-      </View>
+      // Waiting for the server: nothing for a moment, then the bouncing football.
+      <WaitScreen label={copy.profileLoading} subtitle={copy.loaderSub} />
     );
   }
   // The gate renders inside the shell so the navigation bar stays usable while
@@ -186,5 +181,4 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   hidden: { display: 'none' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 240 },
 });
