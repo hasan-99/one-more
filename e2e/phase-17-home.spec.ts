@@ -145,7 +145,7 @@ test('no game yet: home invites to play, shows open games and localizes to Greek
 
   await expect(page.getByRole('heading', { name: 'Find your next game.' })).toBeVisible();
   await expect(page.getByText('2 open games', { exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Explore games' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Explore games' }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Where to?' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Next kick-offs' })).toBeVisible();
   await expect(page.getByTestId('home-rail-card')).toHaveCount(2);
@@ -160,7 +160,7 @@ test('no game yet: home invites to play, shows open games and localizes to Greek
   const languageToggle = page.getByRole('button', { name: 'Language: English' });
   await languageToggle.click();
   await expect(page.getByRole('heading', { name: 'Βρες τον επόμενο αγώνα σου.' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Ανακάλυψε αγώνες' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ανακάλυψε αγώνες' }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Πού πάμε;' })).toBeVisible();
 });
 

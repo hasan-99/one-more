@@ -1867,3 +1867,7 @@
 - **Found while building:** `Link asChild` drops function and animated styles on web; `PressLink` puts the press animation on a wrapper.
 - **Checks:** tsc PASS, eslint PASS, vitest 64 PASS (6 new), build:web PASS, `e2e/phase-17-home.spec.ts` 5 PASS on mobile (rewritten: the old signed-out test was stale because /home requires sign-in). Full regression: see next entry.
 - **Not verified:** real device (animation smoothness, countdown on native).
+
+### 2026-11-16 — Home redesign regression
+- **Checks:** full run: mobile 74 passed / 1 skipped / 1 failed, desktop 12 passed / 2 failed. All 3 failures were test locators made ambiguous by the new page (the "99+" badge now also appears on the Notifications tile; "Explore games" also exists in the desktop navigation). Locators scoped; `phase-17-home` + `notification-bell` re-run: 8/8 on mobile and 8/8 on desktop. The other specs were not re-run after this locator-only change.
+- **Next:** a second, bolder home proposal ("Floodlit Home" artifact) is with the owner for a decision; nothing of it is built.

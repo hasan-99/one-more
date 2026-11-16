@@ -108,7 +108,11 @@ test('the bell sits beside the language switch and shows the unread count', asyn
   unread = 120;
   await page.reload();
   await expect(page.getByRole('button', { name: 'Notifications, 120 unread' })).toBeVisible();
-  await expect(page.getByText('99+', { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('button', { name: 'Notifications, 120 unread' })
+      .getByText('99+', { exact: true }),
+  ).toBeVisible();
 
   // Nothing unread: no number.
   unread = 0;
