@@ -71,7 +71,10 @@ test.describe('public legal and support pages', () => {
       await expect(page).toHaveURL(new RegExp(`${path}$`));
       await expect(page.getByRole('heading', { name: heading, exact: true }).first()).toBeVisible();
       await expect(page.getByText(/placeholder|pending review|not ready/i)).toHaveCount(0);
-      expect((await page.locator('body').innerText()).length).toBeGreaterThan(900);
+      // The long text loads lazily, so wait for it instead of reading the page once.
+      await expect
+        .poll(async () => (await page.locator('body').innerText()).length)
+        .toBeGreaterThan(900);
     });
   }
 

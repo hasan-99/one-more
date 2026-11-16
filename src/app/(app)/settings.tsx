@@ -133,13 +133,14 @@ export default function SettingsScreen() {
     setDeletionBusy(true);
     try {
       await deleteMyAccount();
-      // The account no longer exists; end the local session and leave the private area.
+      // The account no longer exists. Leave the private area first, so ending the session cannot
+      // send the player to the sign-in page, then end the local session and forget cached data.
+      showToast(copy.settingsDeletionRequestSuccess, 'success');
+      router.replace('/');
       await getSupabaseClient()
         .auth.signOut({ scope: 'local' })
         .catch(() => undefined);
       await clearLocalUserData();
-      showToast(copy.settingsDeletionRequestSuccess, 'success');
-      router.replace('/');
     } catch {
       showToast(copy.settingsDeletionRequestError, 'error');
       setDeletionBusy(false);
