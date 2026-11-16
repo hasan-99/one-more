@@ -1834,3 +1834,6 @@
 - Game page: "Back to games" and "Cancel match" share one row with the same button design (cancel in the error colour); confirm step shows "Keep match" / "Cancel match" in the same row. Tests: `phase-17-create-game.spec.ts` (equal row, height and width), screenshot `docs/screenshots/phase-17/game-footer-row.png`.
 - Ball loader: three designs shown as an Artifact, awaiting the user's choice; not built.
 - Cancel match now asks in a small popup (Keep match / Cancel match in one row); tests in phase-17-create-game.spec.ts cover open, keep, and confirm (cancel_match payload, redirect).
+
+## Football loader
+- The profile wait on launch now shows a bouncing football (squash on landing, spin, shadow, grass puff) with a changing line after 0.8 s, a 'taking longer' message after 6 s and the existing retry after 12 s (`BallLoader`, `WaitScreen`, EN+GL copy). Respects reduce-motion. Tests: `e2e/startup.spec.ts`; regression 62 passed / 1 skipped (mobile). Screenshot `docs/screenshots/phase-17/startup-ball-loader.png`. Not tested on a device.
