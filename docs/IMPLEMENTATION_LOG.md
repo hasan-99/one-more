@@ -1817,3 +1817,7 @@
 ## Performance and navigation
 - Measured 7 key pages before/after (`scripts/perf/measure.mjs`, `docs/reports/performance-2026-11.md`): page weight about -52%, full load on throttled 4G -27%, no duplicate API calls on Create game. Changes: 256 px logo and favicon, subset fonts, in-memory request cache for cities/areas, web stub for native-only landing, two unused components removed, skip link + main landmark, prefetch on main nav.
 - Checks: tsc, eslint, vitest 46/46, Playwright mobile (navigation, security headers, auth, challenges, create game, onboarding, profile, layout audit). JS bundle not reduced (remaining issue).
+
+## Store compliance audit
+- Real in-app account deletion (`delete_my_account`), user blocking (`block_user` and friends), full Privacy/Terms/Support/Deletion/Licences pages (EN+GL) with links on landing, sign-up and Settings, Android permissions reduced to INTERNET + VIBRATE, iOS Face ID string removed, privacy manifest, opaque/adaptive icons, production EAS profile, store docs (`docs/store/`), report `docs/reports/store-compliance-2026-11.md`.
+- Checks: tsc, eslint, vitest 50/50, Playwright store-compliance 20/20, regression 47 pass / 4 pre-existing failures (same on the earlier build), expo prebuild android+ios inspected. New migrations not applied; SQL tested on scratch PostgreSQL only. No real-device or store-console verification.
