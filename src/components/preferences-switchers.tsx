@@ -114,8 +114,8 @@ const styles = StyleSheet.create({
   group: { gap: 4 },
   compactGroup: { flexShrink: 0 },
   compactOption: {
-    minHeight: 40,
-    minWidth: 40,
+    minHeight: 44,
+    minWidth: 44,
     paddingHorizontal: 10,
     borderRadius: 10,
     alignItems: 'center',

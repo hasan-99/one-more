@@ -112,8 +112,8 @@ export function NotificationBell() {
 
 const styles = StyleSheet.create({
   box: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',

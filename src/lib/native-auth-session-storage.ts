@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import type { SupportedStorage } from '@supabase/supabase-js';
 
 import { createMigratingSessionStorage } from '@/lib/auth-session-storage';
+import { createEncryptedSessionStorage } from '@/lib/encrypted-session-storage';
 
 const legacySecureStore: SupportedStorage = {
   async getItem(key) {
@@ -48,7 +50,13 @@ const legacySecureStore: SupportedStorage = {
   },
 };
 
+const keyStore: SupportedStorage = {
+  getItem: (key) => SecureStore.getItemAsync(key),
+  setItem: (key, value) => SecureStore.setItemAsync(key, value),
+  removeItem: (key) => SecureStore.deleteItemAsync(key),
+};
+
 export const authSessionStorage = createMigratingSessionStorage(
-  AsyncStorage,
+  createEncryptedSessionStorage(AsyncStorage, keyStore, (length) => Crypto.getRandomBytes(length)),
   legacySecureStore,
 );

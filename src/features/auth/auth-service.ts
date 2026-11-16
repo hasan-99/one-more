@@ -1,3 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { clearRequestCache } from '@/lib/request-cache';
 import { getSupabaseClient } from '@/lib/supabase';
 
 export function signUpWithPassword(
@@ -49,6 +52,20 @@ export function setNewPassword(password: string) {
   return getSupabaseClient().auth.updateUser({ password });
 }
 
-export function signOut() {
-  return getSupabaseClient().auth.signOut();
+/** Forgets everything this device cached about the signed-in user (memory cache + profile flag). */
+export async function clearLocalUserData(): Promise<void> {
+  clearRequestCache();
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const mine = keys.filter((key) => key.startsWith('one-more.profile-complete.'));
+    if (mine.length > 0) await AsyncStorage.multiRemove(mine);
+  } catch {
+    // Storage may be unavailable; the session itself is still ended by the caller.
+  }
+}
+
+export async function signOut() {
+  const result = await getSupabaseClient().auth.signOut();
+  await clearLocalUserData();
+  return result;
 }

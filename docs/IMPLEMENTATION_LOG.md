@@ -1840,3 +1840,8 @@
 
 ## Notification bell
 - Top bar (signed-in, all pages with the bar): bell box beside the language switch (both 40 px high) with a red unread badge (99+ above 99), lime bell when there is something unread, rings once when the count grows. Count = unread rows of `inbox_notifications` (head count), refreshed on sign-in, page change, app resume and every 60 s; the Notifications page keeps it in sync and now has a back button. Hidden when signed out. Tests: `e2e/notification-bell.spec.ts`; regression 67 passed + 9 desktop. Not tested on a device; no realtime push (polling only).
+
+### 2026-11-16 — Store readiness fixes, batch 1
+- **Change:** encrypted auth session storage (AES-256-GCM, key in SecureStore), iPhone-only iOS target, local data cleared on sign-out/deletion, EAS remote versioning + production iOS image, 44 px tap targets, Android R8 + resource shrinking via `expo-build-properties`. New deps: `@noble/ciphers`, `expo-crypto`, `expo-build-properties`.
+- **Checks:** tsc PASS, eslint PASS, vitest 55 PASS, `expo prebuild` (temp copy) PASS: iPhone-only family, minify and shrink true. Browser regression: see next entry.
+- **Not verified:** real device sign-in after the OTA (encrypted storage needs a device test; web uses Supabase's own storage).

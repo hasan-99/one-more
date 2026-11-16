@@ -60,3 +60,17 @@ Owner = **ME** (console / manual / decision), **CODE** = I do it. Effort S/M/L. 
 5. P3 only if you ask.
 
 Not doing without your decision: P3-4 and P3-5 (large rewrites; "do not break existing features").
+
+## Progress — batch 1 (2026-11-16)
+
+| ID | Status | Note |
+| --- | --- | --- |
+| P0-6 | ✅ code | Session encrypted with AES-256-GCM (`@noble/ciphers`); random key in SecureStore (`expo-crypto` for randomness). Old plain sessions are upgraded in place; lost key/tampering = signed out. 5 new unit tests |
+| P1-1 | ✅ | `ios.supportsTablet: false`; prebuild shows `TARGETED_DEVICE_FAMILY = "1"` (iPhone only) |
+| P1-2 | ✅ | `clearLocalUserData()` (request cache + profile flag) runs on sign-out and account deletion |
+| P1-4 | ✅ | `appVersionSource: remote`, production iOS `image: latest`. ⚠️ You must run `eas build:version:set` once if you want to start from a specific number |
+| P1-5 | ✅ | Bell and language switch are 44×44 |
+| P2-1 | ✅ | `expo-build-properties`; prebuild shows `enableMinifyInReleaseBuilds=true`, `enableShrinkResourcesInReleaseBuilds=true` |
+| P2-2 | ⏭ dropped | The font plugin registers fonts by file name (`Barlow-Regular`) but the code uses names like `Barlow_400Regular`; switching would mean renaming every fontFamily for no gain. Runtime loading stays |
+| P2-7 | pending | static legal files |
+| P0-1 | waiting | needs your bundle id |

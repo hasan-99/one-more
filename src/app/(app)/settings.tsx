@@ -1,3 +1,4 @@
+import { clearLocalUserData } from '@/features/auth/auth-service';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -136,6 +137,7 @@ export default function SettingsScreen() {
       await getSupabaseClient()
         .auth.signOut({ scope: 'local' })
         .catch(() => undefined);
+      await clearLocalUserData();
       showToast(copy.settingsDeletionRequestSuccess, 'success');
       router.replace('/');
     } catch {
