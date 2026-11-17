@@ -1,5 +1,4 @@
-import { clearLocalUserData } from '@/features/auth/auth-service';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,14 +9,9 @@ import { AppCard, AppPage } from '@/components/layout/AppPage';
 import { AppearanceSwitcher } from '@/components/preferences-switchers';
 import { useToast } from '@/components/toast/ToastProvider';
 import {
-  cancelAccountDeletionRequest,
-  getAccountDeletionRequest,
   getNotificationPreferences,
-  deleteMyAccount,
   saveNotificationPreferences,
-  type AccountDeletionRequestRow,
 } from '@/features/profile/profile-service';
-import { getSupabaseClient } from '@/lib/supabase';
 import {
   listBlockedUsers,
   unblockUser,
@@ -41,10 +35,7 @@ export default function SettingsScreen() {
     loaded: boolean;
   } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [deletionRequest, setDeletionRequest] = useState<AccountDeletionRequestRow | null>(null);
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
-  const [deletionConfirming, setDeletionConfirming] = useState(false);
-  const [deletionBusy, setDeletionBusy] = useState(false);
   const currentState = user?.id === notificationState?.userId ? notificationState : null;
   const loading = Boolean(user) && (!currentState || currentState.loading);
   const loadError = currentState?.error ?? false;
@@ -54,14 +45,10 @@ export default function SettingsScreen() {
     if (!user) return;
     setNotificationState({ userId: user.id, loading: true, error: false, loaded: false });
     try {
-      const [preferences, request] = await Promise.all([
-        getNotificationPreferences(user.id),
-        getAccountDeletionRequest(user.id),
-      ]);
+      const preferences = await getNotificationPreferences(user.id);
       setInAppEnabled(preferences.in_app_enabled);
       setDiscoveryEmail(preferences.discovery_email_enabled);
       setChatEmail(preferences.chat_email_enabled);
-      setDeletionRequest(request);
       setNotificationState({ userId: user.id, loading: false, error: false, loaded: true });
     } catch {
       setNotificationState({ userId: user.id, loading: false, error: true, loaded: false });
@@ -71,13 +58,12 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (!user) return;
     let active = true;
-    void Promise.all([getNotificationPreferences(user.id), getAccountDeletionRequest(user.id)])
-      .then(([preferences, request]) => {
+    void getNotificationPreferences(user.id)
+      .then((preferences) => {
         if (!active) return;
         setInAppEnabled(preferences.in_app_enabled);
         setDiscoveryEmail(preferences.discovery_email_enabled);
         setChatEmail(preferences.chat_email_enabled);
-        setDeletionRequest(request);
         setNotificationState({ userId: user.id, loading: false, error: false, loaded: true });
       })
       .catch(() => {
@@ -125,40 +111,6 @@ export default function SettingsScreen() {
       setBlocked((rows) => rows.filter((row) => row.userId !== userId));
     } catch {
       showToast(copy.settingsBlockedError, 'error');
-    }
-  };
-
-  const submitDeletion = async () => {
-    if (!user) return;
-    setDeletionBusy(true);
-    try {
-      await deleteMyAccount();
-      // The account no longer exists. Leave the private area first, so ending the session cannot
-      // send the player to the sign-in page, then end the local session and forget cached data.
-      showToast(copy.settingsDeletionRequestSuccess, 'success');
-      router.replace('/');
-      await getSupabaseClient()
-        .auth.signOut({ scope: 'local' })
-        .catch(() => undefined);
-      await clearLocalUserData();
-    } catch {
-      showToast(copy.settingsDeletionRequestError, 'error');
-      setDeletionBusy(false);
-    }
-  };
-
-  const cancelDeletionRequest = async () => {
-    if (!deletionRequest) return;
-    setDeletionBusy(true);
-    try {
-      const cancelled = await cancelAccountDeletionRequest(deletionRequest.id);
-      if (!cancelled) throw new Error('deletion_request_not_cancellable');
-      setDeletionRequest(null);
-      showToast(copy.settingsDeletionCancelSuccess, 'success');
-    } catch {
-      showToast(copy.settingsDeletionCancelError, 'error');
-    } finally {
-      setDeletionBusy(false);
     }
   };
 
@@ -259,36 +211,10 @@ export default function SettingsScreen() {
             {copy.settingsDeletionTitle}
           </Text>
           <Text style={{ color: colors.textSecondary }}>{copy.settingsDeletionDescription}</Text>
-          {deletionRequest ? (
-            <>
-              <Text style={{ color: colors.textPrimary }}>{copy.settingsDeletionRequested}</Text>
-              <AuthButton
-                label={deletionBusy ? copy.profileSaving : copy.settingsDeletionCancel}
-                disabled={deletionBusy}
-                onPress={() => void cancelDeletionRequest()}
-              />
-            </>
-          ) : null}
-          {deletionConfirming ? (
-            <>
-              <AuthFeedback>{copy.settingsDeletionConfirm}</AuthFeedback>
-              <AuthButton
-                label={deletionBusy ? copy.profileSaving : copy.settingsDeletionRequest}
-                disabled={deletionBusy}
-                onPress={() => void submitDeletion()}
-              />
-              <AuthButton
-                label={copy.commonCancel}
-                disabled={deletionBusy}
-                onPress={() => setDeletionConfirming(false)}
-              />
-            </>
-          ) : (
-            <AuthButton
-              label={copy.settingsDeletionStart}
-              onPress={() => setDeletionConfirming(true)}
-            />
-          )}
+          <AuthButton
+            label={copy.settingsDeletionStart}
+            onPress={() => router.push('/account-deletion' as Href)}
+          />
         </AppCard>
       ) : null}
     </AppPage>
