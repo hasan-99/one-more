@@ -408,7 +408,7 @@ export function PlayerProfile() {
             icon="userx"
             label={copy.profileDeleteAccount}
             hint={copy.profileDeleteAccountHint}
-            onPress={() => router.push('/settings' as Href)}
+            onPress={() => router.push('/account-deletion' as Href)}
             colors={colors}
             styles={styles}
             danger

@@ -34,6 +34,7 @@ export default function AppLayout() {
     pathname === '/create' ||
     pathname === '/profile' ||
     pathname === '/settings' ||
+    pathname === '/account-deletion' ||
     pathname === '/notifications' ||
     pathname.startsWith('/chat/') ||
     pathname.startsWith('/teams/') ||

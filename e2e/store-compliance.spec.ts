@@ -155,8 +155,14 @@ test('account deletion in settings deletes immediately and signs the user out', 
   await page.route('**/auth/v1/logout**', (route) => route.fulfill({ status: 204, body: '' }));
   await page.goto('/settings');
   await page.getByRole('button', { name: 'Delete my account' }).click();
+  await expect(page).toHaveURL(/\/account-deletion/);
   await expect(page.getByText(/permanently deletes your account/i)).toBeVisible();
-  await page.getByRole('button', { name: 'Yes, delete my account permanently' }).click();
+  await expect(page.getByText('What will be deleted')).toBeVisible();
+  const confirm = page.getByRole('button', { name: 'Confirm and delete my account' });
+  await expect(confirm).toBeDisabled();
+  await page.getByRole('checkbox', { name: /I understand/ }).click();
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
   await expect(page).toHaveURL(/\/$/);
   expect(deleted).toBe(true);
   const token = await page.evaluate(() =>
