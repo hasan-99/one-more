@@ -311,7 +311,7 @@ export const en = {
   deleteAcctPolicyBody: 'This follows our Privacy Policy: personal data is removed when you delete your account. For any data request, contact support.',
   deleteAcctConfirmTitle: 'Confirm',
   deleteAcctUnderstand: 'I understand that my account and data will be deleted permanently.',
-  deleteAcctConfirmButton: 'Confirm and delete my account',
+  deleteAcctConfirmButton: 'Confirm deletion',
   settingsDeletionTitle: 'Account deletion',
   settingsDeletionDescription:
     'Deleting your account removes your profile, matches you organise, your join requests, chat messages, notifications and your sign-in immediately and permanently. Teams you captain pass to another member, or are disbanded if you are the only member. This cannot be undone.',
@@ -996,7 +996,7 @@ export const en = {
   profileAnyFormat: 'Any',
   profileFormatPlayers: '{count} players',
   profileGameRemindersShort: 'Game reminders',
-  profileRemindersHint: 'Reminders 24 h and 2 h before kick-off',
+  profileRemindersHint: 'Before each game',
   profileLanguageHint: 'Choose the app language',
   profileAppearanceHint: 'Dark or light theme',
   profileSettingsHint: 'Account, privacy and data',
