@@ -318,9 +318,13 @@ export function PlayerProfile() {
           </Text>
           <View style={styles.listCard}>
             <View style={[styles.row, styles.rowDivider]}>
-              <Text nativeID="profile-reminders" style={[styles.rowTitle, styles.rowCopy]}>
-                {copy.profileGameRemindersShort}
-              </Text>
+              <MenuIcon name="clock" colors={colors} styles={styles} />
+              <View style={styles.rowCopy}>
+                <Text nativeID="profile-reminders" style={styles.rowTitle}>
+                  {copy.profileGameRemindersShort}
+                </Text>
+                <Text style={styles.rowHint}>{copy.profileRemindersHint}</Text>
+              </View>
               <ToggleSwitch
                 value={reminders}
                 label={copy.profileGameReminders}
@@ -329,51 +333,109 @@ export function PlayerProfile() {
               />
             </View>
             <AccountRow
+              icon="globe"
               label={copy.profileLanguage}
+              hint={copy.profileLanguageHint}
               value={locale === 'en' ? copy.languageEnglish : copy.languageGreek}
               onPress={() => setLocale(locale === 'en' ? 'el' : 'en')}
               colors={colors}
               styles={styles}
             />
             <AccountRow
+              icon="moon"
               label={copy.themeLabel}
+              hint={copy.profileAppearanceHint}
               value={theme === 'dark' ? copy.themeDark : copy.themeLight}
               onPress={() => setThemePreference(theme === 'dark' ? 'light' : 'dark')}
               colors={colors}
               styles={styles}
             />
             <AccountRow
+              icon="sliders"
               label={copy.appSettingsTitle}
+              hint={copy.profileSettingsHint}
               onPress={() => router.push('/settings' as Href)}
               colors={colors}
               styles={styles}
             />
             <AccountRow
+              icon="bell"
               label={copy.appNotificationsTitle}
+              hint={copy.profileNotificationsHint}
               onPress={() => router.push('/notifications' as Href)}
               colors={colors}
               styles={styles}
+              last
             />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void handleSignOut()}
-              disabled={signingOut}
-              style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.cardTop }]}
-            >
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"
-                  stroke={colors.errorText}
-                  strokeWidth={2.2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-              <Text style={[styles.rowTitle, { color: colors.errorText }]}>
-                {signingOut ? copy.authSessionLoading : copy.authSignOut}
-              </Text>
-            </Pressable>
           </View>
+
+          <View style={styles.listCard}>
+            <View style={styles.policiesHead}>
+              <Text accessibilityRole="header" style={styles.policiesTitle}>
+                {copy.profilePoliciesTitle}
+              </Text>
+              <Text style={styles.rowHint}>{copy.profilePoliciesSubtitle}</Text>
+            </View>
+            <AccountRow
+              icon="shield"
+              label={copy.legalPrivacyLink}
+              hint={copy.profilePrivacyHint}
+              onPress={() => router.push('/privacy' as Href)}
+              colors={colors}
+              styles={styles}
+              first
+            />
+            <AccountRow
+              icon="doc"
+              label={copy.legalTermsLink}
+              hint={copy.profileTermsHint}
+              onPress={() => router.push('/terms' as Href)}
+              colors={colors}
+              styles={styles}
+            />
+            <AccountRow
+              icon="help"
+              label={copy.legalSupportLink}
+              hint={copy.profileSupportHint}
+              onPress={() => router.push('/support' as Href)}
+              colors={colors}
+              styles={styles}
+              last
+            />
+          </View>
+
+          <AccountRow
+            icon="userx"
+            label={copy.profileDeleteAccount}
+            hint={copy.profileDeleteAccountHint}
+            onPress={() => router.push('/settings' as Href)}
+            colors={colors}
+            styles={styles}
+            danger
+          />
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void handleSignOut()}
+            disabled={signingOut}
+            style={({ pressed }) => [
+              styles.signOutButton,
+              pressed && { backgroundColor: colors.error },
+            ]}
+          >
+            <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"
+                stroke={colors.errorText}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <Text style={styles.signOutText}>
+              {signingOut ? copy.authSessionLoading : copy.authSignOut}
+            </Text>
+          </Pressable>
           <Text style={styles.email}>{user?.email ?? ''}</Text>
         </Rise>
       </ScrollView>
@@ -1015,18 +1077,67 @@ export function AnyPill({
   );
 }
 
+const MENU_ICONS = {
+  clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z',
+  globe: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18',
+  moon: 'M20 14A8 8 0 0110 4a8 8 0 1010 10z',
+  sliders: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M8 15v4',
+  bell: 'M6 16v-5a6 6 0 1112 0v5l1.5 2h-15L6 16zM10 20a2 2 0 004 0',
+  shield: 'M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z',
+  doc: 'M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5',
+  help: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9.5 9.5a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5M12 17h.01',
+  userx: 'M10 12a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM3 20a7 7 0 0114 0M16 9l5 5M21 9l-5 5',
+} as const;
+type MenuIconName = keyof typeof MENU_ICONS;
+
+function MenuIcon({
+  name,
+  colors,
+  styles,
+  danger,
+}: {
+  name: MenuIconName;
+  colors: ThemeColors;
+  styles: Styles;
+  danger?: boolean;
+}) {
+  return (
+    <View style={styles.menuIcon} importantForAccessibility="no-hide-descendants">
+      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+        <Path
+          d={MENU_ICONS[name]}
+          stroke={danger ? colors.errorText : colors.accentText}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
+  );
+}
+
 function AccountRow({
+  icon,
   label,
+  hint,
   value,
   onPress,
   colors,
   styles,
+  last,
+  first,
+  danger,
 }: {
+  icon: MenuIconName;
   label: string;
+  hint?: string;
   value?: string;
   onPress: () => void;
   colors: ThemeColors;
   styles: Styles;
+  last?: boolean;
+  first?: boolean;
+  danger?: boolean;
 }) {
   return (
     <Pressable
@@ -1035,13 +1146,18 @@ function AccountRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        styles.rowDivider,
-        pressed && { backgroundColor: colors.cardTop },
+        danger ? styles.dangerCard : !last && styles.rowDivider,
+        first && styles.rowFirst,
+        pressed && { backgroundColor: danger ? colors.error : colors.cardTop },
       ]}
     >
-      <Text style={[styles.rowTitle, styles.rowCopy]}>{label}</Text>
+      <MenuIcon name={icon} colors={colors} styles={styles} danger={danger} />
+      <View style={styles.rowCopy}>
+        <Text style={[styles.rowTitle, danger && { color: colors.errorText }]}>{label}</Text>
+        {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
+      </View>
       {value ? <Text style={styles.rowValue}>{value}</Text> : null}
-      <Chevron color={colors.textSecondary} />
+      <Chevron color={danger ? colors.errorText : colors.textSecondary} />
     </Pressable>
   );
 }
@@ -1662,6 +1778,46 @@ export function makeStyles(colors: ThemeColors, locale: Locale) {
     },
     rowDivider: { borderBottomWidth: 1, borderBottomColor: colors.navBorder },
     email: { color: colors.textMuted, fontFamily: body, fontSize: 13 },
+    rowHint: { color: colors.textSecondary, fontFamily: body, fontSize: 13, lineHeight: 18 },
+    rowFirst: { borderTopWidth: 1, borderTopColor: colors.navBorder },
+    menuIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.cardTop,
+    },
+    policiesHead: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10, gap: 2 },
+    policiesTitle: {
+      color: colors.textPrimary,
+      fontFamily: display,
+      fontSize: 22,
+      lineHeight: 24,
+      fontWeight: '800',
+    },
+    dangerCard: {
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: colors.errorText,
+      backgroundColor: colors.error,
+    },
+    signOutButton: {
+      minHeight: 56,
+      borderRadius: 18,
+      borderWidth: 1.5,
+      borderColor: colors.errorText,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    signOutText: {
+      color: colors.errorText,
+      fontFamily: semibold,
+      fontSize: 17,
+      fontWeight: '600',
+    },
     modalRoot: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
     scrim: {
       position: 'absolute',

@@ -1891,3 +1891,8 @@
 - **Change:** restored the approved "Floodlit Home" (`HomeStadium`, `HomeParts`, `home-service`, `home-logic`, `use-now`, `PressLink`, EN/EL strings, home e2e) from the commit before the revert. Kept all later fixes (skeleton, Greek buttons, delete-account race, profile timeout).
 - **Checks:** tsc PASS, eslint PASS, vitest 65 PASS, build:web PASS, `phase-17-home` mobile 5/5 PASS (run with the installed Chromium; full regression not re-run).
 - **Not verified:** real device; full Playwright regression; desktop.
+
+### 2026-11-17 — Profile "Account" section redesigned
+- **Change:** Account is now grouped cards: preferences (reminders, language, appearance, settings, notifications) with icon + hint per row; "Policies and help" card (privacy, terms, support, linking to the existing pages); a red "Request account deletion" card (opens Settings, where deletion lives); outlined Sign out. New EN + EL strings (`profile*Hint`, `profilePolicies*`, `profileDeleteAccount*`).
+- **Checks:** tsc PASS, eslint PASS, vitest 65 PASS, build:web PASS, Playwright (profile-reference, phase-02, greek-buttons, store-compliance, layout-audit) 38 passed / 10 skipped / 0 failed.
+- **Not verified:** the new layout was not looked at in a browser or on a device; Greek row text wrapping only covered by the existing button audit.
